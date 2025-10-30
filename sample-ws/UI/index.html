@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Lecture Chat Prototype</title>
+  <style>
+    :root { --pad: 12px; --radius: 10px; --border: #d0d0d0; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      margin: 0 auto; padding: 16px; max-width: 560px;
+    }
+    header { margin-bottom: 10px; }
+    h1 { font-size: 1.2rem; margin: 0 0 6px; }
+    #status { font-size: 0.9rem; color: #555; }
+
+    #messages {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      min-height: 300px; max-height: 60vh; overflow-y: auto;
+      padding: var(--pad); background: #fafafa; margin: 12px 0;
+    }
+    .msg {
+      background: #fff; border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 8px 10px; margin-bottom: 8px;
+      line-height: 1.35; word-wrap: break-word;
+    }
+    .me { border-color: #a8d5ff; background: #eef7ff; }
+    .meta { font-size: 0.75rem; color: #666; margin-bottom: 2px; }
+    .text { font-size: 1rem; }
+
+    #composer {
+      display: flex; gap: 8px;
+    }
+    #input {
+      flex: 1; font-size: 1rem; padding: 12px;
+      border: 1px solid var(--border); border-radius: var(--radius);
+    }
+    #send {
+      font-size: 1rem; padding: 12px 14px; border: 1px solid #0d6efd;
+      background: #0d6efd; color: white; border-radius: var(--radius);
+      min-width: 80px; touch-action: manipulation; cursor: pointer;
+    }
+    #send:disabled { opacity: 0.6; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Live Chat Prototype</h1>
+    <div id="status">Connecting…</div>
+  </header>
+
+  <main id="messages" aria-live="polite"></main>
+
+  <form id="composer" autocomplete="off">
+    <input id="input" type="text" inputmode="text" placeholder="Type a message…" maxlength="2000" />
+    <button id="send" type="submit">Send</button>
+  </form>
+
+  <script>
+    // --- minimal identity so we can mark "Me" locally (no auth, no storage) ---
+    const clientId = crypto.getRandomValues(new Uint32Array(1))[0].toString(16);
+
+    // Use same host as page; supports LAN testing (replace with ws://<your-ip>:3000 if needed)
+    const wsUrl = (location.protocol === "https:" ? "wss://" : "ws://") + location.host;
+    const socket = new WebSocket(wsUrl);
+
+    const statusEl = document.getElementById("status");
+    const messagesEl = document.getElementById("messages");
+    const form = document.getElementById("composer");
+    const input = document.getElementById("input");
+    const sendBtn = document.getElementById("send");
+
+    socket.addEventListener("open", () => {
+      statusEl.textContent = "Connected";
+      sendBtn.disabled = false;
+      input.focus();
+    });
+
+    socket.addEventListener("close", () => {
+      statusEl.textContent = "Disconnected";
+      sendBtn.disabled = true;
+    });
+
+    socket.addEventListener("error", () => {
+      statusEl.textContent = "Connection error";
+    });
+
+    socket.addEventListener("message", (event) => {
+      let msg;
+      try { msg = JSON.parse(event.data); } catch { return; }
+      if (msg.type !== "chat") return;
+
+      const mine = (msg.clientId === clientId);
+      appendMessage({
+        text: msg.text,
+        mine,
+        ts: msg.ts || Date.now()
+      });
+    });
+
+    function appendMessage({ text, mine, ts }) {
+      const wrap = document.createElement("div");
+      wrap.className = "msg" + (mine ? " me" : "");
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      const time = new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      meta.textContent = (mine ? "You" : "Helper") + " • " + time;
+
+      const body = document.createElement("div");
+      body.className = "text";
+      body.textContent = text;
+
+      wrap.appendChild(meta);
+      wrap.appendChild(body);
+      messagesEl.appendChild(wrap);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const text = input.value.trim();
+      if (!text || socket.readyState !== WebSocket.OPEN) return;
+      socket.send(JSON.stringify({ type: "chat", text, clientId, ts: Date.now() }));
+      input.value = "";
+      input.focus();
+    });
+  </script>
+</body>
+</html>
