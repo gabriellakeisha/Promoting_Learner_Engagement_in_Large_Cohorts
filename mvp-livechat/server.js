@@ -6,83 +6,69 @@ const WebSocket = require("ws");
 
 const app = express();
 
-// Serve ./UI
-app.use(express.static(path.join(__dirname, "UI")));
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "UI", "index.html"));
-});
+// Serve ./UI and map "/" to index.html
+const UI_DIR = path.join(__dirname, "UI");
+const INDEX_PATH = path.join(UI_DIR, "index.html");
+app.use(express.static(UI_DIR));
+app.get("/", (req, res) => res.sendFile(INDEX_PATH));
 
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-// helpers
-function broadcast(payloadObj) {
-  const data = JSON.stringify(payloadObj);
+// Broadcast helper
+function broadcast(obj) {
+  const data = JSON.stringify(obj);
   for (const client of wss.clients) {
     if (client.readyState === WebSocket.OPEN) client.send(data);
   }
 }
-function broadcastChat({ text, clientId = null, ts = Date.now() }) {
-  broadcast({ type: "chat", text, clientId, ts });
-}
-function broadcastPresence() {
-  broadcast({ type: "presence", count: wss.clients.size, ts: Date.now() });
+
+// Wrap any inbound into a standard chat payload
+function toChatPayload(d) {
+  // d can be string or object {user,text}
+  if (typeof d === "string") {
+    return { type: "chat", user: "User-????", text: d, ts: Date.now() };
+  }
+  const user = typeof d.user === "string" ? d.user.slice(0, 32) : "User-????";
+  const text = typeof d.text === "string" ? d.text.slice(0, 2000) : "";
+  return { type: "chat", user, text, ts: Date.now() };
 }
 
-// WebSocket connection handler 
 wss.on("connection", (ws) => {
-  console.log("Client connected");
+  console.log("WS client connected");
 
-  // initial greeting
+  // Send a system message only to this client so we know receive works
   ws.send(JSON.stringify({
-    type: "chat",
-    text: "Welcome! Send a message and I will try to answer. Type help for options.",
-    clientId: "bot",
+    type: "system",
+    text: "Connected to server. Start sending messages.",
     ts: Date.now()
   }));
 
-  // update everyone’s online count
-  broadcastPresence();
+  ws.on("message", (buffer) => {
+    let inbound = buffer.toString();
+    console.log("raw received:", inbound);
 
-  ws.on("message", (buf) => {
-    let msg;
-    try { msg = JSON.parse(buf.toString()); } catch { return; }
-
-    if (msg?.type === "typing") {
-      return;
-    }
-
-    if (msg?.type !== "chat" || typeof msg.text !== "string") return;
-
-    // 1) send the user's message to everyone 
-    const clipped = msg.text.slice(0, 2000);
-    const ts = msg.ts || Date.now();
-    const clientId = msg.clientId || null;
-
-    broadcastChat({ text: clipped, clientId, ts });
-
-    // 2) simple bot logic (auto-response) -- limited using conditional statements
-    const txt = clipped.toLowerCase();
-    let reply = null;
-    if (txt.startsWith("help")) reply = "more testing: help, tip, test";
-    else if (txt.includes("hello") || txt.includes("hi")) reply = "Hi there!";
-    else if (txt.includes("test")) reply = "Test received";
-    else if (txt.startsWith("tip")) reply = "initial test";
-    else reply = "I cannot answer that yet, sorry.";
-
-    if (reply) {
-      setTimeout(() => broadcastChat({ text: reply, clientId: "bot" }), 400);
+    // Try to parse JSON; fall back to raw text
+    try {
+      const parsed = JSON.parse(inbound);
+      const payload = toChatPayload(parsed);
+      if (!payload.text) return;
+      console.log("broadcasting:", payload);
+      broadcast(payload);
+    } catch {
+      const payload = toChatPayload(inbound);
+      if (!payload.text) return;
+      console.log("broadcasting(raw):", payload);
+      broadcast(payload);
     }
   });
 
-  ws.on("close", () => {
-    console.log("Client disconnected");
-    broadcastPresence();
-  });
+  ws.on("close", () => console.log("WS client disconnected"));
 });
 
-// listen on all interfaces so phone can reach it
+// Bind to all interfaces so phone can reach it too
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Open http://localhost:${PORT} or http://<ip>:${PORT}`);
+  console.log("UI_DIR:", UI_DIR);
+  console.log(`test: open http://localhost:${PORT} and http://<laptop-ip>:${PORT}`);
 });
