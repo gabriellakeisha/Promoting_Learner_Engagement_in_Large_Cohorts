@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat - Backchannel</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="chat-container">
+            <!-- Header -->
+            <div class="chat-header">
+                <div>
+                    <h2>💬 Live Chat</h2>
+                    <p id="userInfo">Loading...</p>
+                </div>
+                <div class="header-stats">
+                    <span id="userCount" class="stat-badge">👥 0</span>
+                    <span id="connectionStatus" class="stat-badge status-connecting">🔌 Connecting...</span>
+                </div>
+            </div>
+
+            <!-- Messages Display -->
+            <div id="messages" class="messages-container">
+                <div class="system-message">
+                    <p>Welcome! Waiting for server connection...</p>
+                </div>
+            </div>
+
+            <!-- Message Input -->
+            <div class="message-input-container">
+                <input 
+                    type="text" 
+                    id="messageInput" 
+                    placeholder="Type your message..." 
+                    maxlength="500"
+                    autocomplete="off"
+                />
+                <button id="sendBtn" class="btn-send" disabled>Send</button>
+            </div>
+
+            <!-- Controls -->
+            <div class="controls">
+                <button id="loadHistoryBtn" class="btn-secondary">📥 Load History</button>
+                <button id="logoutBtn" class="btn-secondary">🚪 Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===========================================
+        // CONFIGURATION
+        // ===========================================
+        const WS_URL = `ws://${window.location.host}`;
+        
+        // ===========================================
+        // STATE MANAGEMENT
+        // ===========================================
+        let ws;
+        let username = localStorage.getItem('username');
+        let isConnected = false;
+
+        // ===========================================
+        // DOM ELEMENTS
+        // ===========================================
+        const messagesDiv = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const userInfoDiv = document.getElementById('userInfo');
+        const userCountSpan = document.getElementById('userCount');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const loadHistoryBtn = document.getElementById('loadHistoryBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        // ===========================================
+        // INITIALIZATION
+        // ===========================================
+        function init() {
+            // Check if user is logged in
+            if (!username) {
+                alert('Please login first');
+                window.location.href = '/login.html';
+                return;
+            }
+
+            // Display user info
+            userInfoDiv.textContent = `Logged in as: ${username}`;
+
+            // Connect to WebSocket
+            connectWebSocket();
+
+            // Setup event listeners
+            setupEventListeners();
+        }
+
+        // ===========================================
+        // WEBSOCKET CONNECTION
+        // ===========================================
+        function connectWebSocket() {
+            console.log('🔌 Connecting to WebSocket server...');
+            ws = new WebSocket(WS_URL);
+
+            ws.onopen = () => {
+                console.log('✅ WebSocket connected');
+                isConnected = true;
+                updateConnectionStatus(true);
+                sendBtn.disabled = false;
+                addSystemMessage('Connected to server!');
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    handleIncomingMessage(data);
+                } catch (error) {
+                    console.error('❌ Error parsing message:', error);
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error('❌ WebSocket error:', error);
+                addSystemMessage('Connection error occurred');
+            };
+
+            ws.onclose = () => {
+                console.log('🔌 WebSocket disconnected');
+                isConnected = false;
+                updateConnectionStatus(false);
+                sendBtn.disabled = true;
+                addSystemMessage('Disconnected from server. Refresh to reconnect.');
+            };
+        }
+
+        // ===========================================
+        // MESSAGE HANDLING
+        // ===========================================
+        function handleIncomingMessage(data) {
+            console.log('📩 Received:', data);
+
+            switch (data.type) {
+                case 'chat':
+                    addChatMessage(data.username, data.text, data.timestamp);
+                    break;
+                case 'system':
+                    addSystemMessage(data.text);
+                    break;
+                case 'userCount':
+                    updateUserCount(data.count);
+                    break;
+                default:
+                    console.log('Unknown message type:', data.type);
+            }
+        }
+
+        function sendMessage() {
+            const text = messageInput.value.trim();
+
+            if (!text) return;
+            if (!isConnected) {
+                alert('Not connected to server');
+                return;
+            }
+
+            const message = {
+                username: username,
+                text: text,
+                timestamp: new Date()
+            };
+
+            // Send via WebSocket
+            ws.send(JSON.stringify(message));
+            console.log('📤 Sent message:', message);
+
+            // Clear input
+            messageInput.value = '';
+            messageInput.focus();
+        }
+
+        // ===========================================
+        // UI UPDATES
+        // ===========================================
+        function addChatMessage(user, text, timestamp) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            
+            // Highlight own messages
+            if (user === username) {
+                messageDiv.classList.add('own-message');
+            }
+
+            const time = new Date(timestamp).toLocaleTimeString('en-GB', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <span class="message-username">${escapeHtml(user)}</span>
+                    <span class="message-time">${time}</span>
+                </div>
+                <div class="message-text">${escapeHtml(text)}</div>
+            `;
+
+            messagesDiv.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        function addSystemMessage(text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'system-message';
+            messageDiv.innerHTML = `<p>${escapeHtml(text)}</p>`;
+            messagesDiv.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        function updateConnectionStatus(connected) {
+            if (connected) {
+                connectionStatus.textContent = '🟢 Connected';
+                connectionStatus.className = 'stat-badge status-connected';
+            } else {
+                connectionStatus.textContent = '🔴 Disconnected';
+                connectionStatus.className = 'stat-badge status-disconnected';
+            }
+        }
+
+        function updateUserCount(count) {
+            userCountSpan.textContent = `👥 ${count}`;
+        }
+
+        function scrollToBottom() {
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        // ===========================================
+        // LOAD MESSAGE HISTORY
+        // ===========================================
+        async function loadHistory() {
+            try {
+                loadHistoryBtn.disabled = true;
+                loadHistoryBtn.textContent = '⏳ Loading...';
+
+                const response = await fetch('/api/messages?limit=50');
+                const data = await response.json();
+
+                if (data.success) {
+                    // Clear current messages
+                    messagesDiv.innerHTML = '';
+                    
+                    // Add history
+                    data.messages.forEach(msg => {
+                        addChatMessage(msg.username, msg.text, msg.timestamp);
+                    });
+
+                    addSystemMessage(`Loaded ${data.count} messages from history`);
+                } else {
+                    alert('Failed to load history');
+                }
+            } catch (error) {
+                console.error('❌ Error loading history:', error);
+                alert('Failed to load history');
+            } finally {
+                loadHistoryBtn.disabled = false;
+                loadHistoryBtn.textContent = '📥 Load History';
+            }
+        }
+
+        // ===========================================
+        // EVENT LISTENERS
+        // ===========================================
+        function setupEventListeners() {
+            // Send message on button click
+            sendBtn.addEventListener('click', sendMessage);
+
+            // Send message on Enter key
+            messageInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            // Load history
+            loadHistoryBtn.addEventListener('click', loadHistory);
+
+            // Logout
+            logoutBtn.addEventListener('click', () => {
+                if (confirm('Are you sure you want to logout?')) {
+                    localStorage.removeItem('username');
+                    window.location.href = '/login.html';
+                }
+            });
+        }
+
+        // ===========================================
+        // UTILITY FUNCTIONS
+        // ===========================================
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ===========================================
+        // START APPLICATION
+        // ===========================================
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
