@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Backchannel Chat</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="login-box">
+            <h1>🎓 Backchannel Chat</h1>
+            <p class="subtitle">Login + Database Integration</p>
+            
+            <div class="form-group">
+                <label for="username">Enter Your Username</label>
+                <input 
+                    type="text" 
+                    id="username" 
+                    placeholder="e.g., John Smith" 
+                    maxlength="30"
+                    autocomplete="off"
+                    autofocus
+                />
+                <small>This will be displayed beside your messages</small>
+            </div>
+            
+            <button id="loginBtn" class="btn-primary">Join Chat</button>
+            
+            <div id="error" class="error-message"></div>
+            
+            <div class="info-box">
+                <p><strong>Information::</strong></p>
+                <ul>
+                    <li>Enter any username (no password needed)</li>
+                    <li>Messages are saved to MongoDB database</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get elements
+        const usernameInput = document.getElementById('username');
+        const loginBtn = document.getElementById('loginBtn');
+        const errorDiv = document.getElementById('error');
+
+        // Handle Enter key press
+        usernameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
+
+        // Handle login button click
+        loginBtn.addEventListener('click', login);
+
+        function login() {
+            const username = usernameInput.value.trim();
+            
+            // Validate username
+            if (!username) {
+                showError('Please enter a username');
+                return;
+            }
+            
+            if (username.length < 2) {
+                showError('Username must be at least 2 characters');
+                return;
+            }
+            
+            if (username.length > 30) {
+                showError('Username must be less than 30 characters');
+                return;
+            }
+            
+            // Save username to localStorage
+            localStorage.setItem('username', username);
+            console.log('✅ Username saved:', username);
+            
+            // Redirect to chat
+            window.location.href = '/chat.html';
+        }
+
+        function showError(message) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            
+            // Clear error after 3 seconds
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        // Check if already logged in
+        window.addEventListener('load', () => {
+            const savedUsername = localStorage.getItem('username');
+            if (savedUsername) {
+                usernameInput.value = savedUsername;
+            }
+        });
+    </script>
+</body>
+</html>

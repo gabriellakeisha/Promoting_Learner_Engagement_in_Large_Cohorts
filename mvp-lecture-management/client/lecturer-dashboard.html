@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecturer Dashboard - Lecture Engagement</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    
+    .modal-overlay.show {
+      display: flex;
+    }
+    
+    .analytics-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      overflow-y: auto;
+      z-index: 1000;
+      padding: 20px;
+      display: none;
+    }
+    
+    .analytics-overlay.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="navbar-content">
+      <div class="navbar-brand">🎓 Lecture Engagement - Lecturer</div>
+      <div class="navbar-user">
+        <div class="user-info">
+          <div class="user-name" id="user-name">Loading...</div>
+          <div class="user-role">lecturer</div>
+        </div>
+        <button class="btn btn-secondary btn-small" id="logout-btn">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="dashboard">
+      <div class="dashboard-header">
+        <h2>My Sessions</h2>
+        <button class="btn btn-primary" id="create-session-btn">+ Create New Session</button>
+      </div>
+
+      <div id="alert-container"></div>
+
+      <!-- Create Session Modal -->
+      <div id="create-modal" class="modal-overlay">
+        <div style="background: white; border-radius: 16px; padding: 32px; max-width: 500px; width: 90%;">
+          <h3 style="margin-bottom: 24px;">Create New Session</h3>
+          <form id="create-session-form">
+            <div class="form-group">
+              <label for="title">Session Title</label>
+              <input type="text" id="title" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label for="moduleCode">Module Code</label>
+              <input type="text" id="moduleCode" class="form-input" placeholder="e.g., CSC3002">
+            </div>
+            <div class="form-group">
+              <label for="description">Description</label>
+              <textarea id="description" class="form-input" rows="3"></textarea>
+            </div>
+            <div style="display: flex; gap: 12px;">
+              <button type="submit" class="btn btn-primary" style="flex: 1;">Create</button>
+              <button type="button" class="btn btn-secondary" style="flex: 1;" id="cancel-btn">Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Sessions List -->
+      <div id="loading">
+        <div class="spinner"></div>
+      </div>
+
+      <div id="sessions-container" class="hidden">
+        <div id="sessions-list" class="sessions-grid"></div>
+        <div id="no-sessions" class="hidden text-center" style="padding: 40px; color: var(--text-secondary);">
+          <p>No sessions yet. Create your first session to get started!</p>
+        </div>
+      </div>
+
+      <!-- Analytics Modal -->
+      <div id="analytics-modal" class="analytics-overlay">
+        <div style="max-width: 1200px; margin: 0 auto; background: white; border-radius: 16px; padding: 32px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
+            <h2 id="analytics-title">Session Analytics</h2>
+            <button class="btn btn-secondary btn-small" id="close-analytics-btn">Close</button>
+          </div>
+
+          <div id="analytics-content">
+            <div class="spinner"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/lecturer-dashboard.js"></script>
+</body>
+</html>
