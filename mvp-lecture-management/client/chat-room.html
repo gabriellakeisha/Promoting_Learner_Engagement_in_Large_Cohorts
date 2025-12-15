@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat Room - Lecture Engagement</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-content">
+      <div class="navbar-brand">
+        <a href="/student-dashboard" style="text-decoration: none; color: inherit;">
+          ← Back to Dashboard
+        </a>
+      </div>
+      <div class="navbar-user">
+        <div class="user-info">
+          <div class="user-name" id="user-name">Loading...</div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="chat-container">
+      <!-- Chat Header -->
+      <div class="chat-header">
+        <h2 id="session-title">Loading...</h2>
+        <p id="session-info">Session information</p>
+      </div>
+
+      <!-- Messages -->
+      <div class="chat-messages" id="messages-container">
+        <div id="loading" class="text-center">
+          <div class="spinner"></div>
+        </div>
+      </div>
+
+      <!-- Input -->
+      <div class="chat-input-container">
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label for="message-type">Message Type:</label>
+          <select id="message-type" class="form-select">
+            <option value="QUESTION">❓ Question</option>
+            <option value="COMMENT">💬 Comment</option>
+            <option value="CONFUSION">❗ Confusion</option>
+          </select>
+        </div>
+        <div class="chat-input-wrapper">
+          <textarea 
+            id="message-input" 
+            class="chat-input" 
+            placeholder="Type your message here..."
+            rows="3"
+          ></textarea>
+          <button class="btn btn-primary" id="send-btn" style="height: 80px;">
+            Send
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/student-chat.js"></script>
+</body>
+</html>

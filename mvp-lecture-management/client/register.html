@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register - Lecture Engagement Platform</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h1>🎓 Create Account</h1>
+        <p>Join the Lecture Engagement Platform</p>
+      </div>
+
+      <div id="alert-container"></div>
+
+      <form id="register-form">
+        <div class="form-group">
+          <label for="displayName">Full Name</label>
+          <input 
+            type="text" 
+            id="displayName" 
+            class="form-input" 
+            placeholder="John Doe"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input 
+            type="email" 
+            id="email" 
+            class="form-input" 
+            placeholder="student@qub.ac.uk"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input 
+            type="password" 
+            id="password" 
+            class="form-input" 
+            placeholder="Minimum 6 characters"
+            required
+            minlength="6"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="role">I am a...</label>
+          <select id="role" class="form-select" required>
+            <option value="student">Student</option>
+            <option value="lecturer">Lecturer</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="register-btn">
+          Create Account
+        </button>
+      </form>
+
+      <p class="text-center mt-3" style="color: var(--text-secondary); font-size: 14px;">
+        Already have an account? 
+        <a href="/" style="color: var(--primary-color); font-weight: 600;">Login here</a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // Register functionality
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const btn = document.getElementById('register-btn');
+      btn.disabled = true;
+      btn.textContent = 'Creating account...';
+      
+      const data = {
+        displayName: document.getElementById('displayName').value,
+        email: document.getElementById('email').value,
+        password: document.getElementById('password').value,
+        role: document.getElementById('role').value
+      };
+      
+      try {
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          showAlert('Account created successfully! Redirecting to login...', 'success');
+          setTimeout(() => window.location.href = '/', 2000);
+        } else {
+          showAlert(result.message, 'error');
+          btn.disabled = false;
+          btn.textContent = 'Create Account';
+        }
+      } catch (error) {
+        showAlert('Error creating account. Please try again.', 'error');
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+      }
+    });
+    
+    function showAlert(message, type) {
+      const container = document.getElementById('alert-container');
+      container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+    }
+  </script>
+</body>
+</html>

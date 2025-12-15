@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Dashboard - Lecture Engagement</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="navbar-content">
+      <div class="navbar-brand">🎓 Lecture Engagement</div>
+      <div class="navbar-user">
+        <div class="user-info">
+          <div class="user-name" id="user-name">Loading...</div>
+          <div class="user-role" id="user-role">student</div>
+        </div>
+        <button class="btn btn-secondary btn-small" id="logout-btn">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="dashboard">
+      <div class="dashboard-header">
+        <h2>My Sessions</h2>
+        <p style="color: var(--text-secondary)">Join or view your active lecture sessions</p>
+      </div>
+
+      <div id="alert-container"></div>
+
+      <!-- Join Session Form - BIGGER INPUT -->
+      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 32px; border-radius: 16px; margin-bottom: 32px; box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);">
+        <h3 style="margin-bottom: 8px; font-size: 24px; color: white; font-weight: 700;">Join a New Session</h3>
+        <p style="color: rgba(255,255,255,0.9); margin-bottom: 24px; font-size: 15px;">Enter the 6-character code provided by your lecturer</p>
+        <form id="join-form" style="display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap;">
+          <div class="form-group" style="flex: 1; min-width: 250px; margin-bottom: 0;">
+            <label for="join-code" style="color: white; font-weight: 600; font-size: 16px; margin-bottom: 12px;">Session Join Code</label>
+            <input 
+              type="text" 
+              id="join-code" 
+              class="form-input" 
+              placeholder="e.g., ABC123"
+              style="text-transform: uppercase; font-size: 24px; font-weight: 700; letter-spacing: 4px; text-align: center; padding: 20px; border: 3px solid white;"
+              maxlength="6"
+              required
+            >
+          </div>
+          <button type="submit" class="btn btn-primary" id="join-btn" style="background: white; color: #667eea; font-weight: 700; padding: 20px 40px; font-size: 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+            Join Session →
+          </button>
+        </form>
+      </div>
+
+      <!-- Sessions List -->
+      <div id="loading" class="text-center">
+        <div class="spinner"></div>
+      </div>
+
+      <div id="sessions-container" class="hidden">
+        <h3 style="margin-bottom: 16px; font-size: 18px;">Your Enrolled Sessions</h3>
+        <div id="sessions-list" class="sessions-grid"></div>
+        <div id="no-sessions" class="hidden text-center" style="padding: 40px; color: var(--text-secondary);">
+          <p>You haven't joined any sessions yet.</p>
+          <p style="font-size: 14px; margin-top: 8px;">Enter a join code above to get started!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentUser = null;
+
+    // Check authentication
+    async function checkAuth() {
+      try {
+        const response = await fetch('/api/auth/me');
+        const result = await response.json();
+        
+        if (!result.success) {
+          window.location.href = '/';
+          return;
+        }
+        
+        currentUser = result.user;
+        document.getElementById('user-name').textContent = currentUser.displayName;
+        document.getElementById('user-role').textContent = currentUser.role;
+        
+        if (currentUser.role === 'lecturer') {
+          window.location.href = '/lecturer-dashboard';
+          return;
+        }
+        
+        loadSessions();
+      } catch (error) {
+        window.location.href = '/';
+      }
+    }
+
+    // Load sessions
+    async function loadSessions() {
+      try {
+        const response = await fetch('/api/sessions/my-sessions');
+        const result = await response.json();
+        
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('sessions-container').classList.remove('hidden');
+        
+        if (result.success && result.sessions.length > 0) {
+          displaySessions(result.sessions);
+        } else {
+          document.getElementById('no-sessions').classList.remove('hidden');
+        }
+      } catch (error) {
+        showAlert('Error loading sessions', 'error');
+      }
+    }
+
+    // Display sessions
+    function displaySessions(sessions) {
+      const container = document.getElementById('sessions-list');
+      container.innerHTML = sessions.map(session => `
+        <div class="session-card" onclick="openSession('${session.id}')">
+          <div class="session-title">${session.title}</div>
+          <div class="session-meta">
+            <div class="session-meta-item">
+              📚 ${session.moduleCode || 'No module code'}
+            </div>
+            <div class="session-meta-item">
+              👨‍🏫 ${session.lecturer}
+            </div>
+            <div class="session-meta-item">
+              <span class="session-status status-${session.status}">
+                ${session.status}
+              </span>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Join session
+    document.getElementById('join-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const joinCode = document.getElementById('join-code').value.toUpperCase();
+      const btn = document.getElementById('join-btn');
+      
+      btn.disabled = true;
+      btn.textContent = 'Joining...';
+      
+      try {
+        const response = await fetch('/api/sessions/join', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ joinCode })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          showAlert('Successfully joined session! 🎉', 'success');
+          document.getElementById('join-code').value = '';
+          setTimeout(() => loadSessions(), 1000);
+        } else {
+          showAlert(result.message, 'error');
+        }
+      } catch (error) {
+        showAlert('Error joining session', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Join Session →';
+      }
+    });
+
+    // Open session
+    function openSession(sessionId) {
+      window.location.href = `/chat/${sessionId}`;
+    }
+
+    // Logout
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.href = '/';
+    });
+
+    function showAlert(message, type) {
+      const container = document.getElementById('alert-container');
+      container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+      setTimeout(() => container.innerHTML = '', 5000);
+    }
+
+    // Initialize
+    checkAuth();
+  </script>
+</body>
+</html>

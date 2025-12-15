@@ -1,0 +1,55 @@
+email,password,role,displayName
+lecturer1@qub.ac.uk,Password123!,lecturer,Dr. Andrew McDowell
+lecturer2@qub.ac.uk,Password123!,lecturer,Prof. Sarah Johnson
+student1@qub.ac.uk,Student123!,student,Alice Anderson
+student2@qub.ac.uk,Student123!,student,Bob Brown
+student3@qub.ac.uk,Student123!,student,Charlie Chen
+student4@qub.ac.uk,Student123!,student,Diana Davis
+student5@qub.ac.uk,Student123!,student,Emma Evans
+student6@qub.ac.uk,Student123!,student,Frank Fisher
+student7@qub.ac.uk,Student123!,student,Grace Garcia
+student8@qub.ac.uk,Student123!,student,Henry Harris
+student9@qub.ac.uk,Student123!,student,Isla Ibrahim
+student10@qub.ac.uk,Student123!,student,Jack Jackson
+student11@qub.ac.uk,Student123!,student,Kate Kelly
+student12@qub.ac.uk,Student123!,student,Liam Lewis
+student13@qub.ac.uk,Student123!,student,Mia Martinez
+student14@qub.ac.uk,Student123!,student,Noah Nelson
+student15@qub.ac.uk,Student123!,student,Olivia O'Brien
+student16@qub.ac.uk,Student123!,student,Peter Parker
+student17@qub.ac.uk,Student123!,student,Quinn Rodriguez
+student18@qub.ac.uk,Student123!,student,Ruby Robinson
+student19@qub.ac.uk,Student123!,student,Sam Smith
+student20@qub.ac.uk,Student123!,student,Tara Taylor
+student21@qub.ac.uk,Student123!,student,Uma Thomas
+student22@qub.ac.uk,Student123!,student,Victor Vazquez
+student23@qub.ac.uk,Student123!,student,Wendy Williams
+student24@qub.ac.uk,Student123!,student,Xavier White
+student25@qub.ac.uk,Student123!,student,Yara Young
+student26@qub.ac.uk,Student123!,student,Zach Zhang
+student27@qub.ac.uk,Student123!,student,Aiden Allen
+student28@qub.ac.uk,Student123!,student,Bella Baker
+student29@qub.ac.uk,Student123!,student,Caleb Cooper
+student30@qub.ac.uk,Student123!,student,Daisy Davies
+student31@qub.ac.uk,Student123!,student,Ethan Edwards
+student32@qub.ac.uk,Student123!,student,Freya Foster
+student33@qub.ac.uk,Student123!,student,George Green
+student34@qub.ac.uk,Student123!,student,Hannah Hill
+student35@qub.ac.uk,Student123!,student,Isaac Hughes
+student36@qub.ac.uk,Student123!,student,Jasmine James
+student37@qub.ac.uk,Student123!,student,Kyle King
+student38@qub.ac.uk,Student123!,student,Lily Lopez
+student39@qub.ac.uk,Student123!,student,Mason Moore
+student40@qub.ac.uk,Student123!,student,Nora Murphy
+student41@qub.ac.uk,Student123!,student,Oscar Owen
+student42@qub.ac.uk,Student123!,student,Piper Phillips
+student43@qub.ac.uk,Student123!,student,Quincy Quinn
+student44@qub.ac.uk,Student123!,student,Riley Reed
+student45@qub.ac.uk,Student123!,student,Sophia Scott
+student46@qub.ac.uk,Student123!,student,Tyler Turner
+student47@qub.ac.uk,Student123!,student,Violet Walker
+student48@qub.ac.uk,Student123!,student,William Ward
+student49@qub.ac.uk,Student123!,student,Xena Wood
+student50@qub.ac.uk,Student123!,student,Yasmin Wright
+admin@qub.ac.uk,Admin123!,admin,System Administrator
+shaandini@qub.ac.uk,Sha2025!,student,Gabriella Keisha Andini
