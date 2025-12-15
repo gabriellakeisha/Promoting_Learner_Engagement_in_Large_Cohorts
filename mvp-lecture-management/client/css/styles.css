@@ -162,6 +162,45 @@ body {
   font-size: 13px;
 }
 
+/* Send button in corner */
+.send-btn-corner {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  width: 40px;
+  height: 40px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.send-btn-corner:hover {
+  background: #1d4ed8;
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.send-btn-corner:active {
+  transform: scale(0.95);
+}
+
+/* Dark mode support */
+body.dark-mode .send-btn-corner {
+  background: var(--primary-color);
+}
+
+body.dark-mode .send-btn-corner:hover {
+  background: #60a5fa;
+}
+
 /* Navigation */
 .navbar {
   background: var(--bg-primary);
@@ -422,6 +461,28 @@ body {
   resize: vertical;
   min-height: 80px;
   font-family: inherit;
+}
+
+.chat-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+/* Chat input wrapper - relative positioning for button */
+.chat-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+/* Textarea with padding for button */
+.chat-input {
+  width: 100%;
+  padding: 12px 60px 12px 12px; /* Extra padding on right for button */
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 15px;
+  resize: vertical;
+  min-height: 80px;
 }
 
 .chat-input:focus {

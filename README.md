@@ -1,6 +1,5 @@
 # Final-Year-Project - 40392749 
-
-Initial websckt test: websocket_test
-Initial live chat development: mvp_livechat 
-Current MVP set up: mvp-lecture-management 
+- Initial websocket test: websocket_test
+- Initial live chat development: mvp_livechat 
+- Current MVP set up: mvp-lecture-management 
 
