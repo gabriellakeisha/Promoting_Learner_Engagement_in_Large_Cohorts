@@ -236,7 +236,7 @@ body.dark-mode .send-btn-corner:hover {
 
 .user-name {
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -290,7 +290,7 @@ body.dark-mode .send-btn-corner:hover {
 .session-title {
   font-size: 18px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-secondary);
   margin-bottom: 8px;
 }
 
@@ -592,4 +592,145 @@ body.dark-mode .send-btn-corner:hover {
   .analytics-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Dark mode variables */
+body.dark-mode {
+  --primary-color: #3b82f6;
+  --secondary-color: #1e293b;
+  --bg-color: #0f172a;
+  --card-bg: #1e293b;
+  --text-color: #e2e8f0;
+  --border-color: #334155;
+  --input-bg: #1e293b;
+  --input-border: #475569;
+  --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Dark mode specific styles */
+body.dark-mode {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: var(--text-color);
+}
+
+body.dark-mode .navbar {
+  background: rgba(30, 41, 59, 0.95);
+  border-bottom: 1px solid var(--border-color);
+}
+
+body.dark-mode .card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+}
+
+body.dark-mode .input,
+body.dark-mode .textarea,
+body.dark-mode .select {
+  background: var(--input-bg);
+  border-color: var(--input-border);
+  color: var(--text-color);
+}
+
+body.dark-mode .input:focus,
+body.dark-mode .textarea:focus,
+body.dark-mode .select:focus {
+  border-color: var(--primary-color);
+  background: #0f172a;
+}
+
+body.dark-mode .message {
+  background: var(--card-bg);
+  border-color: var(--border-color);
+}
+
+body.dark-mode .session-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+}
+
+body.dark-mode .session-card:hover {
+  border-color: var(--primary-color);
+  background: #334155;
+}
+
+body.dark-mode .modal-content {
+  background: var(--card-bg);
+  color: var(--text-color);
+}
+
+body.dark-mode .stats-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+}
+
+body.dark-mode table {
+  background: var(--card-bg);
+}
+
+body.dark-mode thead {
+  background: #334155;
+}
+
+body.dark-mode tbody tr {
+  border-bottom: 1px solid var(--border-color);
+}
+
+body.dark-mode tbody tr:hover {
+  background: #334155;
+}
+
+/* Dark mode toggle button */
+.dark-mode-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  cursor: pointer;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  z-index: 1000;
+}
+
+.dark-mode-toggle:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+}
+
+body.dark-mode .dark-mode-toggle {
+  background: #f59e0b;
+}
+
+/* Smooth transition for dark mode switch */
+body,
+.navbar,
+.card,
+.input,
+.textarea,
+.select,
+.message,
+.session-card,
+.modal-content,
+.stats-card,
+table,
+thead,
+tbody tr {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+.export-csv-btn {
+  background: #10b981;
+  margin-right: 10px;
+}
+.export-csv-btn:hover {
+  background: #059669;
 }
