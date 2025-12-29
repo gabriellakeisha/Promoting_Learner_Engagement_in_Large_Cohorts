@@ -375,4 +375,116 @@ router.get('/live/:sessionId', isAuthenticated, async (req, res) => {
   }
 });
 
+// Lecturer routes
+// NEW ROUTE: Export session analytics to CSV
+router.get('/export-csv/:sessionId', isAuthenticated, isLecturer, async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    
+    // Get session details
+    const session = await Session.findById(sessionId);
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    
+    // Get all messages with user details
+    const messages = await Message.find({ sessionId })
+      .populate('userId', 'displayName email')
+      .sort({ createdAt: 1 });
+    
+    // Get membership data
+    const memberships = await Membership.find({ sessionId })
+      .populate('userId', 'displayName email');
+    
+    // Calculate analytics
+    const totalMessages = messages.length;
+    const activeUsers = new Set(messages.map(m => m.userId?._id.toString())).size;
+    const totalMembers = memberships.length;
+    const participationRate = totalMembers > 0 
+      ? ((activeUsers / totalMembers) * 100).toFixed(2) 
+      : 0;
+    
+    // Message type breakdown
+    const messagesByType = messages.reduce((acc, msg) => {
+      acc[msg.type] = (acc[msg.type] || 0) + 1;
+      return acc;
+    }, {});
+    
+    // Create CSV content
+    let csv = 'Session Analytics Export\n';
+    csv += `Session Title,${session.title}\n`;
+    csv += `Module Code,${session.moduleCode}\n`;
+    csv += `Join Code,${session.joinCode}\n`;
+    csv += `Status,${session.status}\n`;
+    csv += `Created At,${session.createdAt.toISOString()}\n`;
+    csv += '\n';
+    
+    csv += 'Summary Statistics\n';
+    csv += `Total Messages,${totalMessages}\n`;
+    csv += `Total Members,${totalMembers}\n`;
+    csv += `Active Users,${activeUsers}\n`;
+    csv += `Participation Rate,${participationRate}%\n`;
+    csv += '\n';
+    
+    csv += 'Message Type Breakdown\n';
+    csv += `Questions,${messagesByType.QUESTION || 0}\n`;
+    csv += `Comments,${messagesByType.COMMENT || 0}\n`;
+    csv += `Confusion,${messagesByType.CONFUSION || 0}\n`;
+    csv += '\n';
+    
+    csv += 'Top Contributors\n';
+    csv += 'Name,Email,Message Count\n';
+    
+    // Calculate top contributors
+    const contributorMap = {};
+    messages.forEach(msg => {
+      if (msg.userId) {
+        const userId = msg.userId._id.toString();
+        if (!contributorMap[userId]) {
+          contributorMap[userId] = {
+            name: msg.userId.displayName,
+            email: msg.userId.email,
+            count: 0
+          };
+        }
+        contributorMap[userId].count++;
+      }
+    });
+    
+    const topContributors = Object.values(contributorMap)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+    
+    topContributors.forEach(c => {
+      csv += `"${c.name}","${c.email}",${c.count}\n`;
+    });
+    
+    csv += '\n';
+    csv += 'All Messages\n';
+    csv += 'Timestamp,User,Email,Type,Message\n';
+    
+    messages.forEach(msg => {
+      const timestamp = msg.createdAt.toISOString();
+      const userName = msg.userId?.displayName || 'Anonymous';
+      const userEmail = msg.userId?.email || 'N/A';
+      const type = msg.type;
+      const text = msg.text.replace(/"/g, '""'); // Escape quotes
+      
+      csv += `"${timestamp}","${userName}","${userEmail}","${type}","${text}"\n`;
+    });
+    
+    // Set headers for file download
+    const filename = `session_analytics_${session.joinCode}_${Date.now()}.csv`;
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    
+    // Send CSV
+    res.send(csv);
+    
+  } catch (error) {
+    console.error('Export CSV error:', error);
+    res.status(500).json({ error: 'Failed to export CSV' });
+  }
+});
+
 module.exports = router;

@@ -1,5 +1,6 @@
 let currentUser = null;
 let sessions = [];
+let currentAnalyticsSessionId = null;
 
 // Initialize
 async function init() {
@@ -117,6 +118,7 @@ document.getElementById('create-session-form').addEventListener('submit', async 
 
 // View analytics - FIXED
 async function viewAnalytics(sessionId, title) {
+  currentAnalyticsSessionId = sessionId;
   document.getElementById('analytics-modal').classList.add('show');
   document.getElementById('analytics-title').textContent = `Analytics: ${title}`;
   document.getElementById('analytics-content').innerHTML = '<div class="spinner"></div>';
@@ -289,3 +291,60 @@ function showAlert(message, type) {
 
 // Initialize
 init();
+
+// Export analytics to CSV
+function exportToCSV() {
+  const sessionId = currentAnalyticsSessionId; // Make sure this variable is set when opening analytics
+  
+  if (!sessionId) {
+    alert('No session selected for export');
+    return;
+  }
+  
+  // Show loading indicator
+  const btn = document.querySelector('.export-csv-btn');
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '⏳ Exporting...';
+  btn.disabled = true;
+  
+  // Make request to export endpoint
+  fetch(`/api/analytics/export-csv/${sessionId}`, {
+    method: 'GET',
+    credentials: 'include'
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error('Export failed');
+    }
+    return response.blob();
+  })
+  .then(blob => {
+    // Create download link
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `session_analytics_${Date.now()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    
+    // Cleanup
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    
+    // Show success message
+    alert('✅ Analytics exported successfully!');
+    
+    // Reset button
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  })
+  .catch(error => {
+    console.error('CSV export error:', error);
+    alert('❌ Failed to export CSV');
+    
+    // Reset button
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  });
+}
+
