@@ -734,3 +734,109 @@ tbody tr {
 .export-csv-btn:hover {
   background: #059669;
 }
+
+/* Dark mode chat message fixes */
+body.dark-mode .chat-message {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+body.dark-mode .message-header {
+  color: #e2e8f0 !important;
+}
+
+body.dark-mode .message-username {
+  color: #60a5fa !important;
+  font-weight: 600;
+}
+
+body.dark-mode .message-time {
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .message-text {
+  color: #f1f5f9 !important;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+body.dark-mode .message-badge {
+  color: #1e293b !important;
+  font-weight: 700;
+}
+
+/* Ensure chat container is visible */
+body.dark-mode .chat-messages {
+  background: #0f172a;
+}
+
+body.dark-mode .chat-container {
+  background: #0f172a;
+}
+
+/* Analytics text in dark mode */
+body.dark-mode .analytics-content h3,
+body.dark-mode .analytics-content h4,
+body.dark-mode .analytics-content p,
+body.dark-mode .analytics-content label {
+  color: #e2e8f0;
+}
+
+body.dark-mode .stats-card h3 {
+  color: #e2e8f0;
+}
+
+body.dark-mode .stats-card .stats-value {
+  color: white;
+}
+
+/* Analytics card styling */
+.analytics-chart-card {
+  background: var(--card-bg, white);
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: background-color 0.3s ease;
+}
+
+.analytics-table-card {
+  background: var(--card-bg, white);
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin-top: 24px;
+  transition: background-color 0.3s ease;
+}
+
+body.dark-mode .analytics-chart-card,
+body.dark-mode .analytics-table-card {
+  background: var(--card-bg);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+/* Username styling - works in both light and dark mode */
+.message-username {
+  background: var(--primary-color);
+  color: white !important;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+
+/* Make sure username is always white on blue background */
+body.dark-mode .message-username {
+  background: #3b82f6;
+  color: white !important;
+}
+
+/* If you have the username as a separate element */
+.chat-message .message-header .message-username {
+  color: white !important;
+}
+
+body.dark-mode .chat-message .message-header .message-username {
+  color: white !important;
+}

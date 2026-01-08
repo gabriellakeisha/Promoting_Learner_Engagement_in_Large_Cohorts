@@ -19,11 +19,11 @@
       justify-content: center;
       z-index: 1000;
     }
-    
+
     .modal-overlay.show {
       display: flex;
     }
-    
+
     .analytics-overlay {
       position: fixed;
       top: 0;
@@ -36,12 +36,13 @@
       padding: 20px;
       display: none;
     }
-    
+
     .analytics-overlay.show {
       display: block;
     }
   </style>
 </head>
+
 <body>
   <!-- Navigation -->
   <nav class="navbar">
@@ -108,11 +109,12 @@
         <div style="max-width: 1200px; margin: 0 auto; background: white; border-radius: 16px; padding: 32px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
             <h2 id="analytics-title">Session Analytics</h2>
-            <button class="btn btn-secondary export-csv-btn" onclick="exportToCSV()">
-              📊 Export CSV
-            </button>
-
-            <button class="btn btn-secondary btn-small" id="close-analytics-btn">Close</button>
+            <div style="display: flex; gap: 12px;">
+              <button class="btn btn-secondary export-csv-btn" onclick="exportToCSV()">
+                📊 Export CSV
+              </button>
+              <button class="btn btn-secondary btn-small" id="close-analytics-btn">Close</button>
+            </div>
           </div>
 
           <div id="analytics-content">

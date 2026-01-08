@@ -1,21 +1,36 @@
 let socket;
-let currentUser;
-let sessionId;
-let messages = [];
+let currentUser = null;
+let currentSession = null;
+
+// FIXED: Proper URL parameter extraction
+function getUrlParameter(name) {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get(name);
+}
 
 // Get session ID from URL
-const pathParts = window.location.pathname.split('/');
-sessionId = pathParts[pathParts.length - 1];
+const sessionId = getUrlParameter('sessionId');
+
+// Validate session ID
+if (!sessionId || sessionId.length !== 24) {
+  alert('❌ Invalid session ID. Redirecting to dashboard...');
+  window.location.href = '/student-dashboard.html';
+  throw new Error('Invalid session ID');
+}
+
+console.log('✅ Valid Session ID:', sessionId);
 
 // Initialize
 async function init() {
   try {
     // Check authentication
-    const authResponse = await fetch('/api/auth/me');
+    const authResponse = await fetch('/api/auth/me', {
+      credentials: 'include'
+    });
     const authResult = await authResponse.json();
     
     if (!authResult.success) {
-      window.location.href = '/';
+      window.location.href = '/login.html';
       return;
     }
     
@@ -23,131 +38,137 @@ async function init() {
     document.getElementById('user-name').textContent = currentUser.displayName;
     
     // Load session details
-    await loadSessionDetails();
+    await loadSession();
     
     // Initialize Socket.IO
-    initSocket();
+    initializeSocket();
     
-    // Load messages
+    // Load existing messages
     await loadMessages();
     
   } catch (error) {
     console.error('Init error:', error);
-    alert('Error loading chat. Redirecting...');
-    window.location.href = '/student-dashboard';
+    alert('Error loading chat. Please try again.');
+    window.location.href = '/student-dashboard.html';
   }
 }
 
 // Load session details
-async function loadSessionDetails() {
+async function loadSession() {
   try {
-    const response = await fetch(`/api/sessions/${sessionId}`);
+    const response = await fetch(`/api/sessions/${sessionId}`, {
+      credentials: 'include'
+    });
     const result = await response.json();
     
-    if (result.success) {
+    if (result.success && result.session) {
+      currentSession = result.session;
       document.getElementById('session-title').textContent = result.session.title;
       document.getElementById('session-info').textContent = 
-        `${result.session.moduleCode} • ${result.session.lecturer.name} • ${result.session.memberCount} members`;
+        `${result.session.moduleCode || 'No module'} • Join Code: ${result.session.joinCode}`;
+    } else {
+      throw new Error('Session not found');
     }
   } catch (error) {
-    console.error('Error loading session:', error);
+    console.error('Load session error:', error);
+    alert('Session not found. Redirecting...');
+    window.location.href = '/student-dashboard.html';
   }
 }
 
 // Initialize Socket.IO
-function initSocket() {
-  socket = io();
+function initializeSocket() {
+  socket = io({
+    transports: ['websocket', 'polling']
+  });
   
   socket.on('connect', () => {
-    console.log('✅ Connected to server');
-    
-    // Join session room
-    socket.emit('join-session', { sessionId });
+    console.log('✅ Socket connected');
+    socket.emit('join_session', {
+      sessionId: sessionId,
+      userId: currentUser._id,
+      username: currentUser.displayName,
+      userRole: currentUser.role
+    });
   });
   
-  socket.on('joined-session', (data) => {
-    console.log('✅ Joined session:', data);
-  });
-  
-  socket.on('new-message', (message) => {
-    console.log('📨 New message:', message);
-    addMessageToUI(message);
-    scrollToBottom();
-  });
-  
-  socket.on('user-joined', (data) => {
-    showNotification(`${data.displayName} joined the session`);
-  });
-  
-  socket.on('user-left', (data) => {
-    showNotification(`${data.displayName} left the session`);
-  });
-  
-  socket.on('error', (data) => {
-    alert(data.message);
+  socket.on('receive_message', (message) => {
+    console.log('📨 Received message:', message);
+    appendMessage(message);
   });
   
   socket.on('disconnect', () => {
-    console.log('❌ Disconnected from server');
+    console.log('❌ Socket disconnected');
+  });
+  
+  socket.on('error', (error) => {
+    console.error('Socket error:', error);
   });
 }
 
-// Load messages
+// Load existing messages
 async function loadMessages() {
   try {
-    const response = await fetch(`/api/messages/${sessionId}?limit=50`);
+    const response = await fetch(`/api/messages/session/${sessionId}`, {
+      credentials: 'include'
+    });
     const result = await response.json();
     
-    document.getElementById('loading').style.display = 'none';
+    // Remove loading spinner
+    document.getElementById('loading').remove();
     
-    if (result.success) {
-      messages = result.messages;
-      displayMessages(messages);
+    if (result.success && result.messages) {
+      result.messages.forEach(msg => {
+        appendMessage({
+          username: msg.userId?.displayName || 'Anonymous',
+          userRole: msg.userId?.role || 'student',
+          text: msg.text,
+          type: msg.type,
+          timestamp: msg.createdAt
+        });
+      });
+      
+      // Scroll to bottom
       scrollToBottom();
     }
   } catch (error) {
-    console.error('Error loading messages:', error);
-    document.getElementById('loading').innerHTML = 
-      '<p style="color: var(--danger-color);">Error loading messages</p>';
+    console.error('Load messages error:', error);
   }
 }
 
-// Display messages
-function displayMessages(messages) {
+// Append message to chat
+function appendMessage(message) {
   const container = document.getElementById('messages-container');
-  container.innerHTML = messages.map(msg => createMessageHTML(msg)).join('');
-}
-
-// Add message to UI
-function addMessageToUI(message) {
-  const container = document.getElementById('messages-container');
-  container.insertAdjacentHTML('beforeend', createMessageHTML(message));
-}
-
-// Create message HTML
-function createMessageHTML(msg) {
-  const time = new Date(msg.timestamp).toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+  const messageDiv = document.createElement('div');
   
-  return `
-    <div class="message type-${msg.type.toLowerCase()}">
-      <div class="message-header">
-        <span class="message-author">${msg.user.displayName}</span>
-        <span class="message-type type-badge-${msg.type.toLowerCase()}">
-          ${msg.type}
-        </span>
-      </div>
-      <div class="message-text">${escapeHtml(msg.text)}</div>
-      <div class="message-time">${time}${msg.isEdited ? ' (edited)' : ''}</div>
+  // Determine if message is from lecturer
+  const isLecturer = message.userRole === 'lecturer';
+  const isOwnMessage = message.username === currentUser.displayName;
+  
+  // Add classes based on role
+  messageDiv.className = `chat-message ${isLecturer ? 'lecturer-message' : 'student-message'}`;
+  
+  messageDiv.innerHTML = `
+    <div class="message-header">
+      <span class="message-username ${isLecturer ? 'lecturer' : 'student'}">
+        ${isLecturer ? '👨‍🏫 ' : '👤 '}${escapeHtml(message.username)}
+        ${isOwnMessage ? ' (You)' : ''}
+      </span>
+      <span class="message-time">${formatTime(message.timestamp)}</span>
     </div>
+    <div class="message-text">${escapeHtml(message.text)}</div>
+    <span class="message-badge badge-${message.type.toLowerCase()}">
+      ${getTypeIcon(message.type)} ${message.type}
+    </span>
   `;
+  
+  container.appendChild(messageDiv);
+  scrollToBottom();
 }
 
 // Send message
 document.getElementById('send-btn').addEventListener('click', sendMessage);
-document.getElementById('message-input').addEventListener('keydown', (e) => {
+document.getElementById('message-input').addEventListener('keypress', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
     sendMessage();
@@ -156,60 +177,69 @@ document.getElementById('message-input').addEventListener('keydown', (e) => {
 
 async function sendMessage() {
   const input = document.getElementById('message-input');
-  const type = document.getElementById('message-type').value;
+  const typeSelect = document.getElementById('message-type');
   const text = input.value.trim();
   
   if (!text) return;
   
-  const btn = document.getElementById('send-btn');
-  btn.disabled = true;
-  btn.textContent = 'Sending...';
+  const messageData = {
+    sessionId: sessionId,
+    text: text,
+    type: typeSelect.value,
+    username: currentUser.displayName,
+    userRole: currentUser.role
+  };
   
   try {
-    // Send via Socket.IO for real-time
-    socket.emit('send-message', {
-      sessionId,
-      text,
-      type
+    // Send via Socket.IO
+    socket.emit('send_message', messageData);
+    
+    // Also save to database via API
+    await fetch('/api/messages/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(messageData)
     });
     
     // Clear input
     input.value = '';
+    input.focus();
     
   } catch (error) {
-    console.error('Send error:', error);
-    alert('Error sending message');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Send';
+    console.error('Send message error:', error);
+    alert('Failed to send message. Please try again.');
   }
 }
 
-// Utility functions
-function scrollToBottom() {
-  const container = document.getElementById('messages-container');
-  container.scrollTop = container.scrollHeight;
-}
-
-function showNotification(message) {
-  // Simple notification
-  const notification = document.createElement('div');
-  notification.className = 'alert alert-info';
-  notification.textContent = message;
-  notification.style.position = 'fixed';
-  notification.style.top = '20px';
-  notification.style.right = '20px';
-  notification.style.zIndex = '1000';
-  document.body.appendChild(notification);
-  
-  setTimeout(() => notification.remove(), 3000);
-}
-
+// Helper functions
 function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
 }
 
-// Initialize when page loads
-init();
+function formatTime(timestamp) {
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString('en-US', { 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  });
+}
+
+function getTypeIcon(type) {
+  const icons = {
+    'QUESTION': '❓',
+    'COMMENT': '💬',
+    'CONFUSION': '❗'
+  };
+  return icons[type] || '💬';
+}
+
+function scrollToBottom() {
+  const container = document.getElementById('messages-container');
+  container.scrollTop = container.scrollHeight;
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', init);
