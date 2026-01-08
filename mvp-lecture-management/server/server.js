@@ -32,6 +32,11 @@ const io = new Server(server, {
   },
 });
 
+// ========================================
+// CRITICAL FIX: Make io accessible in routes
+// ========================================
+app.set('io', io);
+
 // Connect to MongoDB
 connectDB();
 
@@ -114,7 +119,7 @@ io.on('connection', async (socket) => {
 
   // Get user from session
   const session = socket.request.session;
-  
+
   if (!session || !session.userId) {
     console.log('❌ Unauthorized socket connection');
     socket.disconnect();
@@ -123,7 +128,7 @@ io.on('connection', async (socket) => {
 
   const userId = session.userId;
   const userRole = session.userRole;
-  
+
   console.log(`👤 User connected: ${session.displayName} (${userRole})`);
 
   // Set user online
@@ -137,7 +142,7 @@ io.on('connection', async (socket) => {
   socket.on('join-session', async (data) => {
     try {
       const { sessionId } = data;
-      
+
       // Verify session exists
       const sessionDoc = await Session.findById(sessionId);
       if (!sessionDoc) {
@@ -179,10 +184,9 @@ io.on('connection', async (socket) => {
     }
   });
 
-  // Handle new message
   socket.on('send-message', async (data) => {
     try {
-      const { sessionId, text, type } = data;
+      const { sessionId, text, type, replyTo } = data;
 
       if (!sessionId || !text || !type) {
         socket.emit('error', { message: 'Invalid message data' });
@@ -205,12 +209,13 @@ io.on('connection', async (socket) => {
         return;
       }
 
-      // Create message
+      // Create message with optional reply
       const message = new Message({
         sessionId,
         userId,
         text: text.trim(),
         type,
+        replyTo: replyTo || null
       });
 
       await message.save();
@@ -220,8 +225,16 @@ io.on('connection', async (socket) => {
         await membership.incrementMessageCount();
       }
 
-      // Populate user info
+      // Populate user info and reply data
       await message.populate('userId', 'displayName role');
+      await message.populate({
+        path: 'replyTo',
+        select: 'text userId type timestamp',
+        populate: {
+          path: 'userId',
+          select: 'displayName role'
+        }
+      });
 
       // Broadcast to all in session room
       const messageData = {
@@ -231,16 +244,33 @@ io.on('connection', async (socket) => {
         timestamp: message.timestamp,
         isEdited: message.isEdited,
         isPinned: message.isPinned,
+        replyTo: message.replyTo ? {
+          id: message.replyTo._id,
+          text: message.replyTo.text,
+          type: message.replyTo.type,
+          timestamp: message.replyTo.timestamp,
+          user: {
+            displayName: message.replyTo.userId?.displayName || 'Unknown',
+            role: message.replyTo.userId?.role || 'student'
+          }
+        } : null,
         user: {
           id: message.userId._id,
           displayName: message.userId.displayName,
           role: message.userId.role,
         },
+        userId: {
+          _id: message.userId._id,
+          displayName: message.userId.displayName,
+          role: message.userId.role
+        },
+        username: message.userId.displayName,
+        userRole: message.userId.role
       };
 
       io.to(`session-${sessionId}`).emit('new-message', messageData);
 
-      console.log(`💬 Message sent in session ${sessionId} by ${session.displayName}`);
+      console.log(`Message sent in session ${sessionId} by ${session.displayName}`);
 
     } catch (error) {
       console.error('Send message error:', error);
@@ -254,7 +284,7 @@ io.on('connection', async (socket) => {
       const { messageId, text } = data;
 
       const message = await Message.findById(messageId);
-      
+
       if (!message) {
         socket.emit('error', { message: 'Message not found' });
         return;
@@ -297,7 +327,7 @@ io.on('connection', async (socket) => {
       const { messageId } = data;
 
       const message = await Message.findById(messageId).populate('sessionId');
-      
+
       if (!message) {
         socket.emit('error', { message: 'Message not found' });
         return;
@@ -329,7 +359,7 @@ io.on('connection', async (socket) => {
       const { messageId } = data;
 
       const message = await Message.findById(messageId).populate('sessionId');
-      
+
       if (!message) {
         socket.emit('error', { message: 'Message not found' });
         return;
@@ -358,7 +388,7 @@ io.on('connection', async (socket) => {
   // Handle typing indicator
   socket.on('typing', (data) => {
     const { sessionId, isTyping } = data;
-    
+
     socket.to(`session-${sessionId}`).emit('user-typing', {
       userId,
       displayName: session.displayName,

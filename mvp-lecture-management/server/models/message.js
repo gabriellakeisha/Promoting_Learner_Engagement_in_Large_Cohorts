@@ -22,11 +22,21 @@ const messageSchema = new mongoose.Schema({
     enum: ['QUESTION', 'COMMENT', 'CONFUSION'],
     required: true,
   },
+  replyTo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Message',
+    default: null,
+    index: true
+  },
   isDeleted: {
     type: Boolean,
     default: false,
   },
   isPinned: {
+    type: Boolean,
+    default: false,
+  },
+  isAnnouncement: {
     type: Boolean,
     default: false,
   },
@@ -44,25 +54,25 @@ const messageSchema = new mongoose.Schema({
     index: true,
   },
 }, {
-  timestamps: true, // This adds createdAt and updatedAt fields automatically
+  timestamps: true,
 });
 
-// Compound index for efficient querying
 messageSchema.index({ sessionId: 1, timestamp: -1 });
-messageSchema.index({ sessionId: 1, createdAt: 1 }); // For frontend compatibility
+messageSchema.index({ sessionId: 1, createdAt: 1 });
+messageSchema.index({ sessionId: 1, isPinned: 1 });
 
-// Virtual field to ensure createdAt is always available
 messageSchema.virtual('createdAtCompat').get(function() {
   return this.createdAt || this.timestamp;
 });
 
-// Method to soft delete message
+messageSchema.set('toJSON', { virtuals: true });
+messageSchema.set('toObject', { virtuals: true });
+
 messageSchema.methods.softDelete = async function() {
   this.isDeleted = true;
   await this.save();
 };
 
-// Method to edit message
 messageSchema.methods.editMessage = async function(newText) {
   this.text = newText;
   this.isEdited = true;
@@ -70,11 +80,9 @@ messageSchema.methods.editMessage = async function(newText) {
   await this.save();
 };
 
-// Method to pin message
 messageSchema.methods.togglePin = async function() {
   this.isPinned = !this.isPinned;
   await this.save();
 };
 
-// Export model, checking if it already exists to prevent OverwriteModelError
 module.exports = mongoose.models.Message || mongoose.model('Message', messageSchema);

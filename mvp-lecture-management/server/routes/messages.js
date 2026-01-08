@@ -1,237 +1,339 @@
 const express = require('express');
 const router = express.Router();
-const Message = require('../models/message'); // lowercase 'm' to match your file
-const Membership = require('../models/Membership');
+const Message = require('../models/Message');
 const Session = require('../models/Session');
+const Membership = require('../models/Membership');
 const { isAuthenticated } = require('../middleware/auth');
 
-// ============================================
-// GET MESSAGES FOR A SESSION
-// ✅ FIXED: Route path matches frontend call
-// Frontend calls: /api/messages/session/:sessionId
-// ============================================
-router.get('/session/:sessionId', isAuthenticated, async (req, res) => {
+// Middleware to verify session access
+const verifySessionAccess = async (req, res, next) => {
   try {
     const { sessionId } = req.params;
-    const { limit = 50, before } = req.query;
-    
-    console.log('📥 Fetching messages for session:', sessionId);
-    console.log('User ID from session:', req.session.userId);
+    const userId = req.session.userId;
 
-    // Check if session exists
     const session = await Session.findById(sessionId);
     if (!session) {
-      return res.status(404).json({
-        success: false,
-        message: 'Session not found',
-      });
+      return res.status(404).json({ success: false, message: 'Session not found' });
     }
 
-    // Check access permissions
-    const membership = await Membership.findOne({
-      userId: req.session.userId,
-      sessionId,
-    });
+    const isLecturer = session.lecturer.toString() === userId;
+    const membership = await Membership.findOne({ userId, sessionId });
 
-    const isLecturer = session.lecturer.toString() === req.session.userId;
-
-    if (!membership && !isLecturer) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. You must join the session first.',
-      });
+    if (!isLecturer && !membership) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
     }
 
-    // Build query
-    const query = {
-      sessionId,
-      isDeleted: false,
-    };
-
-    // Add "before" filter for pagination (load older messages)
-    if (before) {
-      query._id = { $lt: before };
-    }
-
-    // Fetch messages
-    const messages = await Message.find(query)
-      .sort({ timestamp: 1 }) // Oldest first for chat display
-      .limit(parseInt(limit))
-      .populate('userId', 'displayName role email');
-
-    console.log(`✅ Found ${messages.length} messages`);
-
-    res.json({
-      success: true,
-      messages: messages.map(m => ({
-        id: m._id,
-        text: m.text,
-        type: m.type,
-        timestamp: m.timestamp,
-        createdAt: m.createdAt || m.timestamp, // Support both fields
-        isEdited: m.isEdited,
-        editedAt: m.editedAt,
-        isPinned: m.isPinned,
-        userId: {
-          _id: m.userId._id,
-          displayName: m.userId.displayName,
-          role: m.userId.role,
-          email: m.userId.email
-        }
-      })),
-      hasMore: messages.length === parseInt(limit),
-    });
+    req.sessionDoc = session;
+    req.isLecturer = isLecturer;
+    next();
   } catch (error) {
-    console.error('❌ Get messages error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error fetching messages',
-      error: error.message,
-    });
+    console.error('Session access verification error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
-});
+};
 
-// ============================================
-// SEND NEW MESSAGE
-// ✅ Endpoint: POST /api/messages/send
-// ============================================
+// Send message - WITH SOCKET.IO BROADCAST
 router.post('/send', isAuthenticated, async (req, res) => {
   try {
-    const { sessionId, text, type } = req.body;
+    const { sessionId, text, type, replyTo, isAnnouncement } = req.body;
+    const userId = req.session.userId;
 
-    console.log('📤 Sending message:', { sessionId, type, from: req.session.userId });
+    console.log('Sending message:', {
+      sessionId,
+      type,
+      replyTo,
+      isAnnouncement,
+      from: userId
+    });
 
-    // Validation
+    // Validate required fields
     if (!sessionId || !text || !type) {
       return res.status(400).json({
         success: false,
-        message: 'Session ID, text, and type are required',
+        message: 'Missing required fields'
       });
     }
 
-    if (!['QUESTION', 'COMMENT', 'CONFUSION'].includes(type)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid message type. Must be QUESTION, COMMENT, or CONFUSION',
-      });
-    }
-
-    // Check if session exists and is active
+    // Verify session exists and is active
     const session = await Session.findById(sessionId);
     if (!session) {
       return res.status(404).json({
         success: false,
-        message: 'Session not found',
+        message: 'Session not found'
       });
     }
 
     if (session.status !== 'active') {
       return res.status(400).json({
         success: false,
-        message: 'Cannot send messages to ended session',
+        message: 'Session is not active'
       });
     }
 
-    // Check membership
-    const membership = await Membership.findOne({
-      userId: req.session.userId,
-      sessionId,
-    });
+    // Verify user has access
+    const isLecturer = session.lecturer.toString() === userId;
+    const membership = await Membership.findOne({ userId, sessionId });
 
-    const isLecturer = session.lecturer.toString() === req.session.userId;
-
-    if (!membership && !isLecturer) {
+    if (!isLecturer && !membership) {
       return res.status(403).json({
         success: false,
-        message: 'Access denied. You must join the session first.',
+        message: 'Access denied'
       });
+    }
+
+    // Validate message type
+    const validTypes = ['QUESTION', 'COMMENT', 'CONFUSION'];
+    if (!validTypes.includes(type)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid message type'
+      });
+    }
+
+    // Validate text length
+    if (text.trim().length === 0 || text.length > 2000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Message text must be between 1 and 2000 characters'
+      });
+    }
+
+    // If replyTo is provided, verify it exists
+    if (replyTo) {
+      const parentMessage = await Message.findById(replyTo);
+      if (!parentMessage || parentMessage.sessionId.toString() !== sessionId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid reply reference'
+        });
+      }
     }
 
     // Create message
     const message = new Message({
       sessionId,
-      userId: req.session.userId,
+      userId,
       text: text.trim(),
       type,
+      replyTo: replyTo || null,
+      isAnnouncement: isAnnouncement || false
     });
 
     await message.save();
+    console.log('Message saved:', message._id);
 
-    // Update membership message count (if student)
+    // Update membership message count
     if (membership) {
       await membership.incrementMessageCount();
     }
 
-    // Populate user info for response
-    await message.populate('userId', 'displayName role email');
+    // ========================================
+    // CRITICAL: SOCKET.IO BROADCAST
+    // ========================================
+    try {
+      // Populate message with user data
+      const populatedMessage = await Message.findById(message._id)
+        .populate('userId', 'displayName role')
+        .populate({
+          path: 'replyTo',
+          select: 'text userId type timestamp',
+          populate: {
+            path: 'userId',
+            select: 'displayName role'
+          }
+        });
 
-    console.log('✅ Message saved:', message._id);
+      console.log('📤 Broadcasting message to session:', sessionId);
 
+      // Get Socket.IO instance
+      const io = req.app.get('io');
+
+      if (io) {
+        // Prepare message data for broadcast
+        const messageData = {
+          id: populatedMessage._id.toString(),
+          text: populatedMessage.text,
+          type: populatedMessage.type,
+          timestamp: populatedMessage.createdAt || populatedMessage.timestamp,
+          isEdited: populatedMessage.isEdited,
+          isPinned: populatedMessage.isPinned,
+          isAnnouncement: populatedMessage.isAnnouncement,
+          replyTo: populatedMessage.replyTo ? {
+            id: populatedMessage.replyTo._id.toString(),
+            text: populatedMessage.replyTo.text,
+            type: populatedMessage.replyTo.type,
+            timestamp: populatedMessage.replyTo.timestamp,
+            user: {
+              displayName: populatedMessage.replyTo.userId?.displayName || 'Unknown',
+              role: populatedMessage.replyTo.userId?.role || 'student'
+            }
+          } : null,
+          user: {
+            id: populatedMessage.userId._id,
+            displayName: populatedMessage.userId.displayName,
+            role: populatedMessage.userId.role,
+          },
+          userId: {
+            _id: populatedMessage.userId._id,
+            displayName: populatedMessage.userId.displayName,
+            role: populatedMessage.userId.role
+          },
+          username: populatedMessage.userId.displayName,
+          userRole: populatedMessage.userId.role
+        };
+
+        // Broadcast to all users in session room
+        io.to(`session-${sessionId}`).emit('new-message', messageData);
+
+        console.log('✅ Message broadcasted via Socket.IO');
+      } else {
+        console.error('❌ Socket.IO instance not found!');
+      }
+    } catch (broadcastError) {
+      console.error('❌ Broadcast error:', broadcastError);
+      // Don't fail the request if broadcast fails
+    }
+    // ========================================
+    // END SOCKET.IO BROADCAST
+    // ========================================
+
+    // Return success response
     res.status(201).json({
       success: true,
       message: 'Message sent successfully',
       messageData: {
-        id: message._id,
+        id: message._id.toString(),
         text: message.text,
         type: message.type,
-        timestamp: message.timestamp,
-        isEdited: message.isEdited,
-        isPinned: message.isPinned,
-        user: {
-          id: message.userId._id,
-          displayName: message.userId.displayName,
-          role: message.userId.role,
-        },
-      },
+        timestamp: message.createdAt || message.timestamp,
+        isAnnouncement: message.isAnnouncement,
+        isPinned: message.isPinned
+      }
     });
+
   } catch (error) {
-    console.error('❌ Send message error:', error);
+    console.error('Send message error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error sending message',
-      error: error.message,
+      message: 'Failed to send message',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
 
-// ============================================
-// EDIT MESSAGE (own messages only, within 5 minutes)
-// ✅ Endpoint: PUT /api/messages/:messageId
-// ============================================
+// Get messages for a session
+router.get('/session/:sessionId', isAuthenticated, verifySessionAccess, async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const limit = parseInt(req.query.limit) || 50;
+    const skip = parseInt(req.query.skip) || 0;
+
+    console.log('Fetching messages for session:', sessionId);
+
+    const messages = await Message.find({
+      sessionId,
+      isDeleted: false
+    })
+      .sort({ createdAt: 1 })
+      .skip(skip)
+      .limit(limit)
+      .populate('userId', 'displayName role')
+      .populate({
+        path: 'replyTo',
+        select: 'text userId type timestamp',
+        populate: {
+          path: 'userId',
+          select: 'displayName role'
+        }
+      })
+      .lean();
+
+    console.log(`Found ${messages.length} messages`);
+
+    // Format messages for client
+    const formattedMessages = messages.map(msg => ({
+      id: msg._id.toString(),
+      text: msg.text,
+      type: msg.type,
+      timestamp: msg.createdAt || msg.timestamp,
+      isEdited: msg.isEdited,
+      editedAt: msg.editedAt,
+      isPinned: msg.isPinned,
+      isAnnouncement: msg.isAnnouncement,
+      userId: msg.userId,
+      replyTo: msg.replyTo ? {
+        id: msg.replyTo._id,
+        text: msg.replyTo.text,
+        type: msg.replyTo.type,
+        timestamp: msg.replyTo.timestamp,
+        userId: msg.replyTo.userId
+      } : null
+    }));
+
+    res.json({
+      success: true,
+      messages: formattedMessages,
+      count: formattedMessages.length
+    });
+
+  } catch (error) {
+    console.error('Get messages error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch messages'
+    });
+  }
+});
+
+// Get pinned messages
+router.get('/:sessionId/pinned', isAuthenticated, verifySessionAccess, async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+
+    const pinnedMessages = await Message.find({
+      sessionId,
+      isPinned: true,
+      isDeleted: false
+    })
+      .sort({ timestamp: -1 })
+      .populate('userId', 'displayName role')
+      .lean();
+
+    res.json({
+      success: true,
+      messages: pinnedMessages
+    });
+
+  } catch (error) {
+    console.error('Get pinned messages error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch pinned messages'
+    });
+  }
+});
+
+// Edit message
 router.put('/:messageId', isAuthenticated, async (req, res) => {
   try {
     const { messageId } = req.params;
     const { text } = req.body;
-
-    if (!text || text.trim().length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Message text is required',
-      });
-    }
+    const userId = req.session.userId;
 
     const message = await Message.findById(messageId);
 
     if (!message) {
       return res.status(404).json({
         success: false,
-        message: 'Message not found',
+        message: 'Message not found'
       });
     }
 
     // Check ownership
-    if (message.userId.toString() !== req.session.userId) {
+    if (message.userId.toString() !== userId) {
       return res.status(403).json({
         success: false,
-        message: 'You can only edit your own messages',
-      });
-    }
-
-    // Check if message is already deleted
-    if (message.isDeleted) {
-      return res.status(400).json({
-        success: false,
-        message: 'Cannot edit deleted message',
+        message: 'You can only edit your own messages'
       });
     }
 
@@ -240,13 +342,12 @@ router.put('/:messageId', isAuthenticated, async (req, res) => {
     if (message.timestamp < fiveMinutesAgo) {
       return res.status(400).json({
         success: false,
-        message: 'Messages can only be edited within 5 minutes of posting',
+        message: 'Edit window expired (5 minutes)'
       });
     }
 
     // Update message
     await message.editMessage(text.trim());
-    await message.populate('userId', 'displayName role');
 
     res.json({
       success: true,
@@ -254,181 +355,99 @@ router.put('/:messageId', isAuthenticated, async (req, res) => {
       messageData: {
         id: message._id,
         text: message.text,
-        type: message.type,
-        timestamp: message.timestamp,
         isEdited: message.isEdited,
-        editedAt: message.editedAt,
-        user: {
-          id: message.userId._id,
-          displayName: message.userId.displayName,
-          role: message.userId.role,
-        },
-      },
+        editedAt: message.editedAt
+      }
     });
+
   } catch (error) {
-    console.error('❌ Edit message error:', error);
+    console.error('Edit message error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error editing message',
-      error: error.message,
+      message: 'Failed to edit message'
     });
   }
 });
 
-// ============================================
-// DELETE MESSAGE (own messages or lecturer can delete any)
-// ✅ Endpoint: DELETE /api/messages/:messageId
-// ============================================
+// Delete message
 router.delete('/:messageId', isAuthenticated, async (req, res) => {
   try {
     const { messageId } = req.params;
+    const userId = req.session.userId;
 
-    const message = await Message.findById(messageId)
-      .populate('sessionId');
+    const message = await Message.findById(messageId).populate('sessionId');
 
     if (!message) {
       return res.status(404).json({
         success: false,
-        message: 'Message not found',
+        message: 'Message not found'
       });
     }
 
-    const isOwner = message.userId.toString() === req.session.userId;
-    const isLecturer = message.sessionId.lecturer.toString() === req.session.userId;
+    // Check if user is owner or lecturer
+    const isOwner = message.userId.toString() === userId;
+    const isLecturer = message.sessionId.lecturer.toString() === userId;
 
-    // Check permissions
     if (!isOwner && !isLecturer) {
       return res.status(403).json({
         success: false,
-        message: 'You can only delete your own messages',
+        message: 'You can only delete your own messages or messages in your session'
       });
     }
 
-    // Soft delete
     await message.softDelete();
 
     res.json({
       success: true,
-      message: 'Message deleted successfully',
+      message: 'Message deleted successfully'
     });
+
   } catch (error) {
-    console.error('❌ Delete message error:', error);
+    console.error('Delete message error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error deleting message',
-      error: error.message,
+      message: 'Failed to delete message'
     });
   }
 });
 
-// ============================================
-// PIN/UNPIN MESSAGE (lecturer only)
-// ✅ Endpoint: POST /api/messages/:messageId/pin
-// ============================================
+// Pin/Unpin message (lecturer only)
 router.post('/:messageId/pin', isAuthenticated, async (req, res) => {
   try {
     const { messageId } = req.params;
+    const userId = req.session.userId;
 
-    const message = await Message.findById(messageId)
-      .populate('sessionId');
+    const message = await Message.findById(messageId).populate('sessionId');
 
     if (!message) {
       return res.status(404).json({
         success: false,
-        message: 'Message not found',
+        message: 'Message not found'
       });
     }
 
     // Check if user is lecturer
-    const isLecturer = message.sessionId.lecturer.toString() === req.session.userId;
-
+    const isLecturer = message.sessionId.lecturer.toString() === userId;
     if (!isLecturer) {
       return res.status(403).json({
         success: false,
-        message: 'Only lecturers can pin messages',
+        message: 'Only lecturers can pin messages'
       });
     }
 
     await message.togglePin();
-    await message.populate('userId', 'displayName role');
 
     res.json({
       success: true,
-      message: message.isPinned ? 'Message pinned' : 'Message unpinned',
-      messageData: {
-        id: message._id,
-        isPinned: message.isPinned,
-      },
+      message: 'Message pin status updated',
+      isPinned: message.isPinned
     });
+
   } catch (error) {
-    console.error('❌ Pin message error:', error);
+    console.error('Pin message error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error toggling pin',
-      error: error.message,
-    });
-  }
-});
-
-// ============================================
-// GET PINNED MESSAGES FOR SESSION
-// ✅ Endpoint: GET /api/messages/session/:sessionId/pinned
-// ============================================
-router.get('/session/:sessionId/pinned', isAuthenticated, async (req, res) => {
-  try {
-    const { sessionId } = req.params;
-
-    // Check access
-    const session = await Session.findById(sessionId);
-    if (!session) {
-      return res.status(404).json({
-        success: false,
-        message: 'Session not found',
-      });
-    }
-
-    const membership = await Membership.findOne({
-      userId: req.session.userId,
-      sessionId,
-    });
-
-    const isLecturer = session.lecturer.toString() === req.session.userId;
-
-    if (!membership && !isLecturer) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied.',
-      });
-    }
-
-    const pinnedMessages = await Message.find({
-      sessionId,
-      isPinned: true,
-      isDeleted: false,
-    })
-      .sort({ timestamp: -1 })
-      .populate('userId', 'displayName role');
-
-    res.json({
-      success: true,
-      messages: pinnedMessages.map(m => ({
-        id: m._id,
-        text: m.text,
-        type: m.type,
-        timestamp: m.timestamp,
-        user: {
-          id: m.userId._id,
-          displayName: m.userId.displayName,
-          role: m.userId.role,
-        },
-      })),
-    });
-  } catch (error) {
-    console.error('❌ Get pinned messages error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error fetching pinned messages',
-      error: error.message,
+      message: 'Failed to pin message'
     });
   }
 });
