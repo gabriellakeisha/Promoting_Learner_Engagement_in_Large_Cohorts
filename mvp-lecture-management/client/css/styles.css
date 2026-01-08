@@ -192,15 +192,6 @@ body {
   transform: scale(0.95);
 }
 
-/* Dark mode support */
-body.dark-mode .send-btn-corner {
-  background: var(--primary-color);
-}
-
-body.dark-mode .send-btn-corner:hover {
-  background: #60a5fa;
-}
-
 /* Navigation */
 .navbar {
   background: var(--bg-primary);
@@ -370,6 +361,106 @@ body.dark-mode .send-btn-corner:hover {
   background: var(--bg-secondary);
 }
 
+/* ============================================
+   CHAT MESSAGE STYLING - FIXED FOR DARK MODE
+   ============================================ */
+
+/* Base chat message styles */
+.chat-message {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+/* Student messages - Blue left border */
+.chat-message.student-message {
+  border-left: 4px solid #3b82f6;
+  background: #f8fafc;
+}
+
+/* Lecturer messages - Green left border */
+.chat-message.lecturer-message {
+  border-left: 4px solid #10b981;
+  background: #f0fdf4;
+}
+
+/* Message header (username + time) */
+.message-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+/* ✅ USERNAME STYLING - ALWAYS VISIBLE IN BOTH MODES */
+.message-username {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: white !important; /* Always white text in light mode */
+}
+
+/* Student username - Blue badge */
+.message-username.student {
+  background: #3b82f6 !important;
+  color: white !important;
+}
+
+/* Lecturer username - Green badge */
+.message-username.lecturer {
+  background: #10b981 !important;
+  color: white !important;
+}
+
+/* Message time */
+.message-time {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Message text */
+.message-text {
+  color: #1e293b;
+  font-size: 15px;
+  line-height: 1.6;
+  margin-bottom: 12px;
+  word-wrap: break-word;
+}
+
+/* Message type badges */
+.message-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.badge-question {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.badge-comment {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge-confusion {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* Old message styling for backwards compatibility */
 .message {
   background: white;
   border-radius: 12px;
@@ -389,13 +480,6 @@ body.dark-mode .send-btn-corner:hover {
 
 .message.type-confusion {
   border-left-color: var(--confusion-color);
-}
-
-.message-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
 }
 
 .message-author {
@@ -428,44 +512,11 @@ body.dark-mode .send-btn-corner:hover {
   color: #92400e;
 }
 
-.message-text {
-  color: var(--text-primary);
-  line-height: 1.5;
-  margin-bottom: 8px;
-}
-
-.message-time {
-  font-size: 12px;
-  color: var(--text-light);
-}
-
 /* Chat Input */
 .chat-input-container {
   background: white;
   border-top: 2px solid var(--border-color);
   padding: 20px 24px;
-}
-
-.chat-input-wrapper {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-}
-
-.chat-input {
-  flex: 1;
-  padding: 12px 16px;
-  border: 2px solid var(--border-color);
-  border-radius: 8px;
-  font-size: 15px;
-  resize: vertical;
-  min-height: 80px;
-  font-family: inherit;
-}
-
-.chat-input:focus {
-  outline: none;
-  border-color: var(--primary-color);
 }
 
 /* Chat input wrapper - relative positioning for button */
@@ -483,6 +534,7 @@ body.dark-mode .send-btn-corner:hover {
   font-size: 15px;
   resize: vertical;
   min-height: 80px;
+  font-family: inherit;
 }
 
 .chat-input:focus {
@@ -515,6 +567,24 @@ body.dark-mode .send-btn-corner:hover {
 .stat-value {
   font-size: 32px;
   font-weight: 700;
+}
+
+/* Analytics card styling */
+.analytics-chart-card {
+  background: var(--card-bg, white);
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: background-color 0.3s ease;
+}
+
+.analytics-table-card {
+  background: var(--card-bg, white);
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin-top: 24px;
+  transition: background-color 0.3s ease;
 }
 
 /* Alerts */
@@ -575,24 +645,9 @@ body.dark-mode .send-btn-corner:hover {
   display: none;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .auth-card {
-    padding: 24px;
-  }
-  
-  .dashboard {
-    padding: 20px;
-  }
-  
-  .sessions-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .analytics-grid {
-    grid-template-columns: 1fr;
-  }
-}
+/* ============================================
+   DARK MODE STYLES
+   ============================================ */
 
 /* Dark mode variables */
 body.dark-mode {
@@ -618,30 +673,27 @@ body.dark-mode .navbar {
   border-bottom: 1px solid var(--border-color);
 }
 
-body.dark-mode .card {
+body.dark-mode .card,
+body.dark-mode .dashboard,
+body.dark-mode .auth-card {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow);
 }
 
-body.dark-mode .input,
-body.dark-mode .textarea,
-body.dark-mode .select {
+body.dark-mode .form-input,
+body.dark-mode .form-select,
+body.dark-mode .chat-input {
   background: var(--input-bg);
   border-color: var(--input-border);
   color: var(--text-color);
 }
 
-body.dark-mode .input:focus,
-body.dark-mode .textarea:focus,
-body.dark-mode .select:focus {
+body.dark-mode .form-input:focus,
+body.dark-mode .form-select:focus,
+body.dark-mode .chat-input:focus {
   border-color: var(--primary-color);
   background: #0f172a;
-}
-
-body.dark-mode .message {
-  background: var(--card-bg);
-  border-color: var(--border-color);
 }
 
 body.dark-mode .session-card {
@@ -654,6 +706,98 @@ body.dark-mode .session-card:hover {
   background: #334155;
 }
 
+body.dark-mode .send-btn-corner {
+  background: var(--primary-color);
+}
+
+body.dark-mode .send-btn-corner:hover {
+  background: #60a5fa;
+}
+
+/* ============================================
+   DARK MODE - CHAT MESSAGES (USERNAME FIX)
+   ============================================ */
+
+/* Dark mode chat message container */
+body.dark-mode .chat-message {
+  background: #1e293b;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Dark mode - Student messages */
+body.dark-mode .chat-message.student-message {
+  border-left-color: #60a5fa;
+  background: #1e293b;
+}
+
+/* Dark mode - Lecturer messages */
+body.dark-mode .chat-message.lecturer-message {
+  border-left-color: #34d399;
+  background: #1e3a2e;
+}
+
+/* ✅ DARK MODE - USERNAME ALWAYS VISIBLE (BRIGHT BADGE + DARK TEXT) */
+body.dark-mode .message-username.student {
+  background: #60a5fa !important; /* Brighter blue in dark mode */
+  color: #0f172a !important; /* Dark text for better contrast */
+}
+
+body.dark-mode .message-username.lecturer {
+  background: #34d399 !important; /* Brighter green in dark mode */
+  color: #0f172a !important; /* Dark text for better contrast */
+}
+
+/* Dark mode - Message time */
+body.dark-mode .message-time {
+  color: #94a3b8;
+}
+
+/* Dark mode - Message text */
+body.dark-mode .message-text {
+  color: #f1f5f9 !important;
+}
+
+/* Dark mode - Message badges */
+body.dark-mode .badge-question {
+  background: #1e3a8a;
+  color: #93c5fd;
+}
+
+body.dark-mode .badge-comment {
+  background: #14532d;
+  color: #86efac;
+}
+
+body.dark-mode .badge-confusion {
+  background: #78350f;
+  color: #fcd34d;
+}
+
+/* Dark mode - Chat container backgrounds */
+body.dark-mode .chat-messages {
+  background: #0f172a;
+}
+
+body.dark-mode .chat-container {
+  background: #0f172a;
+}
+
+body.dark-mode .chat-input-container {
+  background: #1e293b;
+  border-top-color: #334155;
+}
+
+body.dark-mode .chat-header {
+  background: #1e293b;
+  border-bottom: 1px solid #334155;
+}
+
+/* Dark mode - Old message styles */
+body.dark-mode .message {
+  background: var(--card-bg);
+  border-color: var(--border-color);
+}
+
 body.dark-mode .modal-content {
   background: var(--card-bg);
   color: var(--text-color);
@@ -662,6 +806,12 @@ body.dark-mode .modal-content {
 body.dark-mode .stats-card {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
+}
+
+body.dark-mode .analytics-chart-card,
+body.dark-mode .analytics-table-card {
+  background: var(--card-bg);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 body.dark-mode table {
@@ -714,10 +864,11 @@ body.dark-mode .dark-mode-toggle {
 body,
 .navbar,
 .card,
-.input,
-.textarea,
-.select,
+.form-input,
+.form-select,
+.chat-input,
 .message,
+.chat-message,
 .session-card,
 .modal-content,
 .stats-card,
@@ -731,112 +882,26 @@ tbody tr {
   background: #10b981;
   margin-right: 10px;
 }
+
 .export-csv-btn:hover {
   background: #059669;
 }
 
-/* Dark mode chat message fixes */
-body.dark-mode .chat-message {
-  background: #1e293b !important;
-  border-color: #334155 !important;
-}
-
-body.dark-mode .message-header {
-  color: #e2e8f0 !important;
-}
-
-body.dark-mode .message-username {
-  color: #60a5fa !important;
-  font-weight: 600;
-}
-
-body.dark-mode .message-time {
-  color: #94a3b8 !important;
-}
-
-body.dark-mode .message-text {
-  color: #f1f5f9 !important;
-  font-size: 15px;
-  line-height: 1.5;
-}
-
-body.dark-mode .message-badge {
-  color: #1e293b !important;
-  font-weight: 700;
-}
-
-/* Ensure chat container is visible */
-body.dark-mode .chat-messages {
-  background: #0f172a;
-}
-
-body.dark-mode .chat-container {
-  background: #0f172a;
-}
-
-/* Analytics text in dark mode */
-body.dark-mode .analytics-content h3,
-body.dark-mode .analytics-content h4,
-body.dark-mode .analytics-content p,
-body.dark-mode .analytics-content label {
-  color: #e2e8f0;
-}
-
-body.dark-mode .stats-card h3 {
-  color: #e2e8f0;
-}
-
-body.dark-mode .stats-card .stats-value {
-  color: white;
-}
-
-/* Analytics card styling */
-.analytics-chart-card {
-  background: var(--card-bg, white);
-  padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  transition: background-color 0.3s ease;
-}
-
-.analytics-table-card {
-  background: var(--card-bg, white);
-  padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  margin-top: 24px;
-  transition: background-color 0.3s ease;
-}
-
-body.dark-mode .analytics-chart-card,
-body.dark-mode .analytics-table-card {
-  background: var(--card-bg);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-}
-
-/* Username styling - works in both light and dark mode */
-.message-username {
-  background: var(--primary-color);
-  color: white !important;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 600;
-  display: inline-block;
-  margin-bottom: 8px;
-}
-
-/* Make sure username is always white on blue background */
-body.dark-mode .message-username {
-  background: #3b82f6;
-  color: white !important;
-}
-
-/* If you have the username as a separate element */
-.chat-message .message-header .message-username {
-  color: white !important;
-}
-
-body.dark-mode .chat-message .message-header .message-username {
-  color: white !important;
+/* Responsive */
+@media (max-width: 768px) {
+  .auth-card {
+    padding: 24px;
+  }
+  
+  .dashboard {
+    padding: 20px;
+  }
+  
+  .sessions-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
 }

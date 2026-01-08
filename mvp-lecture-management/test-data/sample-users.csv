@@ -1,5 +1,5 @@
 email,password,role,displayName
-lecturer1@qub.ac.uk,Password123!,lecturer,Dr. Andrew McDowell
+lecturer1@qub.ac.uk,Password123!,lecturer,Dr. ABC
 lecturer2@qub.ac.uk,Password123!,lecturer,Prof. Sarah Johnson
 student1@qub.ac.uk,Student123!,student,Alice Anderson
 student2@qub.ac.uk,Student123!,student,Bob Brown

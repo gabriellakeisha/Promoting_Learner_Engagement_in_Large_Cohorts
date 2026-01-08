@@ -121,14 +121,14 @@
     function displaySessions(sessions) {
       const container = document.getElementById('sessions-list');
       container.innerHTML = sessions.map(session => `
-        <div class="session-card" onclick="openSession('${session.id}')">
+        <div class="session-card" onclick="openSession('${session._id || session.id}')">
           <div class="session-title">${session.title}</div>
           <div class="session-meta">
             <div class="session-meta-item">
               📚 ${session.moduleCode || 'No module code'}
             </div>
             <div class="session-meta-item">
-              👨‍🏫 ${session.lecturer}
+              👨‍🏫 ${session.lecturer || 'Unknown'}
             </div>
             <div class="session-meta-item">
               <span class="session-status status-${session.status}">
@@ -174,9 +174,11 @@
       }
     });
 
-    // Open session
+    // ✅ FIXED: Open session with correct URL format
     function openSession(sessionId) {
-      window.location.href = `/chat/${sessionId}`;
+      console.log('Opening session:', sessionId);
+      // FIXED: Use query parameter format to match lecturer dashboard and chat room
+      window.location.href = `/chat-room.html?sessionId=${sessionId}`;
     }
 
     // Logout

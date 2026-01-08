@@ -44,11 +44,17 @@ const messageSchema = new mongoose.Schema({
     index: true,
   },
 }, {
-  timestamps: true,
+  timestamps: true, // This adds createdAt and updatedAt fields automatically
 });
 
 // Compound index for efficient querying
 messageSchema.index({ sessionId: 1, timestamp: -1 });
+messageSchema.index({ sessionId: 1, createdAt: 1 }); // For frontend compatibility
+
+// Virtual field to ensure createdAt is always available
+messageSchema.virtual('createdAtCompat').get(function() {
+  return this.createdAt || this.timestamp;
+});
 
 // Method to soft delete message
 messageSchema.methods.softDelete = async function() {
@@ -70,4 +76,5 @@ messageSchema.methods.togglePin = async function() {
   await this.save();
 };
 
-module.exports = mongoose.model('Message', messageSchema);
+// Export model, checking if it already exists to prevent OverwriteModelError
+module.exports = mongoose.models.Message || mongoose.model('Message', messageSchema);

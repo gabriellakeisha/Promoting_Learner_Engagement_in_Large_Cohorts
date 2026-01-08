@@ -1,14 +1,105 @@
 const express = require('express');
 const router = express.Router();
-const Message = require('../models/Message');
+const Message = require('../models/message'); // lowercase 'm' to match your file
 const Membership = require('../models/Membership');
 const Session = require('../models/Session');
 const { isAuthenticated } = require('../middleware/auth');
 
-// Send new message
+// ============================================
+// GET MESSAGES FOR A SESSION
+// ✅ FIXED: Route path matches frontend call
+// Frontend calls: /api/messages/session/:sessionId
+// ============================================
+router.get('/session/:sessionId', isAuthenticated, async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const { limit = 50, before } = req.query;
+    
+    console.log('📥 Fetching messages for session:', sessionId);
+    console.log('User ID from session:', req.session.userId);
+
+    // Check if session exists
+    const session = await Session.findById(sessionId);
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: 'Session not found',
+      });
+    }
+
+    // Check access permissions
+    const membership = await Membership.findOne({
+      userId: req.session.userId,
+      sessionId,
+    });
+
+    const isLecturer = session.lecturer.toString() === req.session.userId;
+
+    if (!membership && !isLecturer) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. You must join the session first.',
+      });
+    }
+
+    // Build query
+    const query = {
+      sessionId,
+      isDeleted: false,
+    };
+
+    // Add "before" filter for pagination (load older messages)
+    if (before) {
+      query._id = { $lt: before };
+    }
+
+    // Fetch messages
+    const messages = await Message.find(query)
+      .sort({ timestamp: 1 }) // Oldest first for chat display
+      .limit(parseInt(limit))
+      .populate('userId', 'displayName role email');
+
+    console.log(`✅ Found ${messages.length} messages`);
+
+    res.json({
+      success: true,
+      messages: messages.map(m => ({
+        id: m._id,
+        text: m.text,
+        type: m.type,
+        timestamp: m.timestamp,
+        createdAt: m.createdAt || m.timestamp, // Support both fields
+        isEdited: m.isEdited,
+        editedAt: m.editedAt,
+        isPinned: m.isPinned,
+        userId: {
+          _id: m.userId._id,
+          displayName: m.userId.displayName,
+          role: m.userId.role,
+          email: m.userId.email
+        }
+      })),
+      hasMore: messages.length === parseInt(limit),
+    });
+  } catch (error) {
+    console.error('❌ Get messages error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching messages',
+      error: error.message,
+    });
+  }
+});
+
+// ============================================
+// SEND NEW MESSAGE
+// ✅ Endpoint: POST /api/messages/send
+// ============================================
 router.post('/send', isAuthenticated, async (req, res) => {
   try {
     const { sessionId, text, type } = req.body;
+
+    console.log('📤 Sending message:', { sessionId, type, from: req.session.userId });
 
     // Validation
     if (!sessionId || !text || !type) {
@@ -72,7 +163,9 @@ router.post('/send', isAuthenticated, async (req, res) => {
     }
 
     // Populate user info for response
-    await message.populate('userId', 'displayName role');
+    await message.populate('userId', 'displayName role email');
+
+    console.log('✅ Message saved:', message._id);
 
     res.status(201).json({
       success: true,
@@ -92,7 +185,7 @@ router.post('/send', isAuthenticated, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Send message error:', error);
+    console.error('❌ Send message error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error sending message',
@@ -101,81 +194,10 @@ router.post('/send', isAuthenticated, async (req, res) => {
   }
 });
 
-// Get messages for a session (with pagination)
-router.get('/:sessionId', isAuthenticated, async (req, res) => {
-  try {
-    const { sessionId } = req.params;
-    const { limit = 50, before } = req.query;
-
-    // Check access
-    const session = await Session.findById(sessionId);
-    if (!session) {
-      return res.status(404).json({
-        success: false,
-        message: 'Session not found',
-      });
-    }
-
-    const membership = await Membership.findOne({
-      userId: req.session.userId,
-      sessionId,
-    });
-
-    const isLecturer = session.lecturer.toString() === req.session.userId;
-
-    if (!membership && !isLecturer) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied.',
-      });
-    }
-
-    // Build query
-    const query = {
-      sessionId,
-      isDeleted: false,
-    };
-
-    // Add "before" filter for pagination (load older messages)
-    if (before) {
-      query._id = { $lt: before };
-    }
-
-    // Fetch messages
-    const messages = await Message.find(query)
-      .sort({ timestamp: -1 }) // Newest first
-      .limit(parseInt(limit))
-      .populate('userId', 'displayName role');
-
-    res.json({
-      success: true,
-      messages: messages.reverse().map(m => ({ // Reverse for chronological order
-        id: m._id,
-        text: m.text,
-        type: m.type,
-        timestamp: m.timestamp,
-        isEdited: m.isEdited,
-        editedAt: m.editedAt,
-        isPinned: m.isPinned,
-        user: {
-          id: m.userId._id,
-          displayName: m.userId.displayName,
-          role: m.userId.role,
-        },
-      })),
-      hasMore: messages.length === parseInt(limit),
-    });
-  } catch (error) {
-    console.error('Get messages error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error fetching messages',
-      error: error.message,
-    });
-  }
-});
-
-// Edit message (own messages only, within 5 minutes)
+// ============================================
+// EDIT MESSAGE (own messages only, within 5 minutes)
+// ✅ Endpoint: PUT /api/messages/:messageId
+// ============================================
 router.put('/:messageId', isAuthenticated, async (req, res) => {
   try {
     const { messageId } = req.params;
@@ -244,7 +266,7 @@ router.put('/:messageId', isAuthenticated, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Edit message error:', error);
+    console.error('❌ Edit message error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error editing message',
@@ -253,7 +275,10 @@ router.put('/:messageId', isAuthenticated, async (req, res) => {
   }
 });
 
-// Delete message (own messages or lecturer can delete any)
+// ============================================
+// DELETE MESSAGE (own messages or lecturer can delete any)
+// ✅ Endpoint: DELETE /api/messages/:messageId
+// ============================================
 router.delete('/:messageId', isAuthenticated, async (req, res) => {
   try {
     const { messageId } = req.params;
@@ -287,7 +312,7 @@ router.delete('/:messageId', isAuthenticated, async (req, res) => {
       message: 'Message deleted successfully',
     });
   } catch (error) {
-    console.error('Delete message error:', error);
+    console.error('❌ Delete message error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error deleting message',
@@ -296,7 +321,10 @@ router.delete('/:messageId', isAuthenticated, async (req, res) => {
   }
 });
 
-// Pin/unpin message (lecturer only)
+// ============================================
+// PIN/UNPIN MESSAGE (lecturer only)
+// ✅ Endpoint: POST /api/messages/:messageId/pin
+// ============================================
 router.post('/:messageId/pin', isAuthenticated, async (req, res) => {
   try {
     const { messageId } = req.params;
@@ -333,7 +361,7 @@ router.post('/:messageId/pin', isAuthenticated, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Pin message error:', error);
+    console.error('❌ Pin message error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error toggling pin',
@@ -342,8 +370,11 @@ router.post('/:messageId/pin', isAuthenticated, async (req, res) => {
   }
 });
 
-// Get pinned messages for session
-router.get('/:sessionId/pinned', isAuthenticated, async (req, res) => {
+// ============================================
+// GET PINNED MESSAGES FOR SESSION
+// ✅ Endpoint: GET /api/messages/session/:sessionId/pinned
+// ============================================
+router.get('/session/:sessionId/pinned', isAuthenticated, async (req, res) => {
   try {
     const { sessionId } = req.params;
 
@@ -393,7 +424,7 @@ router.get('/:sessionId/pinned', isAuthenticated, async (req, res) => {
       })),
     });
   } catch (error) {
-    console.error('Get pinned messages error:', error);
+    console.error('❌ Get pinned messages error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error fetching pinned messages',
