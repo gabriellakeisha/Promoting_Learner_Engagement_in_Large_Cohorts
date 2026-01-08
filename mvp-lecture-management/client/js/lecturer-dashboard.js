@@ -5,7 +5,6 @@ let currentAnalyticsSessionId = null;
 // Initialize
 async function init() {
   try {
-    // Check auth
     const response = await fetch('/api/auth/me');
     const result = await response.json();
     
@@ -43,7 +42,7 @@ async function loadSessions() {
   }
 }
 
-// Display sessions
+// Display sessions - FIXED WITH JOIN CHAT BUTTON
 function displaySessions(sessions) {
   const container = document.getElementById('sessions-list');
   container.innerHTML = sessions.map(session => `
@@ -60,12 +59,15 @@ function displaySessions(sessions) {
           <span class="session-status status-${session.status}">${session.status}</span>
         </div>
       </div>
-      <div style="margin-top: 16px; display: flex; gap: 8px;">
-        <button class="btn btn-primary btn-small" onclick="viewAnalytics('${session.id}', '${session.title}')">
-          📊 View Analytics
+      <div style="margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap;">
+        <button class="btn btn-primary btn-small" onclick="viewSessionChat('${session._id || session.id}', '${session.title}')">
+          💬 Join Chat
+        </button>
+        <button class="btn btn-secondary btn-small" onclick="viewAnalytics('${session._id || session.id}', '${session.title}')">
+          📊 Analytics
         </button>
         ${session.status === 'active' ? `
-          <button class="btn btn-danger btn-small" onclick="endSession('${session.id}')">
+          <button class="btn btn-danger btn-small" onclick="endSession('${session._id || session.id}')">
             End Session
           </button>
         ` : ''}
@@ -74,7 +76,12 @@ function displaySessions(sessions) {
   `).join('');
 }
 
-// Create session modal - FIXED
+// NEW FUNCTION - Join chat as lecturer
+function viewSessionChat(sessionId, title) {
+  window.location.href = `/chat-room.html?sessionId=${sessionId}`;
+}
+
+// Create session modal
 document.getElementById('create-session-btn').addEventListener('click', () => {
   document.getElementById('create-modal').classList.add('show');
 });
@@ -116,7 +123,7 @@ document.getElementById('create-session-form').addEventListener('submit', async 
   }
 });
 
-// View analytics - FIXED
+// View analytics
 async function viewAnalytics(sessionId, title) {
   currentAnalyticsSessionId = sessionId;
   document.getElementById('analytics-modal').classList.add('show');
@@ -124,18 +131,29 @@ async function viewAnalytics(sessionId, title) {
   document.getElementById('analytics-content').innerHTML = '<div class="spinner"></div>';
   
   try {
-    const response = await fetch(`/api/analytics/lecturer/${sessionId}`);
+    const response = await fetch(`/api/analytics/lecturer/${sessionId}`, {
+      credentials: 'include'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
     const result = await response.json();
     
-    if (result.success) {
+    if (result.success && result.analytics) {
       displayAnalytics(result.analytics);
     } else {
-      document.getElementById('analytics-content').innerHTML = 
-        '<p style="color: var(--danger-color);">Error loading analytics</p>';
+      throw new Error(result.error || 'No analytics data available');
     }
   } catch (error) {
+    console.error('Analytics error:', error);
     document.getElementById('analytics-content').innerHTML = 
-      '<p style="color: var(--danger-color);">Error loading analytics</p>';
+      `<div style="padding: 40px; text-align: center; color: var(--text-color);">
+        <h3 style="color: var(--danger-color);">⚠️ Error Loading Analytics</h3>
+        <p style="margin-top: 12px;">${error.message}</p>
+        <p style="color: var(--text-secondary); margin-top: 12px;">Please try again or contact support if the issue persists.</p>
+      </div>`;
   }
 }
 
@@ -143,65 +161,73 @@ async function viewAnalytics(sessionId, title) {
 function displayAnalytics(analytics) {
   const container = document.getElementById('analytics-content');
   
+  if (!analytics || !analytics.summary) {
+    container.innerHTML = `<div style="padding: 40px; text-align: center; color: var(--text-color);">
+      <p>No analytics data available yet. Send some messages first!</p>
+    </div>`;
+    return;
+  }
+  
   container.innerHTML = `
-    <!-- Summary Cards -->
     <div class="analytics-grid">
       <div class="stat-card">
         <div class="stat-label">Total Messages</div>
-        <div class="stat-value">${analytics.summary.totalMessages}</div>
+        <div class="stat-value">${analytics.summary.totalMessages || 0}</div>
       </div>
       <div class="stat-card" style="background: linear-gradient(135deg, #10b981, #059669);">
         <div class="stat-label">Active Users</div>
-        <div class="stat-value">${analytics.summary.activeUsers}/${analytics.summary.totalMembers}</div>
+        <div class="stat-value">${analytics.summary.activeUsers || 0}/${analytics.summary.totalMembers || 0}</div>
       </div>
       <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
         <div class="stat-label">Participation Rate</div>
-        <div class="stat-value">${analytics.summary.participationRate}%</div>
+        <div class="stat-value">${analytics.summary.participationRate || 0}%</div>
       </div>
     </div>
 
-    <!-- Charts -->
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 32px;">
-      <div style="background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-        <h3 style="margin-bottom: 16px;">Messages by Type</h3>
+      <div class="analytics-chart-card">
+        <h3 style="margin-bottom: 16px; color: var(--text-color);">Messages by Type</h3>
         <canvas id="type-chart"></canvas>
       </div>
-      <div style="background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-        <h3 style="margin-bottom: 16px;">Timeline</h3>
+      <div class="analytics-chart-card">
+        <h3 style="margin-bottom: 16px; color: var(--text-color);">Timeline</h3>
         <canvas id="timeline-chart"></canvas>
       </div>
     </div>
 
-    <!-- Top Contributors -->
-    <div style="background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-top: 24px;">
-      <h3 style="margin-bottom: 16px;">Top Contributors</h3>
+    <div class="analytics-table-card">
+      <h3 style="margin-bottom: 16px; color: var(--text-color);">Top Contributors</h3>
       <table style="width: 100%; border-collapse: collapse;">
         <thead>
           <tr style="border-bottom: 2px solid var(--border-color);">
-            <th style="text-align: left; padding: 12px;">Name</th>
-            <th style="text-align: left; padding: 12px;">Email</th>
-            <th style="text-align: right; padding: 12px;">Messages</th>
+            <th style="text-align: left; padding: 12px; color: var(--text-color);">Name</th>
+            <th style="text-align: left; padding: 12px; color: var(--text-color);">Email</th>
+            <th style="text-align: right; padding: 12px; color: var(--text-color);">Messages</th>
           </tr>
         </thead>
         <tbody>
-          ${analytics.topContributors.map(c => `
+          ${(analytics.topContributors || []).map(c => `
             <tr style="border-bottom: 1px solid var(--border-color);">
-              <td style="padding: 12px;">${c.displayName}</td>
-              <td style="padding: 12px; color: var(--text-secondary);">${c.email}</td>
-              <td style="padding: 12px; text-align: right; font-weight: 600;">${c.messageCount}</td>
+              <td style="padding: 12px; color: var(--text-color);">${c.displayName || 'Anonymous'}</td>
+              <td style="padding: 12px; color: var(--text-secondary);">${c.email || 'N/A'}</td>
+              <td style="padding: 12px; text-align: right; font-weight: 600; color: var(--text-color);">${c.messageCount || 0}</td>
             </tr>
           `).join('')}
+          ${(analytics.topContributors || []).length === 0 ? '<tr><td colspan="3" style="padding: 20px; text-align: center; color: var(--text-secondary);">No contributors yet</td></tr>' : ''}
         </tbody>
       </table>
     </div>
   `;
   
-  // Create charts
-  createTypeChart(analytics.messagesByType);
-  createTimelineChart(analytics.timeline);
+  if (analytics.messagesByType) {
+    createTypeChart(analytics.messagesByType);
+  }
+  if (analytics.timeline) {
+    createTimelineChart(analytics.timeline);
+  }
 }
 
-// Create type chart
+// Create charts
 function createTypeChart(data) {
   const ctx = document.getElementById('type-chart').getContext('2d');
   new Chart(ctx, {
@@ -209,7 +235,7 @@ function createTypeChart(data) {
     data: {
       labels: ['Questions', 'Comments', 'Confusion'],
       datasets: [{
-        data: [data.QUESTION, data.COMMENT, data.CONFUSION],
+        data: [data.QUESTION || 0, data.COMMENT || 0, data.CONFUSION || 0],
         backgroundColor: ['#3b82f6', '#10b981', '#f59e0b']
       }]
     },
@@ -222,13 +248,12 @@ function createTypeChart(data) {
   });
 }
 
-// Create timeline chart
 function createTimelineChart(data) {
   const ctx = document.getElementById('timeline-chart').getContext('2d');
   new Chart(ctx, {
     type: 'line',
     data: {
-      labels: data.map(d => d.time.split(' ')[1]), // Extract time only
+      labels: data.map(d => d.time.split(' ')[1]),
       datasets: [{
         label: 'Messages',
         data: data.map(d => d.count),
@@ -250,7 +275,7 @@ function createTimelineChart(data) {
   });
 }
 
-// Close analytics - FIXED
+// Close analytics
 document.getElementById('close-analytics-btn').addEventListener('click', () => {
   document.getElementById('analytics-modal').classList.remove('show');
 });
@@ -277,6 +302,50 @@ async function endSession(sessionId) {
   }
 }
 
+// Export CSV
+function exportToCSV() {
+  const sessionId = currentAnalyticsSessionId;
+  
+  if (!sessionId) {
+    alert('No session selected for export');
+    return;
+  }
+  
+  const btn = document.querySelector('.export-csv-btn');
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '⏳ Exporting...';
+  btn.disabled = true;
+  
+  fetch(`/api/analytics/export-csv/${sessionId}`, {
+    method: 'GET',
+    credentials: 'include'
+  })
+  .then(response => {
+    if (!response.ok) throw new Error('Export failed');
+    return response.blob();
+  })
+  .then(blob => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `session_analytics_${Date.now()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    
+    alert('✅ Analytics exported successfully!');
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  })
+  .catch(error => {
+    console.error('CSV export error:', error);
+    alert('❌ Failed to export CSV');
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  });
+}
+
 // Logout
 document.getElementById('logout-btn').addEventListener('click', async () => {
   await fetch('/api/auth/logout', { method: 'POST' });
@@ -291,60 +360,3 @@ function showAlert(message, type) {
 
 // Initialize
 init();
-
-// Export analytics to CSV
-function exportToCSV() {
-  const sessionId = currentAnalyticsSessionId; // Make sure this variable is set when opening analytics
-  
-  if (!sessionId) {
-    alert('No session selected for export');
-    return;
-  }
-  
-  // Show loading indicator
-  const btn = document.querySelector('.export-csv-btn');
-  const originalText = btn.innerHTML;
-  btn.innerHTML = '⏳ Exporting...';
-  btn.disabled = true;
-  
-  // Make request to export endpoint
-  fetch(`/api/analytics/export-csv/${sessionId}`, {
-    method: 'GET',
-    credentials: 'include'
-  })
-  .then(response => {
-    if (!response.ok) {
-      throw new Error('Export failed');
-    }
-    return response.blob();
-  })
-  .then(blob => {
-    // Create download link
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `session_analytics_${Date.now()}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    
-    // Cleanup
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-    
-    // Show success message
-    alert('✅ Analytics exported successfully!');
-    
-    // Reset button
-    btn.innerHTML = originalText;
-    btn.disabled = false;
-  })
-  .catch(error => {
-    console.error('CSV export error:', error);
-    alert('❌ Failed to export CSV');
-    
-    // Reset button
-    btn.innerHTML = originalText;
-    btn.disabled = false;
-  });
-}
-
