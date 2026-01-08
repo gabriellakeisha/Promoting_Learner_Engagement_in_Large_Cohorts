@@ -127,11 +127,8 @@ router.post('/send', isAuthenticated, async (req, res) => {
       await membership.incrementMessageCount();
     }
 
-    // ========================================
-    // CRITICAL: SOCKET.IO BROADCAST
-    // ========================================
+    // SOCKET.IO BROADCAST
     try {
-      // Populate message with user data
       const populatedMessage = await Message.findById(message._id)
         .populate('userId', 'displayName role')
         .populate({
@@ -145,11 +142,9 @@ router.post('/send', isAuthenticated, async (req, res) => {
 
       console.log('📤 Broadcasting message to session:', sessionId);
 
-      // Get Socket.IO instance
       const io = req.app.get('io');
 
       if (io) {
-        // Prepare message data for broadcast
         const messageData = {
           id: populatedMessage._id.toString(),
           text: populatedMessage.text,
@@ -158,6 +153,7 @@ router.post('/send', isAuthenticated, async (req, res) => {
           isEdited: populatedMessage.isEdited,
           isPinned: populatedMessage.isPinned,
           isAnnouncement: populatedMessage.isAnnouncement,
+          isReported: populatedMessage.isReported,
           replyTo: populatedMessage.replyTo ? {
             id: populatedMessage.replyTo._id.toString(),
             text: populatedMessage.replyTo.text,
@@ -182,7 +178,6 @@ router.post('/send', isAuthenticated, async (req, res) => {
           userRole: populatedMessage.userId.role
         };
 
-        // Broadcast to all users in session room
         io.to(`session-${sessionId}`).emit('new-message', messageData);
 
         console.log('✅ Message broadcasted via Socket.IO');
@@ -191,13 +186,8 @@ router.post('/send', isAuthenticated, async (req, res) => {
       }
     } catch (broadcastError) {
       console.error('❌ Broadcast error:', broadcastError);
-      // Don't fail the request if broadcast fails
     }
-    // ========================================
-    // END SOCKET.IO BROADCAST
-    // ========================================
 
-    // Return success response
     res.status(201).json({
       success: true,
       message: 'Message sent successfully',
@@ -250,7 +240,6 @@ router.get('/session/:sessionId', isAuthenticated, verifySessionAccess, async (r
 
     console.log(`Found ${messages.length} messages`);
 
-    // Format messages for client
     const formattedMessages = messages.map(msg => ({
       id: msg._id.toString(),
       text: msg.text,
@@ -260,6 +249,7 @@ router.get('/session/:sessionId', isAuthenticated, verifySessionAccess, async (r
       editedAt: msg.editedAt,
       isPinned: msg.isPinned,
       isAnnouncement: msg.isAnnouncement,
+      isReported: msg.isReported,
       userId: msg.userId,
       replyTo: msg.replyTo ? {
         id: msg.replyTo._id,
@@ -285,91 +275,9 @@ router.get('/session/:sessionId', isAuthenticated, verifySessionAccess, async (r
   }
 });
 
-// Get pinned messages
-router.get('/:sessionId/pinned', isAuthenticated, verifySessionAccess, async (req, res) => {
-  try {
-    const { sessionId } = req.params;
-
-    const pinnedMessages = await Message.find({
-      sessionId,
-      isPinned: true,
-      isDeleted: false
-    })
-      .sort({ timestamp: -1 })
-      .populate('userId', 'displayName role')
-      .lean();
-
-    res.json({
-      success: true,
-      messages: pinnedMessages
-    });
-
-  } catch (error) {
-    console.error('Get pinned messages error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch pinned messages'
-    });
-  }
-});
-
-// Edit message
-router.put('/:messageId', isAuthenticated, async (req, res) => {
-  try {
-    const { messageId } = req.params;
-    const { text } = req.body;
-    const userId = req.session.userId;
-
-    const message = await Message.findById(messageId);
-
-    if (!message) {
-      return res.status(404).json({
-        success: false,
-        message: 'Message not found'
-      });
-    }
-
-    // Check ownership
-    if (message.userId.toString() !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: 'You can only edit your own messages'
-      });
-    }
-
-    // Check 5-minute window
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    if (message.timestamp < fiveMinutesAgo) {
-      return res.status(400).json({
-        success: false,
-        message: 'Edit window expired (5 minutes)'
-      });
-    }
-
-    // Update message
-    await message.editMessage(text.trim());
-
-    res.json({
-      success: true,
-      message: 'Message updated successfully',
-      messageData: {
-        id: message._id,
-        text: message.text,
-        isEdited: message.isEdited,
-        editedAt: message.editedAt
-      }
-    });
-
-  } catch (error) {
-    console.error('Edit message error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to edit message'
-    });
-  }
-});
-
-// Delete message
+// ========================================
+// NEW: DELETE MESSAGE (HARD DELETE)
+// ========================================
 router.delete('/:messageId', isAuthenticated, async (req, res) => {
   try {
     const { messageId } = req.params;
@@ -384,22 +292,35 @@ router.delete('/:messageId', isAuthenticated, async (req, res) => {
       });
     }
 
-    // Check if user is owner or lecturer
+    // Check permissions: owner can delete own, lecturer can delete any
     const isOwner = message.userId.toString() === userId;
     const isLecturer = message.sessionId.lecturer.toString() === userId;
 
     if (!isOwner && !isLecturer) {
       return res.status(403).json({
         success: false,
-        message: 'You can only delete your own messages or messages in your session'
+        message: 'You can only delete your own messages'
       });
     }
 
-    await message.softDelete();
+    // HARD DELETE from MongoDB
+    await Message.findByIdAndDelete(messageId);
+
+    console.log(`✅ Message ${messageId} DELETED from MongoDB by ${userId}`);
+
+    // Broadcast deletion via Socket.IO
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`session-${message.sessionId._id}`).emit('message-deleted', {
+        messageId: messageId,
+        deletedBy: userId
+      });
+      console.log('📤 Deletion broadcasted via Socket.IO');
+    }
 
     res.json({
       success: true,
-      message: 'Message deleted successfully'
+      message: 'Message permanently deleted'
     });
 
   } catch (error) {
@@ -407,6 +328,155 @@ router.delete('/:messageId', isAuthenticated, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to delete message'
+    });
+  }
+});
+
+// ========================================
+// NEW: REPORT MESSAGE (LECTURER ONLY)
+// ========================================
+router.post('/:messageId/report', isAuthenticated, async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { reason } = req.body;
+    const userId = req.session.userId;
+
+    const message = await Message.findById(messageId).populate('sessionId');
+
+    if (!message) {
+      return res.status(404).json({
+        success: false,
+        message: 'Message not found'
+      });
+    }
+
+    // Check if user is lecturer
+    const isLecturer = message.sessionId.lecturer.toString() === userId;
+    if (!isLecturer) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only lecturers can report messages'
+      });
+    }
+
+    // Report the message
+    await message.reportMessage(userId, reason || 'Violation reported by lecturer');
+
+    console.log(`🚩 Message ${messageId} REPORTED by ${userId}`);
+
+    // Broadcast report via Socket.IO
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`session-${message.sessionId._id}`).emit('message-reported', {
+        messageId: messageId,
+        isReported: true,
+        reportedBy: userId
+      });
+      console.log('📤 Report broadcasted via Socket.IO');
+    }
+
+    res.json({
+      success: true,
+      message: 'Message reported successfully',
+      messageData: {
+        id: message._id,
+        isReported: message.isReported,
+        reportedAt: message.reportedAt
+      }
+    });
+
+  } catch (error) {
+    console.error('Report message error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to report message'
+    });
+  }
+});
+
+// ========================================
+// NEW: UNREPORT MESSAGE (LECTURER ONLY)
+// ========================================
+router.delete('/:messageId/report', isAuthenticated, async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const userId = req.session.userId;
+
+    const message = await Message.findById(messageId).populate('sessionId');
+
+    if (!message) {
+      return res.status(404).json({
+        success: false,
+        message: 'Message not found'
+      });
+    }
+
+    // Check if user is lecturer
+    const isLecturer = message.sessionId.lecturer.toString() === userId;
+    if (!isLecturer) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only lecturers can unreport messages'
+      });
+    }
+
+    // Unreport the message
+    await message.unreportMessage();
+
+    console.log(`✅ Message ${messageId} UNREPORTED by ${userId}`);
+
+    // Broadcast unreport via Socket.IO
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`session-${message.sessionId._id}`).emit('message-reported', {
+        messageId: messageId,
+        isReported: false
+      });
+      console.log('📤 Unreport broadcasted via Socket.IO');
+    }
+
+    res.json({
+      success: true,
+      message: 'Report removed successfully'
+    });
+
+  } catch (error) {
+    console.error('Unreport message error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to unreport message'
+    });
+  }
+});
+
+// ========================================
+// NEW: GET REPORTED MESSAGES (LECTURER ONLY)
+// ========================================
+router.get('/session/:sessionId/reported', isAuthenticated, verifySessionAccess, async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+
+    // Check if user is lecturer
+    if (!req.isLecturer) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only lecturers can view reported messages'
+      });
+    }
+
+    const reportedMessages = await Message.getReportedMessages(sessionId);
+
+    res.json({
+      success: true,
+      messages: reportedMessages,
+      count: reportedMessages.length
+    });
+
+  } catch (error) {
+    console.error('Get reported messages error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch reported messages'
     });
   }
 });
@@ -436,6 +506,15 @@ router.post('/:messageId/pin', isAuthenticated, async (req, res) => {
     }
 
     await message.togglePin();
+
+    // Broadcast pin status via Socket.IO
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`session-${message.sessionId._id}`).emit('message-pinned', {
+        messageId: messageId,
+        isPinned: message.isPinned
+      });
+    }
 
     res.json({
       success: true,

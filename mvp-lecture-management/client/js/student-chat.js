@@ -1,14 +1,9 @@
-// COMPLETE FIXED student-chat.js - ALL BUGS RESOLVED
-// - Real-time updates working
-// - Lecturer messages show NO badge (unless announcement/pinned)
-// - Announcement = RED with top label
-// - Pinned messages stay visible
-
 let socket = null;
 let currentUser = null;
 let currentSession = null;
 let sessionId = null;
 let replyingTo = null;
+let socketJoined = false;
 
 console.log('✅ student-chat.js loading...');
 
@@ -75,7 +70,7 @@ async function init() {
     if (!authOk) return;
     
     await loadSession();
-    initializeSocket(); // Initialize socket BEFORE loading messages
+    initializeSocket(); // Initialize socket AFTER we have user and session data
     await loadMessages();
     setupInputArea();
     
@@ -132,38 +127,58 @@ async function loadSession() {
   }
 }
 
-// Initialize Socket.IO - FIXED FOR REAL-TIME UPDATES
+// Initialize Socket.IO - FIXED FOR TIMING ISSUE
 function initializeSocket() {
   console.log('🔌 Initializing Socket.IO...');
+  console.log('🔌 Session ID:', sessionId);
+  console.log('🔌 User:', currentUser?.displayName);
   
   socket = io({
     transports: ['websocket', 'polling'],
     reconnection: true,
     reconnectionDelay: 1000,
-    reconnectionAttempts: 5
+    reconnectionAttempts: 5,
+    forceNew: false
   });
   
   socket.on('connect', () => {
     console.log('✅ Socket connected:', socket.id);
+    console.log('📡 Socket ready, joining session...');
     
-    // Add small delay to ensure socket is fully ready
-    setTimeout(() => {
-      console.log('📡 Emitting join-session...');
-      socket.emit('join-session', {
-        sessionId: sessionId,
-        userId: currentUser._id,
-        displayName: currentUser.displayName,
-        role: currentUser.role
-      });
-    }, 100); // 100ms delay ensures socket is ready
+    // Check if we have all required data
+    if (!sessionId) {
+      console.error('❌ Cannot join: sessionId is null!');
+      return;
+    }
+    
+    if (!currentUser) {
+      console.error('❌ Cannot join: currentUser is null!');
+      return;
+    }
+    
+    console.log('📡 Emitting join-session with:', {
+      sessionId,
+      userId: currentUser._id,
+      displayName: currentUser.displayName,
+      role: currentUser.role
+    });
+    
+    socket.emit('join-session', {
+      sessionId: sessionId,
+      userId: currentUser._id,
+      displayName: currentUser.displayName,
+      role: currentUser.role
+    });
   });
   
   socket.on('joined-session', (data) => {
-    console.log('✅ Successfully joined session:', data);
-    console.log('🎯 NOW IN ROOM - Will receive messages!');
+    console.log('✅ ✅ ✅ SUCCESSFULLY JOINED SESSION! ✅ ✅ ✅');
+    console.log('✅ Room joined:', data);
+    console.log('✅ NOW will receive real-time messages!');
+    socketJoined = true;
   });
   
-
+  // CRITICAL: Real-time message reception
   socket.on('new-message', (message) => {
     console.log('📨 NEW MESSAGE RECEIVED via Socket.IO:', message);
     
@@ -177,12 +192,73 @@ function initializeSocket() {
       timestamp: message.timestamp || message.createdAt,
       replyTo: message.replyTo,
       isPinned: message.isPinned,
-      isAnnouncement: message.isAnnouncement
+      isAnnouncement: message.isAnnouncement,
+      isReported: message.isReported
     };
     
     console.log('📨 Formatted message:', formattedMessage);
     appendMessage(formattedMessage);
     scrollToBottom();
+    console.log('✅ Message added to UI');
+  });
+  
+  // Delete message event
+  socket.on('message-deleted', (data) => {
+    console.log('🗑️ Message deleted:', data.messageId);
+    
+    const messageElement = document.querySelector(`[data-message-id="${data.messageId}"]`);
+    if (messageElement) {
+      messageElement.style.transition = 'opacity 0.3s ease';
+      messageElement.style.opacity = '0';
+      setTimeout(() => {
+        messageElement.remove();
+      }, 300);
+    }
+  });
+  
+  // Message reported/unreported event
+  socket.on('message-reported', (data) => {
+    console.log('🚩 Message report status changed:', data);
+    
+    const messageElement = document.querySelector(`[data-message-id="${data.messageId}"]`);
+    if (messageElement) {
+      if (data.isReported) {
+        // Add reported styling
+        messageElement.classList.add('reported-message');
+        
+        // Add reported badge if not exists
+        const footer = messageElement.querySelector('.message-footer');
+        if (footer && !footer.querySelector('.badge-reported')) {
+          const reportedBadge = document.createElement('span');
+          reportedBadge.className = 'message-badge badge-reported';
+          reportedBadge.innerHTML = '🚩 REPORTED';
+          footer.insertBefore(reportedBadge, footer.firstChild);
+        }
+        
+        // Update report button
+        const reportBtn = messageElement.querySelector('.report-btn');
+        if (reportBtn) {
+          reportBtn.textContent = 'Unreport';
+          reportBtn.classList.add('reported');
+        }
+      } else {
+        // Remove reported styling
+        messageElement.classList.remove('reported-message');
+        
+        // Remove reported badge
+        const reportedBadge = messageElement.querySelector('.badge-reported');
+        if (reportedBadge) {
+          reportedBadge.remove();
+        }
+        
+        // Update report button
+        const reportBtn = messageElement.querySelector('.report-btn');
+        if (reportBtn) {
+          reportBtn.textContent = '🚩 Report';
+          reportBtn.classList.remove('reported');
+        }
+      }
+    }
   });
   
   socket.on('user-joined', (data) => {
@@ -195,6 +271,7 @@ function initializeSocket() {
   
   socket.on('disconnect', () => {
     console.log('❌ Socket disconnected');
+    socketJoined = false;
   });
   
   socket.on('connect_error', (error) => {
@@ -236,7 +313,8 @@ async function loadMessages() {
           timestamp: msg.createdAt || msg.timestamp,
           replyTo: msg.replyTo,
           isPinned: msg.isPinned,
-          isAnnouncement: msg.isAnnouncement
+          isAnnouncement: msg.isAnnouncement,
+          isReported: msg.isReported
         });
       });
       scrollToBottom();
@@ -290,7 +368,7 @@ function setupInputArea() {
       </div>
     `;
   } else {
-    // STUDENT UI - Keep as is but ensure reply indicator
+    // STUDENT UI
     let replyIndicator = document.getElementById('reply-indicator');
     if (!replyIndicator) {
       replyIndicator = document.createElement('div');
@@ -318,7 +396,7 @@ function setupInputArea() {
   }
 }
 
-// Send message - FIXED to not send via Socket.IO, let server broadcast
+// Send message
 async function sendMessage() {
   const input = document.getElementById('message-input');
   
@@ -330,6 +408,17 @@ async function sendMessage() {
   const text = input.value.trim();
   
   if (!text) return;
+  
+  // Check if we're in the room
+  if (!socketJoined) {
+    console.warn('⚠️ Not in room yet, attempting to rejoin...');
+    socket.emit('join-session', {
+      sessionId: sessionId,
+      userId: currentUser._id,
+      displayName: currentUser.displayName,
+      role: currentUser.role
+    });
+  }
   
   let messageData;
   
@@ -385,7 +474,7 @@ async function sendMessage() {
       cancelReply();
       input.focus();
       
-      // Message will appear via Socket.IO broadcast, no need to append manually
+      console.log('⏳ Waiting for Socket.IO broadcast...');
       
     } catch (error) {
       console.error('💥 Send message error:', error);
@@ -424,7 +513,7 @@ async function sendMessage() {
       cancelReply();
       input.focus();
       
-      // Message will appear via Socket.IO broadcast
+      console.log('⏳ Waiting for Socket.IO broadcast...');
       
     } catch (error) {
       console.error('💥 Send message error:', error);
@@ -443,7 +532,6 @@ function appendMessage(message) {
     return;
   }
   
-  // Remove empty state if exists
   const emptyState = container.querySelector('.empty-state');
   if (emptyState) {
     emptyState.remove();
@@ -464,10 +552,31 @@ function appendMessage(message) {
     messageClasses += ' pinned';
   }
   
+  if (message.isReported) {
+    messageClasses += ' reported-message';
+  }
+  
   messageDiv.className = messageClasses;
   messageDiv.dataset.messageId = message.id || message._id;
   
+  const usernameClass = isLecturer ? 'lecturer' : 'student';
   const userIcon = isLecturer ? '👨‍🏫' : '👤';
+  
+  // Reply context
+  let replyHTML = '';
+  if (message.replyTo) {
+    const replyUsername = message.replyTo.user?.displayName || message.replyTo.userId?.displayName || 'Unknown';
+    const replyText = message.replyTo.text.length > 50 
+      ? message.replyTo.text.substring(0, 50) + '...' 
+      : message.replyTo.text;
+    
+    replyHTML = `
+      <div class="message-reply-context" onclick="scrollToMessage('${message.replyTo.id}')">
+        <div class="reply-indicator">Replying to <strong>${escapeHtml(replyUsername)}</strong></div>
+        <div class="reply-text">${escapeHtml(replyText)}</div>
+      </div>
+    `;
+  }
   
   // Announcement top label
   let announcementLabelHTML = '';
@@ -475,21 +584,43 @@ function appendMessage(message) {
     announcementLabelHTML = '<div class="announcement-label">📢 IMPORTANT ANNOUNCEMENT</div>';
   }
   
-  // Badge logic - CRITICAL: No badge for lecturers unless announcement/pinned
+  // Badge logic
   let badgeHTML = '';
-  if (message.isAnnouncement) {
+  if (message.isReported) {
+    badgeHTML = '<span class="message-badge badge-reported">🚩 REPORTED</span>';
+  } else if (message.isAnnouncement) {
     badgeHTML = '<span class="message-badge badge-announcement">📢 ANNOUNCEMENT</span>';
   } else if (message.isPinned) {
     badgeHTML = '<span class="message-badge badge-pinned">📌 PINNED</span>';
   } else if (!isLecturer) {
-    // Only students show type badge
     badgeHTML = `<span class="message-badge badge-${(message.type || 'COMMENT').toLowerCase()}">${getTypeIcon(message.type || 'COMMENT')} ${message.type || 'COMMENT'}</span>`;
   }
   
+  // Action buttons
+  let actionButtonsHTML = '';
+  
+  // Delete button: Show if own message OR if lecturer
+  if (isOwnMessage || currentUser.role === 'lecturer') {
+    actionButtonsHTML += `<button class="delete-btn" onclick="deleteMessage('${message.id || message._id}')">Delete</button>`;
+  }
+  
+  // Report button: Show only for lecturers (on student messages)
+  if (currentUser.role === 'lecturer' && !isLecturer) {
+    if (message.isReported) {
+      actionButtonsHTML += `<button class="report-btn reported" onclick="unreportMessage('${message.id || message._id}')">Unreport</button>`;
+    } else {
+      actionButtonsHTML += `<button class="report-btn" onclick="reportMessage('${message.id || message._id}')">Report</button>`;
+    }
+  }
+  
+  // Reply button
+  actionButtonsHTML += `<button class="reply-btn" onclick="setReplyTo('${message.id || message._id}', '${escapeHtml(message.username)}', '${escapeHtml(message.text).replace(/'/g, "&#39;")}')">Reply</button>`;
+  
   messageDiv.innerHTML = `
     ${announcementLabelHTML}
+    ${replyHTML}
     <div class="message-header">
-      <span class="message-username">
+      <span class="message-username ${usernameClass}">
         ${userIcon} ${escapeHtml(message.username)}${isOwnMessage ? ' (You)' : ''}
       </span>
       <span class="message-time">${formatTime(message.timestamp || message.createdAt || new Date())}</span>
@@ -497,18 +628,117 @@ function appendMessage(message) {
     <div class="message-text">${escapeHtml(message.text)}</div>
     <div class="message-footer">
       ${badgeHTML}
-      <button class="reply-btn" onclick="setReplyTo('${message.id || message._id}', '${escapeHtml(message.username)}', '${escapeHtml(message.text).replace(/'/g, "&#39;")}')">
-        Reply
-      </button>
+      <div class="message-actions">
+        ${actionButtonsHTML}
+      </div>
     </div>
   `;
   
   container.appendChild(messageDiv);
   console.log('✅ Message appended to DOM');
   
-  // Scroll to bottom
   container.scrollTop = container.scrollHeight;
 }
+
+// DELETE MESSAGE FUNCTIONALITY
+window.deleteMessage = async function(messageId) {
+  if (!confirm('Are you sure you want to permanently delete this message? This cannot be undone.')) {
+    return;
+  }
+  
+  try {
+    console.log('🗑️ Deleting message:', messageId);
+    
+    const response = await fetch(`/api/messages/${messageId}`, {
+      method: 'DELETE',
+      credentials: 'include'
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to delete message');
+    }
+    
+    console.log('✅ Message deleted successfully');
+    
+    // Remove from UI immediately (Socket.IO will also handle this)
+    const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+    if (messageElement) {
+      messageElement.style.transition = 'opacity 0.3s ease';
+      messageElement.style.opacity = '0';
+      setTimeout(() => {
+        messageElement.remove();
+      }, 300);
+    }
+    
+  } catch (error) {
+    console.error('❌ Delete error:', error);
+    alert('Failed to delete message: ' + error.message);
+  }
+};
+
+// REPORT MESSAGE FUNCTIONALITY
+window.reportMessage = async function(messageId) {
+  const reason = prompt('Why are you reporting this message? (Optional)');
+  
+  // If user clicks cancel, don't report
+  if (reason === null) {
+    return;
+  }
+  
+  try {
+    console.log('🚩 Reporting message:', messageId);
+    
+    const response = await fetch(`/api/messages/${messageId}/report`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        reason: reason || 'Violation reported by lecturer'
+      })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to report message');
+    }
+    
+    console.log('✅ Message reported successfully');
+    alert('Message reported successfully');
+    
+  } catch (error) {
+    console.error('❌ Report error:', error);
+    alert('Failed to report message: ' + error.message);
+  }
+};
+
+// UNREPORT MESSAGE FUNCTIONALITY
+window.unreportMessage = async function(messageId) {
+  if (!confirm('Remove the report flag from this message?')) {
+    return;
+  }
+  
+  try {
+    console.log('✅ Unreporting message:', messageId);
+    
+    const response = await fetch(`/api/messages/${messageId}/report`, {
+      method: 'DELETE',
+      credentials: 'include'
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to unreport message');
+    }
+    
+    console.log('✅ Message unreported successfully');
+    alert('Report removed successfully');
+    
+  } catch (error) {
+    console.error('❌ Unreport error:', error);
+    alert('Failed to unreport message: ' + error.message);
+  }
+};
 
 // Set reply target
 function setReplyTo(messageId, username, text) {
