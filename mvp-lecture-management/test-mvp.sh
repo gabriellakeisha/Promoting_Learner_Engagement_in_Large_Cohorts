@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🧪 Testing MVP System (Fixed)"
+echo "🧪 Testing MVP System"
 echo ""
 
 # Clean up old cookies

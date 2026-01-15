@@ -7,15 +7,15 @@ async function init() {
   try {
     const response = await fetch('/api/auth/me');
     const result = await response.json();
-    
+
     if (!result.success || result.user.role !== 'lecturer') {
       window.location.href = '/';
       return;
     }
-    
+
     currentUser = result.user;
     document.getElementById('user-name').textContent = currentUser.displayName;
-    
+
     loadSessions();
   } catch (error) {
     window.location.href = '/';
@@ -27,10 +27,10 @@ async function loadSessions() {
   try {
     const response = await fetch('/api/sessions/my-sessions');
     const result = await response.json();
-    
+
     document.getElementById('loading').classList.add('hidden');
     document.getElementById('sessions-container').classList.remove('hidden');
-    
+
     if (result.success && result.sessions.length > 0) {
       sessions = result.sessions;
       displaySessions(sessions);
@@ -42,7 +42,7 @@ async function loadSessions() {
   }
 }
 
-// Display sessions - FIXED WITH JOIN CHAT BUTTON
+// Display sessions 
 function displaySessions(sessions) {
   const container = document.getElementById('sessions-list');
   container.innerHTML = sessions.map(session => `
@@ -62,6 +62,9 @@ function displaySessions(sessions) {
       <div style="margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap;">
         <button class="btn btn-primary btn-small" onclick="viewSessionChat('${session._id || session.id}', '${session.title}')">
           💬 Join Chat
+        </button>
+        <button class="btn btn-secondary btn-small" onclick="openManageStudentsModal('${session._id || session.id}', '${session.title.replace(/'/g, "\\'")}', '${session.joinCode}')">
+        👥 Manage Students
         </button>
         <button class="btn btn-secondary btn-small" onclick="viewAnalytics('${session._id || session.id}', '${session.title}')">
           📊 Analytics
@@ -94,22 +97,22 @@ document.getElementById('cancel-btn').addEventListener('click', () => {
 // Create session
 document.getElementById('create-session-form').addEventListener('submit', async (e) => {
   e.preventDefault();
-  
+
   const data = {
     title: document.getElementById('title').value,
     moduleCode: document.getElementById('moduleCode').value,
     description: document.getElementById('description').value
   };
-  
+
   try {
     const response = await fetch('/api/sessions/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    
+
     const result = await response.json();
-    
+
     if (result.success) {
       showAlert(`Session created! Join Code: ${result.session.joinCode}`, 'success');
       document.getElementById('create-modal').classList.remove('show');
@@ -129,18 +132,18 @@ async function viewAnalytics(sessionId, title) {
   document.getElementById('analytics-modal').classList.add('show');
   document.getElementById('analytics-title').textContent = `Analytics: ${title}`;
   document.getElementById('analytics-content').innerHTML = '<div class="spinner"></div>';
-  
+
   try {
     const response = await fetch(`/api/analytics/lecturer/${sessionId}`, {
       credentials: 'include'
     });
-    
+
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
-    
+
     const result = await response.json();
-    
+
     if (result.success && result.analytics) {
       displayAnalytics(result.analytics);
     } else {
@@ -148,7 +151,7 @@ async function viewAnalytics(sessionId, title) {
     }
   } catch (error) {
     console.error('Analytics error:', error);
-    document.getElementById('analytics-content').innerHTML = 
+    document.getElementById('analytics-content').innerHTML =
       `<div style="padding: 40px; text-align: center; color: var(--text-color);">
         <h3 style="color: var(--danger-color);">⚠️ Error Loading Analytics</h3>
         <p style="margin-top: 12px;">${error.message}</p>
@@ -160,14 +163,14 @@ async function viewAnalytics(sessionId, title) {
 // Display analytics
 function displayAnalytics(analytics) {
   const container = document.getElementById('analytics-content');
-  
+
   if (!analytics || !analytics.summary) {
     container.innerHTML = `<div style="padding: 40px; text-align: center; color: var(--text-color);">
       <p>No analytics data available yet. Send some messages first!</p>
     </div>`;
     return;
   }
-  
+
   container.innerHTML = `
     <div class="analytics-grid">
       <div class="stat-card">
@@ -218,7 +221,7 @@ function displayAnalytics(analytics) {
       </table>
     </div>
   `;
-  
+
   if (analytics.messagesByType) {
     createTypeChart(analytics.messagesByType);
   }
@@ -283,14 +286,14 @@ document.getElementById('close-analytics-btn').addEventListener('click', () => {
 // End session
 async function endSession(sessionId) {
   if (!confirm('Are you sure you want to end this session?')) return;
-  
+
   try {
     const response = await fetch(`/api/sessions/${sessionId}/end`, {
       method: 'POST'
     });
-    
+
     const result = await response.json();
-    
+
     if (result.success) {
       showAlert('Session ended successfully', 'success');
       loadSessions();
@@ -305,45 +308,45 @@ async function endSession(sessionId) {
 // Export CSV
 function exportToCSV() {
   const sessionId = currentAnalyticsSessionId;
-  
+
   if (!sessionId) {
     alert('No session selected for export');
     return;
   }
-  
+
   const btn = document.querySelector('.export-csv-btn');
   const originalText = btn.innerHTML;
   btn.innerHTML = '⏳ Exporting...';
   btn.disabled = true;
-  
+
   fetch(`/api/analytics/export-csv/${sessionId}`, {
     method: 'GET',
     credentials: 'include'
   })
-  .then(response => {
-    if (!response.ok) throw new Error('Export failed');
-    return response.blob();
-  })
-  .then(blob => {
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `session_analytics_${Date.now()}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-    
-    alert('✅ Analytics exported successfully!');
-    btn.innerHTML = originalText;
-    btn.disabled = false;
-  })
-  .catch(error => {
-    console.error('CSV export error:', error);
-    alert('❌ Failed to export CSV');
-    btn.innerHTML = originalText;
-    btn.disabled = false;
-  });
+    .then(response => {
+      if (!response.ok) throw new Error('Export failed');
+      return response.blob();
+    })
+    .then(blob => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `session_analytics_${Date.now()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      alert('✅ Analytics exported successfully!');
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    })
+    .catch(error => {
+      console.error('CSV export error:', error);
+      alert('❌ Failed to export CSV');
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    });
 }
 
 // Logout

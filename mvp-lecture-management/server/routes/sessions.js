@@ -1,4 +1,5 @@
 const express = require('express');
+const User = require('../models/User');
 const router = express.Router();
 const Session = require('../models/Session');
 const Membership = require('../models/Membership');
@@ -335,6 +336,109 @@ router.get('/:sessionId/members', isAuthenticated, isLecturer, async (req, res) 
       message: 'Server error fetching members',
       error: error.message,
     });
+  }
+});
+
+// Get enrolled students for a session (lecturer only)
+router.get('/:sessionId/students', isAuthenticated, isLecturer, async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const session = await Session.findById(sessionId);
+    
+    if (!session) return res.status(404).json({ success: false, message: 'Session not found' });
+    if (session.lecturer.toString() !== req.session.userId) return res.status(403).json({ success: false, message: 'Access denied' });
+
+    const memberships = await Membership.find({ sessionId }).populate('userId', 'displayName email');
+    const students = memberships.filter(m => m.userId).map(m => ({
+      id: m.userId._id,
+      displayName: m.userId.displayName || 'Unknown',
+      email: m.userId.email || '',
+      joinedAt: m.joinedAt
+    }));
+
+    res.json({ success: true, students, count: students.length });
+  } catch (error) {
+    console.error('Get students error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Add student by email (lecturer only)
+router.post('/:sessionId/add-student', isAuthenticated, isLecturer, async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const { email } = req.body;
+
+    if (!email) return res.status(400).json({ success: false, message: 'Email is required' });
+
+    const session = await Session.findById(sessionId);
+    if (!session) return res.status(404).json({ success: false, message: 'Session not found' });
+    if (session.lecturer.toString() !== req.session.userId) return res.status(403).json({ success: false, message: 'Access denied' });
+
+    const student = await User.findOne({ email: email.toLowerCase().trim(), role: 'student' });
+    if (!student) return res.status(404).json({ success: false, message: 'No student account found with this email' });
+
+    const existing = await Membership.findOne({ userId: student._id, sessionId: session._id });
+    if (existing) return res.status(400).json({ success: false, message: 'Student is already enrolled' });
+
+    await new Membership({ userId: student._id, sessionId: session._id }).save();
+    res.json({ success: true, message: `${student.displayName} added to session` });
+  } catch (error) {
+    console.error('Add student error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Remove student (lecturer only)
+router.delete('/:sessionId/remove-student/:studentId', isAuthenticated, isLecturer, async (req, res) => {
+  try {
+    const { sessionId, studentId } = req.params;
+    const session = await Session.findById(sessionId);
+    
+    if (!session) return res.status(404).json({ success: false, message: 'Session not found' });
+    if (session.lecturer.toString() !== req.session.userId) return res.status(403).json({ success: false, message: 'Access denied' });
+
+    const result = await Membership.findOneAndDelete({ userId: studentId, sessionId });
+    if (!result) return res.status(404).json({ success: false, message: 'Student not found in session' });
+
+    res.json({ success: true, message: 'Student removed' });
+  } catch (error) {
+    console.error('Remove student error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Bulk add students (lecturer only)
+router.post('/:sessionId/add-students-bulk', isAuthenticated, isLecturer, async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const { emails } = req.body;
+
+    if (!emails || !Array.isArray(emails)) return res.status(400).json({ success: false, message: 'Array of emails required' });
+
+    const session = await Session.findById(sessionId);
+    if (!session) return res.status(404).json({ success: false, message: 'Session not found' });
+    if (session.lecturer.toString() !== req.session.userId) return res.status(403).json({ success: false, message: 'Access denied' });
+
+    const results = { added: [], alreadyEnrolled: [], notFound: [] };
+
+    for (const email of emails) {
+      const normalizedEmail = email.toLowerCase().trim();
+      const student = await User.findOne({ email: normalizedEmail, role: 'student' });
+
+      if (!student) { results.notFound.push(normalizedEmail); continue; }
+
+      const existing = await Membership.findOne({ userId: student._id, sessionId: session._id });
+      if (existing) { results.alreadyEnrolled.push(normalizedEmail); continue; }
+
+      await new Membership({ userId: student._id, sessionId: session._id }).save();
+      results.added.push({ email: normalizedEmail, displayName: student.displayName });
+    }
+
+    res.json({ success: true, message: `Added ${results.added.length} students`, results });
+  } catch (error) {
+    console.error('Bulk add error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 

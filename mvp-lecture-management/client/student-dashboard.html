@@ -12,7 +12,7 @@
   <!-- Navigation -->
   <nav class="navbar">
     <div class="navbar-content">
-      <div class="navbar-brand">🎓 Lecture Engagement</div>
+      <div class="navbar-brand"> 🔊 Echo Class - Student</div>
       <div class="navbar-user">
         <!-- Avatar (clickable) -->
         <div class="navbar-avatar" id="navbar-avatar" onclick="openProfileModal()" title="Edit Profile">
@@ -31,31 +31,10 @@
     <div class="dashboard">
       <div class="dashboard-header">
         <h2>My Sessions</h2>
-        <p style="color: var(--text-secondary)">Join or view your active lecture sessions</p>
+        <p style="color: var(--text-secondary)">View your enrolled lecture sessions</p>
       </div>
 
       <div id="alert-container"></div>
-
-      <!-- Join Session Form - BIGGER INPUT -->
-      <div
-        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 32px; border-radius: 16px; margin-bottom: 32px; box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);">
-        <h3 style="margin-bottom: 8px; font-size: 24px; color: white; font-weight: 700;">Join a New Session</h3>
-        <p style="color: rgba(255,255,255,0.9); margin-bottom: 24px; font-size: 15px;">Enter the 6-character code
-          provided by your lecturer</p>
-        <form id="join-form" style="display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap;">
-          <div class="form-group" style="flex: 1; min-width: 250px; margin-bottom: 0;">
-            <label for="join-code" style="color: white; font-weight: 600; font-size: 16px; margin-bottom: 12px;">Session
-              Join Code</label>
-            <input type="text" id="join-code" class="form-input" placeholder="e.g., ABC123"
-              style="text-transform: uppercase; font-size: 24px; font-weight: 700; letter-spacing: 4px; text-align: center; padding: 20px; border: 3px solid white;"
-              maxlength="6" required>
-          </div>
-          <button type="submit" class="btn btn-primary" id="join-btn"
-            style="background: white; color: #667eea; font-weight: 700; padding: 20px 40px; font-size: 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
-            Join Session →
-          </button>
-        </form>
-      </div>
 
       <!-- Sessions List -->
       <div id="loading" class="text-center">
@@ -66,8 +45,8 @@
         <h3 style="margin-bottom: 16px; font-size: 18px;">Your Enrolled Sessions</h3>
         <div id="sessions-list" class="sessions-grid"></div>
         <div id="no-sessions" class="hidden text-center" style="padding: 40px; color: var(--text-secondary);">
-          <p>You haven't joined any sessions yet.</p>
-          <p style="font-size: 14px; margin-top: 8px;">Enter a join code above to get started!</p>
+          <p>You haven't been enrolled in any sessions yet.</p>
+          <p style="font-size: 14px; margin-top: 8px;">Contact your lecturer to be added to a session.</p>
         </div>
       </div>
     </div>
@@ -144,44 +123,9 @@
       `).join('');
     }
 
-    // Join session
-    document.getElementById('join-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const joinCode = document.getElementById('join-code').value.toUpperCase();
-      const btn = document.getElementById('join-btn');
-
-      btn.disabled = true;
-      btn.textContent = 'Joining...';
-
-      try {
-        const response = await fetch('/api/sessions/join', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ joinCode })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-          showAlert('Successfully joined session! 🎉', 'success');
-          document.getElementById('join-code').value = '';
-          setTimeout(() => loadSessions(), 1000);
-        } else {
-          showAlert(result.message, 'error');
-        }
-      } catch (error) {
-        showAlert('Error joining session', 'error');
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Join Session →';
-      }
-    });
-
-    // ✅ FIXED: Open session with correct URL format
+    // Open session
     function openSession(sessionId) {
       console.log('Opening session:', sessionId);
-      // FIXED: Use query parameter format to match lecturer dashboard and chat room
       window.location.href = `/chat-room.html?sessionId=${sessionId}`;
     }
 

@@ -361,10 +361,7 @@ body {
   background: var(--bg-secondary);
 }
 
-/* ============================================
-   CHAT MESSAGE STYLING - FIXED FOR DARK MODE
-   ============================================ */
-
+/* CHAT MESSAGE STYLING */
 /* Base chat message styles */
 .chat-message {
   background: #f8fafc;
@@ -2552,4 +2549,229 @@ body:not(.dark-mode) #new-password::placeholder {
 .profile-input-row .btn {
   align-self: flex-start !important;
   margin-top: 4px !important;
+}
+
+/* ============================================
+   IDENTITY MODE SELECTOR
+   ============================================ */
+
+.identity-mode-selector {
+  background: var(--bg-secondary, #252542);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border-color, #333);
+}
+
+.identity-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.identity-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+}
+
+.identity-hint {
+  font-size: 11px;
+  color: var(--text-secondary, #9ca3af);
+}
+
+.identity-options {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.identity-option {
+  flex: 1;
+  min-width: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 8px;
+  background: var(--bg-primary, #1a1a2e);
+  border: 2px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.identity-option:hover {
+  background: var(--bg-tertiary, #2d2d4a);
+  border-color: rgba(102, 126, 234, 0.3);
+}
+
+.identity-option input[type="radio"] {
+  display: none;
+}
+
+.identity-option:has(input:checked) {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.15);
+}
+
+.option-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.option-icon {
+  font-size: 18px;
+}
+
+.option-text {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-primary, #fff);
+}
+
+.option-desc {
+  font-size: 10px;
+  color: var(--text-secondary, #9ca3af);
+}
+
+.identity-option:has(input:checked) .option-text {
+  color: #667eea;
+}
+
+/* Alias Preview Box */
+.alias-preview {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: rgba(102, 126, 234, 0.1);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-secondary, #9ca3af);
+}
+
+.alias-preview strong {
+  color: #667eea;
+  font-weight: 700;
+}
+
+.alias-refresh-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.alias-refresh-btn:hover {
+  background: rgba(102, 126, 234, 0.2);
+}
+
+/* ============================================
+   MESSAGE STYLING BY IDENTITY MODE
+   ============================================ */
+
+/* Anonymous Messages - All look identical */
+.message-bubble.anonymous-message .message-avatar {
+  background: #6b7280 !important;
+}
+
+.message-bubble.anonymous-message .message-username {
+  color: #9ca3af;
+}
+
+/* Pseudonymous Messages */
+.message-bubble.pseudonymous-message .message-avatar {
+  background: linear-gradient(135deg, #667eea, #764ba2) !important;
+}
+
+/* Identity Badges */
+.identity-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: 6px;
+  font-weight: 500;
+}
+
+.identity-badge.anonymous {
+  background: rgba(107, 114, 128, 0.3);
+  color: #9ca3af;
+}
+
+.identity-badge.pseudonymous {
+  background: rgba(102, 126, 234, 0.2);
+  color: #a5b4fc;
+}
+
+/* ============================================
+   ANONYMOUS AVATAR PLACEHOLDER
+   ============================================ */
+
+.anon-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+/* Pseudonymous Avatar */
+.pseudo-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ============================================
+   LIGHT MODE SUPPORT
+   ============================================ */
+
+body:not(.dark-mode) .identity-mode-selector {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+}
+
+body:not(.dark-mode) .identity-option {
+  background: #ffffff;
+}
+
+body:not(.dark-mode) .identity-option:hover {
+  background: #f9fafb;
+}
+
+body:not(.dark-mode) .option-text {
+  color: #1f2937;
+}
+
+body:not(.dark-mode) .identity-label {
+  color: #1f2937;
+}
+
+body:not(.dark-mode) .alias-preview {
+  background: rgba(102, 126, 234, 0.08);
 }

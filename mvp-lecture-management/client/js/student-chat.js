@@ -70,7 +70,7 @@ async function init() {
     if (!authOk) return;
     
     await loadSession();
-    initializeSocket(); // Initialize socket AFTER we have user and session data
+    initializeSocket();
     await loadMessages();
     setupInputArea();
     
@@ -127,7 +127,7 @@ async function loadSession() {
   }
 }
 
-// Initialize Socket.IO - FIXED FOR TIMING ISSUE
+// Initialize Socket.IO
 function initializeSocket() {
   console.log('🔌 Initializing Socket.IO...');
   console.log('🔌 Session ID:', sessionId);
@@ -145,7 +145,6 @@ function initializeSocket() {
     console.log('✅ Socket connected:', socket.id);
     console.log('📡 Socket ready, joining session...');
     
-    // Check if we have all required data
     if (!sessionId) {
       console.error('❌ Cannot join: sessionId is null!');
       return;
@@ -178,11 +177,11 @@ function initializeSocket() {
     socketJoined = true;
   });
   
-  // Real-time message reception
+  // Real-time message reception - UPDATED WITH IDENTITY MODE
   socket.on('new-message', (message) => {
     console.log('📨 NEW MESSAGE RECEIVED via Socket.IO:', message);
     
-    // Format message properly
+    // Format message properly - INCLUDING IDENTITY MODE FIELDS
     const formattedMessage = {
       id: message.id || message._id,
       username: message.user?.displayName || message.username,
@@ -193,7 +192,10 @@ function initializeSocket() {
       replyTo: message.replyTo,
       isPinned: message.isPinned,
       isAnnouncement: message.isAnnouncement,
-      isReported: message.isReported
+      isReported: message.isReported,
+      // NEW: Identity mode fields
+      identityMode: message.identityMode || 'identified',
+      alias: message.alias
     };
     
     console.log('📨 Formatted message:', formattedMessage);
@@ -223,10 +225,8 @@ function initializeSocket() {
     const messageElement = document.querySelector(`[data-message-id="${data.messageId}"]`);
     if (messageElement) {
       if (data.isReported) {
-        // Add reported styling
         messageElement.classList.add('reported-message');
         
-        // Add reported badge if not exists
         const footer = messageElement.querySelector('.message-footer');
         if (footer && !footer.querySelector('.badge-reported')) {
           const reportedBadge = document.createElement('span');
@@ -235,23 +235,19 @@ function initializeSocket() {
           footer.insertBefore(reportedBadge, footer.firstChild);
         }
         
-        // Update report button
         const reportBtn = messageElement.querySelector('.report-btn');
         if (reportBtn) {
           reportBtn.textContent = 'Unreport';
           reportBtn.classList.add('reported');
         }
       } else {
-        // Remove reported styling
         messageElement.classList.remove('reported-message');
         
-        // Remove reported badge
         const reportedBadge = messageElement.querySelector('.badge-reported');
         if (reportedBadge) {
           reportedBadge.remove();
         }
         
-        // Update report button
         const reportBtn = messageElement.querySelector('.report-btn');
         if (reportBtn) {
           reportBtn.textContent = '🚩 Report';
@@ -283,7 +279,7 @@ function initializeSocket() {
   });
 }
 
-// Load existing messages
+// Load existing messages - UPDATED WITH IDENTITY MODE
 async function loadMessages() {
   try {
     console.log('📥 Loading messages...');
@@ -306,15 +302,18 @@ async function loadMessages() {
       result.messages.forEach(msg => {
         appendMessage({
           id: msg.id,
-          username: msg.userId?.displayName || 'Anonymous',
-          userRole: msg.userId?.role || 'student',
+          username: msg.userId?.displayName || msg.username || 'Anonymous',
+          userRole: msg.userId?.role || msg.userRole || 'student',
           text: msg.text,
           type: msg.type,
           timestamp: msg.createdAt || msg.timestamp,
           replyTo: msg.replyTo,
           isPinned: msg.isPinned,
           isAnnouncement: msg.isAnnouncement,
-          isReported: msg.isReported
+          isReported: msg.isReported,
+          // NEW: Identity mode fields
+          identityMode: msg.identityMode || 'identified',
+          alias: msg.alias
         });
       });
       scrollToBottom();
@@ -330,12 +329,12 @@ async function loadMessages() {
   }
 }
 
-// Setup input area based on user role
+// Setup input area based on user role - UPDATED WITH IDENTITY MODE SELECTOR
 function setupInputArea() {
   const inputContainer = document.querySelector('.chat-input-container');
   
   if (currentUser.role === 'lecturer') {
-    // LECTURER UI
+    // LECTURER UI - unchanged
     inputContainer.innerHTML = `
       <div id="reply-indicator" class="reply-indicator-container" style="display: none;"></div>
       
@@ -368,7 +367,7 @@ function setupInputArea() {
       </div>
     `;
   } else {
-    // STUDENT UI
+    // STUDENT UI - UPDATED WITH IDENTITY MODE SELECTOR
     let replyIndicator = document.getElementById('reply-indicator');
     if (!replyIndicator) {
       replyIndicator = document.createElement('div');
@@ -376,6 +375,14 @@ function setupInputArea() {
       replyIndicator.className = 'reply-indicator-container';
       replyIndicator.style.display = 'none';
       inputContainer.insertBefore(replyIndicator, inputContainer.firstChild);
+    }
+    
+    // NEW: Initialize identity mode selector for students
+    if (typeof initIdentityModeSelector === 'function') {
+      initIdentityModeSelector('.chat-input-container');
+      console.log('✅ Identity mode selector initialized');
+    } else {
+      console.warn('⚠️ initIdentityModeSelector not found - identity-mode.js may not be loaded');
     }
   }
   
@@ -396,7 +403,7 @@ function setupInputArea() {
   }
 }
 
-// Send message
+// Send message - UPDATED WITH IDENTITY MODE
 async function sendMessage() {
   const input = document.getElementById('message-input');
   
@@ -423,7 +430,7 @@ async function sendMessage() {
   let messageData;
   
   if (currentUser.role === 'lecturer') {
-    // Lecturer message
+    // Lecturer message - unchanged
     const isAnnouncement = document.getElementById('is-announcement')?.checked || false;
     const shouldPin = document.getElementById('pin-message')?.checked || false;
     
@@ -453,7 +460,6 @@ async function sendMessage() {
       const result = await response.json();
       console.log('✅ Message sent via API:', result);
       
-      // If should pin, pin the message
       if (shouldPin && result.messageData && result.messageData.id) {
         await fetch(`/api/messages/${result.messageData.id}/pin`, {
           method: 'POST',
@@ -461,7 +467,6 @@ async function sendMessage() {
         });
       }
       
-      // Clear input and reset checkboxes
       input.value = '';
       const announceCheckbox = document.getElementById('is-announcement');
       const pinCheckbox = document.getElementById('pin-message');
@@ -482,17 +487,28 @@ async function sendMessage() {
     }
     
   } else {
-    // Student message
+    // ============================================
+    // STUDENT MESSAGE - UPDATED WITH IDENTITY MODE
+    // ============================================
     const typeSelect = document.getElementById('message-type');
+    
+    // NEW: Get identity mode and alias
+    const identityMode = typeof getIdentityMode === 'function' ? getIdentityMode() : 'anonymous';
+    const alias = identityMode === 'pseudonymous' && typeof getSessionAlias === 'function' 
+      ? getSessionAlias() 
+      : null;
     
     messageData = {
       sessionId: sessionId,
       text: text,
       type: typeSelect ? typeSelect.value : 'COMMENT',
-      replyTo: replyingTo ? replyingTo.id : null
+      replyTo: replyingTo ? replyingTo.id : null,
+      // NEW: Identity mode fields
+      identityMode: identityMode,
+      alias: alias
     };
     
-    console.log('📤 Sending student message:', messageData);
+    console.log('📤 Sending student message with identity mode:', identityMode, alias ? `(${alias})` : '');
     
     try {
       const response = await fetch('/api/messages/send', {
@@ -522,7 +538,7 @@ async function sendMessage() {
   }
 }
 
-// Append message to chat
+// Append message to chat - UPDATED WITH IDENTITY MODE RENDERING
 function appendMessage(message) {
   console.log('🔵 appendMessage called with:', message);
   
@@ -542,6 +558,11 @@ function appendMessage(message) {
   const isLecturer = message.userRole === 'lecturer';
   const isOwnMessage = currentUser && message.username === currentUser.displayName;
   
+  // ============================================
+  // NEW: Get identity mode info
+  // ============================================
+  const identityMode = message.identityMode || 'identified';
+  
   let messageClasses = `chat-message ${isLecturer ? 'lecturer-message' : 'student-message'}`;
   
   if (message.isAnnouncement) {
@@ -556,18 +577,77 @@ function appendMessage(message) {
     messageClasses += ' reported-message';
   }
   
+  // NEW: Add identity mode class for students
+  if (!isLecturer && identityMode !== 'identified') {
+    messageClasses += ` ${identityMode}-message`;
+  }
+  
   messageDiv.className = messageClasses;
   messageDiv.dataset.messageId = message.id || message._id;
   
-  // ========================================
-  // AVATAR GENERATION
-  // ========================================
-  const displayName = message.username || 'Anonymous';
-  const avatar = message.avatar; // If available from server
-  const avatarHTML = generateAvatarHTML(avatar, displayName, isLecturer);
+  // ============================================
+  // AVATAR & DISPLAY NAME BASED ON IDENTITY MODE
+  // ============================================
+  let displayName, avatarHTML, identityBadge = '';
+  
+  if (isLecturer) {
+    // Lecturers always show real identity
+    displayName = message.username || 'Lecturer';
+    avatarHTML = generateAvatarHTML(message.avatar, displayName, true);
+  } else {
+    // Students - apply identity mode
+    switch (identityMode) {
+      case 'anonymous':
+        displayName = 'Anonymous';
+        avatarHTML = `
+          <div class="message-avatar anon-avatar" style="
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #6b7280;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            flex-shrink: 0;
+          ">?</div>
+        `;
+        identityBadge = '<span class="identity-badge anonymous">👤 Anon</span>';
+        break;
+        
+      case 'pseudonymous':
+        displayName = message.alias || 'Student';
+        const aliasInitials = displayName.substring(0, 2).toUpperCase();
+        avatarHTML = `
+          <div class="message-avatar pseudo-avatar" style="
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+            flex-shrink: 0;
+          ">${aliasInitials}</div>
+        `;
+        identityBadge = '<span class="identity-badge pseudonymous">🎭 Alias</span>';
+        break;
+        
+      case 'identified':
+      default:
+        displayName = message.username || 'Student';
+        avatarHTML = generateAvatarHTML(message.avatar, displayName, false);
+        break;
+    }
+  }
   
   // ========================================
-  // LECTURER BADGE (as requested by supervisor!)
+  // LECTURER BADGE
   // ========================================
   const lecturerBadge = isLecturer ? 
     '<span class="lecturer-badge-inline">👨‍🏫 Lecturer</span>' : '';
@@ -607,7 +687,7 @@ function appendMessage(message) {
   let actionButtonsHTML = '';
   
   // Reply button (everyone can reply)
-  actionButtonsHTML += `<button class="action-btn reply-btn" onclick="setReplyTo('${message.id || message._id}', '${escapeHtml(message.username)}', '${escapeHtml(message.text?.substring(0, 100) || '')}')" title="Reply">↩️ Reply</button>`;
+  actionButtonsHTML += `<button class="action-btn reply-btn" onclick="setReplyTo('${message.id || message._id}', '${escapeHtml(displayName)}', '${escapeHtml(message.text?.substring(0, 100) || '')}')" title="Reply">↩️ Reply</button>`;
   
   if (currentUser && currentUser.role === 'lecturer') {
     // Lecturer actions
@@ -626,7 +706,7 @@ function appendMessage(message) {
   }
   
   // ========================================
-  // BUILD MESSAGE HTML WITH AVATAR
+  // BUILD MESSAGE HTML
   // ========================================
   messageDiv.innerHTML = `
     <div class="message-avatar-wrapper">
@@ -635,9 +715,10 @@ function appendMessage(message) {
     <div class="message-content-wrapper">
       <div class="message-header">
         <span class="message-username ${isLecturer ? 'lecturer' : 'student'}">
-          ${escapeHtml(displayName)}${isOwnMessage ? ' (You)' : ''}
+          ${escapeHtml(displayName)}${isOwnMessage && identityMode === 'identified' ? ' (You)' : ''}
         </span>
         ${lecturerBadge}
+        ${identityBadge}
         <span class="message-time">${formatTime(message.timestamp || message.createdAt || new Date())}</span>
       </div>
       ${replyHTML}
@@ -720,7 +801,6 @@ function generateColorFromName(name) {
     '#F1948A', '#82E0AA', '#F8B500', '#00CED1', '#FF69B4'
   ];
   
-  // Generate consistent index from name
   let hash = 0;
   for (let i = 0; i < (name || '').length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
@@ -750,7 +830,6 @@ window.deleteMessage = async function(messageId) {
     
     console.log('✅ Message deleted successfully');
     
-    // Remove from UI immediately (Socket.IO will also handle this)
     const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
     if (messageElement) {
       messageElement.style.transition = 'opacity 0.3s ease';
@@ -770,7 +849,6 @@ window.deleteMessage = async function(messageId) {
 window.reportMessage = async function(messageId) {
   const reason = prompt('Why are you reporting this message? (Optional)');
   
-  // If user clicks cancel, don't report
   if (reason === null) {
     return;
   }
@@ -826,6 +904,35 @@ window.unreportMessage = async function(messageId) {
   } catch (error) {
     console.error('❌ Unreport error:', error);
     alert('Failed to unreport message: ' + error.message);
+  }
+};
+
+// TOGGLE PIN FUNCTIONALITY
+window.togglePin = async function(messageId) {
+  try {
+    const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+    const isPinned = messageElement?.classList.contains('pinned');
+    
+    const endpoint = isPinned ? 'unpin' : 'pin';
+    
+    const response = await fetch(`/api/messages/${messageId}/${endpoint}`, {
+      method: 'POST',
+      credentials: 'include'
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Failed to ${endpoint} message`);
+    }
+    
+    console.log(`✅ Message ${endpoint}ned successfully`);
+    
+    // Refresh messages to show updated state
+    location.reload();
+    
+  } catch (error) {
+    console.error('❌ Pin toggle error:', error);
+    alert('Failed to update pin status: ' + error.message);
   }
 };
 

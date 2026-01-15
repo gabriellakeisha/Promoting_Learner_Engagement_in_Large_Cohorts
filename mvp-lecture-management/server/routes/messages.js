@@ -35,7 +35,7 @@ const verifySessionAccess = async (req, res, next) => {
 // Send message - WITH SOCKET.IO BROADCAST
 router.post('/send', isAuthenticated, async (req, res) => {
   try {
-    const { sessionId, text, type, replyTo, isAnnouncement } = req.body;
+    const { sessionId, text, type, replyTo, isAnnouncement, identityMode, alias } = req.body;
     const userId = req.session.userId;
 
     console.log('Sending message:', {
@@ -116,7 +116,10 @@ router.post('/send', isAuthenticated, async (req, res) => {
       text: text.trim(),
       type,
       replyTo: replyTo || null,
-      isAnnouncement: isAnnouncement || false
+      isAnnouncement: isAnnouncement || false,
+      // NEW: Identity mode fields
+      identityMode: identityMode || 'anonymous',
+      alias: identityMode === 'pseudonymous' ? alias : null
     });
 
     await message.save();
@@ -154,6 +157,11 @@ router.post('/send', isAuthenticated, async (req, res) => {
           isPinned: populatedMessage.isPinned,
           isAnnouncement: populatedMessage.isAnnouncement,
           isReported: populatedMessage.isReported,
+
+          // NEW: Identity mode fields
+          identityMode: populatedMessage.identityMode || 'identified',
+          alias: populatedMessage.alias,
+
           replyTo: populatedMessage.replyTo ? {
             id: populatedMessage.replyTo._id.toString(),
             text: populatedMessage.replyTo.text,
@@ -164,10 +172,12 @@ router.post('/send', isAuthenticated, async (req, res) => {
               role: populatedMessage.replyTo.userId?.role || 'student'
             }
           } : null,
+
           user: {
             id: populatedMessage.userId._id,
             displayName: populatedMessage.userId.displayName,
             role: populatedMessage.userId.role,
+            avatarUrl: populatedMessage.userId.avatarUrl
           },
           userId: {
             _id: populatedMessage.userId._id,
@@ -177,6 +187,7 @@ router.post('/send', isAuthenticated, async (req, res) => {
           username: populatedMessage.userId.displayName,
           userRole: populatedMessage.userId.role
         };
+
 
         io.to(`session-${sessionId}`).emit('new-message', messageData);
 
@@ -241,24 +252,40 @@ router.get('/session/:sessionId', isAuthenticated, verifySessionAccess, async (r
     console.log(`Found ${messages.length} messages`);
 
     const formattedMessages = messages.map(msg => ({
-      id: msg._id.toString(),
+      id: msg._id,
       text: msg.text,
       type: msg.type,
-      timestamp: msg.createdAt || msg.timestamp,
+      timestamp: msg.timestamp || msg.createdAt,
       isEdited: msg.isEdited,
-      editedAt: msg.editedAt,
       isPinned: msg.isPinned,
       isAnnouncement: msg.isAnnouncement,
       isReported: msg.isReported,
-      userId: msg.userId,
+      reactions: msg.reactions,
+
+      // NEW: Identity fields
+      identityMode: msg.identityMode || 'identified',
+      alias: msg.alias,
+
       replyTo: msg.replyTo ? {
         id: msg.replyTo._id,
         text: msg.replyTo.text,
         type: msg.replyTo.type,
         timestamp: msg.replyTo.timestamp,
-        userId: msg.replyTo.userId
-      } : null
-    }));
+        user: {
+          displayName: msg.replyTo.userId?.displayName || 'Unknown',
+          role: msg.replyTo.userId?.role || 'student'
+        }
+      } : null,
+      user: {
+        id: msg.userId?._id,
+        displayName: msg.userId?.displayName || 'Unknown',
+        role: msg.userId?.role || 'student',
+        avatarUrl: msg.userId?.avatarUrl
+      },
+      username: msg.userId?.displayName || 'Unknown',
+      userRole: msg.userId?.role || 'student'
+    }))
+
 
     res.json({
       success: true,
