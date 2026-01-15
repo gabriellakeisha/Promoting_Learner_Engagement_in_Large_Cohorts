@@ -1125,14 +1125,6 @@ body.dark-mode .card-title {
   color: #e2e8f0 !important;
 }
 
-/* =========================================
-   COMPLETE FIXED STYLES - ADD TO END OF styles.css
-   - RED announcements with top label
-   - No badge for lecturer messages (unless announcement/pinned)
-   - Fixed layout
-   - Pinned messages stay at bottom
-   ========================================= */
-
 /* LOADING SPINNER */
 #loading {
   display: none;
@@ -1947,4 +1939,617 @@ body.dark-mode .confirm-dialog p {
 body.dark-mode .delete-btn:hover::after,
 body.dark-mode .report-btn:hover::after {
   background: #334155;
+}
+
+/* CHAT AVATAR & LECTURER BADGE STYLES */
+/* Message with avatar layout */
+.chat-message {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  transition: background-color 0.2s ease;
+}
+
+.chat-message:hover {
+  background-color: var(--bg-secondary, #f9fafb);
+}
+
+/* Avatar wrapper */
+.message-avatar-wrapper {
+  flex-shrink: 0;
+}
+
+.message-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.message-avatar.lecturer-avatar {
+  border: 2px solid #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+/* Content wrapper */
+.message-content-wrapper {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Message header with avatar */
+.chat-message .message-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.chat-message .message-username {
+  font-weight: 600;
+  color: var(--text-primary, #1f2937);
+}
+
+.chat-message .message-username.lecturer {
+  color: #667eea;
+}
+
+/* LECTURER BADGE - As requested by supervisor! */
+.lecturer-badge-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Lecturer message styling */
+.chat-message.lecturer-message {
+  background: linear-gradient(90deg, rgba(102, 126, 234, 0.08), transparent);
+  border-left: 3px solid #667eea;
+}
+
+/* Announcement styling */
+.chat-message.announcement {
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.1), transparent);
+  border-left: 3px solid #f59e0b;
+}
+
+/* Pinned message styling */
+.chat-message.pinned {
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.1), transparent);
+  border-left: 3px solid #10b981;
+}
+
+/* Reported message styling */
+.chat-message.reported-message {
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.1), transparent);
+  border-left: 3px solid #ef4444;
+  opacity: 0.8;
+}
+
+/* Message body */
+.message-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.message-type-indicator {
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.message-text {
+  color: var(--text-primary, #374151);
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+/* Reply context */
+.reply-context {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-secondary, #f3f4f6);
+  border-left: 2px solid #667eea;
+  padding: 6px 10px;
+  margin: 6px 0;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.reply-context:hover {
+  background: var(--border-color, #e5e7eb);
+}
+
+.reply-icon {
+  color: #667eea;
+}
+
+.reply-to-user {
+  font-weight: 600;
+  color: var(--text-primary, #1f2937);
+}
+
+.reply-preview {
+  color: var(--text-secondary, #6b7280);
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+/* Message footer */
+.message-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* Message badges */
+.message-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.badge-pinned {
+  background: rgba(16, 185, 129, 0.15);
+  color: #059669;
+}
+
+.badge-announcement {
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+}
+
+.badge-reported {
+  background: rgba(239, 68, 68, 0.15);
+  color: #dc2626;
+}
+
+/* Message actions */
+.message-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.chat-message:hover .message-actions {
+  opacity: 1;
+}
+
+.action-btn {
+  background: var(--bg-secondary, #f3f4f6);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.action-btn:hover {
+  background: var(--bg-primary, #fff);
+  border-color: #667eea;
+}
+
+.action-btn.delete-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+  color: #dc2626;
+}
+
+.action-btn.report-btn.reported {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: #10b981;
+  color: #059669;
+}
+
+/* Message time */
+.message-time {
+  font-size: 11px;
+  color: var(--text-secondary, #9ca3af);
+  margin-left: auto;
+}
+
+/* DARK MODE SUPPORT */
+.dark-mode .chat-message:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.dark-mode .chat-message.lecturer-message {
+  background: linear-gradient(90deg, rgba(102, 126, 234, 0.15), transparent);
+}
+
+.dark-mode .chat-message.announcement {
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.15), transparent);
+}
+
+.dark-mode .chat-message.pinned {
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.15), transparent);
+}
+
+.dark-mode .reply-context {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dark-mode .action-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark-mode .action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Fix Display Name input - readable in dark and light mode */
+.profile-text-input {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 14px;
+  border: 1px solid var(--border-color, #d1d5db);
+  border-radius: 8px;
+  background: var(--input-bg, #ffffff) !important;
+  color: var(--text-primary, #1f2937) !important;
+  box-sizing: border-box;
+}
+
+.profile-text-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+.profile-text-input:disabled {
+  background: var(--bg-secondary, #e5e7eb) !important;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Dark mode input fix */
+.dark-mode .profile-text-input {
+  background: #374151 !important;
+  color: #f3f4f6 !important;
+  border-color: #4b5563 !important;
+}
+
+.dark-mode .profile-text-input::placeholder {
+  color: #9ca3af !important;
+}
+
+.dark-mode .profile-text-input:disabled {
+  background: #1f2937 !important;
+  color: #9ca3af !important;
+}
+
+.navbar-avatar {
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  border-radius: 50%;
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  color: white;
+  background-color: #667eea;
+  transition: transform 0.2s, box-shadow 0.2s;
+  flex-shrink: 0;
+}
+
+.navbar-avatar:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.navbar-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+/* Ensure navbar-user doesn't stretch avatar */
+.navbar-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.navbar-user .navbar-avatar {
+  flex: 0 0 40px !important;
+}
+
+/* Force input text to be visible */
+#profile-display-name,
+#profile-email,
+#current-password,
+#new-password,
+.profile-text-input {
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
+  border: 2px solid #d1d5db !important;
+  padding: 12px 16px !important;
+  font-size: 14px !important;
+  border-radius: 8px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  -webkit-text-fill-color: #1f2937 !important;
+  opacity: 1 !important;
+}
+
+#profile-display-name:focus,
+#current-password:focus,
+#new-password:focus,
+.profile-text-input:focus {
+  border-color: #667eea !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3) !important;
+}
+
+#profile-display-name::placeholder,
+#current-password::placeholder,
+#new-password::placeholder,
+.profile-text-input::placeholder {
+  color: #9ca3af !important;
+  -webkit-text-fill-color: #9ca3af !important;
+  opacity: 1 !important;
+}
+
+/* Disabled input (email) */
+#profile-email,
+.profile-text-input:disabled {
+  background-color: #f3f4f6 !important;
+  color: #6b7280 !important;
+  -webkit-text-fill-color: #6b7280 !important;
+  cursor: not-allowed !important;
+}
+
+/* Dark mode - still use light background for readability */
+.dark-mode #profile-display-name,
+.dark-mode #current-password,
+.dark-mode #new-password,
+.dark-mode .profile-text-input {
+  background-color: #374151 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border-color: #4b5563 !important;
+}
+
+.dark-mode #profile-display-name::placeholder,
+.dark-mode #current-password::placeholder,
+.dark-mode #new-password::placeholder,
+.dark-mode .profile-text-input::placeholder {
+  color: #9ca3af !important;
+  -webkit-text-fill-color: #9ca3af !important;
+}
+
+.dark-mode #profile-email,
+.dark-mode .profile-text-input:disabled {
+  background-color: #1f2937 !important;
+  color: #9ca3af !important;
+  -webkit-text-fill-color: #9ca3af !important;
+}
+
+/* ========================================
+   FIX: Navbar avatar size (40px)
+   ======================================== */
+.navbar-avatar {
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  border-radius: 50% !important;
+  flex-shrink: 0 !important;
+}
+
+.navbar-avatar img {
+  width: 40px !important;
+  height: 40px !important;
+  object-fit: cover !important;
+  border-radius: 50% !important;
+}
+
+/* Profile Input Row - Fix layout */
+.profile-input-row {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 12px !important;
+  width: 100% !important;
+  align-items: stretch !important;
+}
+
+/* Display Name Input - MUST BE VISIBLE */
+#profile-display-name {
+  flex: 1 1 auto !important;
+  min-width: 200px !important;
+  width: 100% !important;
+  height: 44px !important;
+  padding: 10px 14px !important;
+  font-size: 15px !important;
+  font-family: inherit !important;
+  border: 2px solid #4b5563 !important;
+  border-radius: 8px !important;
+  background-color: #1f2937 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  box-sizing: border-box !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+#profile-display-name:focus {
+  border-color: #667eea !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3) !important;
+}
+
+#profile-display-name::placeholder {
+  color: #9ca3af !important;
+  -webkit-text-fill-color: #9ca3af !important;
+}
+
+/* Email Input */
+#profile-email {
+  width: 100% !important;
+  height: 44px !important;
+  padding: 10px 14px !important;
+  font-size: 15px !important;
+  border: 2px solid #374151 !important;
+  border-radius: 8px !important;
+  background-color: #111827 !important;
+  color: #9ca3af !important;
+  -webkit-text-fill-color: #9ca3af !important;
+  box-sizing: border-box !important;
+}
+
+/* Password Inputs */
+#current-password,
+#new-password {
+  width: 100% !important;
+  height: 44px !important;
+  padding: 10px 14px !important;
+  font-size: 15px !important;
+  border: 2px solid #4b5563 !important;
+  border-radius: 8px !important;
+  background-color: #1f2937 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  box-sizing: border-box !important;
+}
+
+#current-password:focus,
+#new-password:focus {
+  border-color: #667eea !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3) !important;
+}
+
+#current-password::placeholder,
+#new-password::placeholder {
+  color: #9ca3af !important;
+  -webkit-text-fill-color: #9ca3af !important;
+}
+
+/* ========================================
+   LIGHT MODE OVERRIDES
+   ======================================== */
+body:not(.dark-mode) #profile-display-name {
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
+  -webkit-text-fill-color: #1f2937 !important;
+  border-color: #d1d5db !important;
+}
+
+body:not(.dark-mode) #profile-display-name::placeholder {
+  color: #6b7280 !important;
+  -webkit-text-fill-color: #6b7280 !important;
+}
+
+body:not(.dark-mode) #profile-email {
+  background-color: #f3f4f6 !important;
+  color: #4b5563 !important;
+  -webkit-text-fill-color: #4b5563 !important;
+  border-color: #e5e7eb !important;
+}
+
+body:not(.dark-mode) #current-password,
+body:not(.dark-mode) #new-password {
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
+  -webkit-text-fill-color: #1f2937 !important;
+  border-color: #d1d5db !important;
+}
+
+body:not(.dark-mode) #current-password::placeholder,
+body:not(.dark-mode) #new-password::placeholder {
+  color: #6b7280 !important;
+  -webkit-text-fill-color: #6b7280 !important;
+}
+
+/* ========================================
+   FIX NAVBAR AVATAR SIZE
+   ======================================== */
+.navbar-avatar {
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+  flex-shrink: 0 !important;
+}
+
+.navbar-avatar img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 50% !important;
+}
+
+/* ========================================
+   PROFILE FORM GROUP
+   ======================================== */
+.profile-form-group {
+  margin-bottom: 20px !important;
+  width: 100% !important;
+}
+
+.profile-form-group label {
+  display: block !important;
+  margin-bottom: 8px !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+}
+
+.password-change-form {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  width: 100% !important;
+}
+
+.password-change-form .btn {
+  align-self: flex-start !important;
+  margin-top: 4px !important;
+}
+
+/* Save button in display name row */
+.profile-input-row .btn {
+  align-self: flex-start !important;
+  margin-top: 4px !important;
 }

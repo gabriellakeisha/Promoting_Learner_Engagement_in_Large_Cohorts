@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -49,10 +50,15 @@
     <div class="navbar-content">
       <div class="navbar-brand">🎓 Lecture Engagement - Lecturer</div>
       <div class="navbar-user">
+        <!-- Avatar (clickable) -->
+        <div class="navbar-avatar" id="navbar-avatar" onclick="openProfileModal()" title="Edit Profile">
+          <!-- Will be populated by JS -->
+        </div>
         <div class="user-info">
           <div class="user-name" id="user-name">Loading...</div>
           <div class="user-role">lecturer</div>
         </div>
+        <a href="#" class="edit-profile-link" onclick="openProfileModal(); return false;">Edit Profile</a>
         <button class="btn btn-secondary btn-small" id="logout-btn">Logout</button>
       </div>
     </div>
@@ -126,6 +132,8 @@
   </div>
 
   <script src="/js/lecturer-dashboard.js"></script>
+  <script src="/js/profile.js"></script>
   <script src="/js/dark-mode.js"></script>
 </body>
+
 </html>

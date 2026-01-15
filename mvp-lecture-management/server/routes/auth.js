@@ -88,7 +88,7 @@ router.post('/login', async (req, res) => {
     // Update login tracking
     await user.updateLoginTracking();
 
-    // CRITICAL: Save user info to session
+    // Save user info to session
     req.session.userId = user._id.toString();
     req.session.userEmail = user.email;
     req.session.userRole = user.role;

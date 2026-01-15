@@ -49,21 +49,21 @@
     </div>
 
     <script>
-        // ===========================================
+        
         // CONFIGURATION
-        // ===========================================
+        
         const WS_URL = `ws://${window.location.host}`;
         
-        // ===========================================
+        
         // STATE MANAGEMENT
-        // ===========================================
+        
         let ws;
         let username = localStorage.getItem('username');
         let isConnected = false;
 
-        // ===========================================
+        
         // DOM ELEMENTS
-        // ===========================================
+        
         const messagesDiv = document.getElementById('messages');
         const messageInput = document.getElementById('messageInput');
         const sendBtn = document.getElementById('sendBtn');
@@ -73,9 +73,9 @@
         const loadHistoryBtn = document.getElementById('loadHistoryBtn');
         const logoutBtn = document.getElementById('logoutBtn');
 
-        // ===========================================
+        
         // INITIALIZATION
-        // ===========================================
+        
         function init() {
             // Check if user is logged in
             if (!username) {
@@ -94,9 +94,9 @@
             setupEventListeners();
         }
 
-        // ===========================================
+        
         // WEBSOCKET CONNECTION
-        // ===========================================
+        
         function connectWebSocket() {
             console.log('🔌 Connecting to WebSocket server...');
             ws = new WebSocket(WS_URL);
@@ -132,9 +132,9 @@
             };
         }
 
-        // ===========================================
+        
         // MESSAGE HANDLING
-        // ===========================================
+        
         function handleIncomingMessage(data) {
             console.log('📩 Received:', data);
 
@@ -177,9 +177,9 @@
             messageInput.focus();
         }
 
-        // ===========================================
+        
         // UI UPDATES
-        // ===========================================
+        
         function addChatMessage(user, text, timestamp) {
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message';
@@ -232,9 +232,9 @@
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
 
-        // ===========================================
+        
         // LOAD MESSAGE HISTORY
-        // ===========================================
+        
         async function loadHistory() {
             try {
                 loadHistoryBtn.disabled = true;
@@ -265,9 +265,9 @@
             }
         }
 
-        // ===========================================
+        
         // EVENT LISTENERS
-        // ===========================================
+        
         function setupEventListeners() {
             // Send message on button click
             sendBtn.addEventListener('click', sendMessage);
@@ -292,18 +292,18 @@
             });
         }
 
-        // ===========================================
+        
         // UTILITY FUNCTIONS
-        // ===========================================
+        
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
 
-        // ===========================================
+        
         // START APPLICATION
-        // ===========================================
+        
         window.addEventListener('load', init);
     </script>
 </body>

@@ -6,9 +6,7 @@ const { MongoClient, ObjectId } = require('mongodb');
 const path = require('path');
 require('dotenv').config();
 
-// ============================================
 // 1. INITIALIZE EXPRESS APP
-// ============================================
 const app = express();
 const server = http.createServer(app);
 
@@ -18,9 +16,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Parse JSON request bodies
 app.use(express.json());
 
-// ============================================
 // 2. CONNECT TO MONGODB
-// ============================================
 let db;
 let messagesCollection;
 
@@ -45,9 +41,7 @@ async function connectDB() {
 // Connect to database on startup
 connectDB();
 
-// ============================================
 // 3. SETUP WEBSOCKET SERVER
-// ============================================
 const wss = new WebSocket.Server({ server });
 
 // Keep track of connected clients
@@ -125,9 +119,7 @@ wss.on('connection', (ws) => {
   });
 });
 
-// ============================================
 // 4. HELPER FUNCTIONS
-// ============================================
 
 // Broadcast message to all connected clients
 function broadcast(message) {
@@ -154,9 +146,9 @@ function broadcastUserCount() {
   console.log(`👥 Active users: ${userCount}`);
 }
 
-// ============================================
+
 // 5. REST API ENDPOINTS
-// ============================================
+
 
 // GET /api/messages - Retrieve recent messages from database
 app.get('/api/messages', async (req, res) => {
@@ -234,9 +226,9 @@ app.post('/api/clear', async (req, res) => {
   }
 });
 
-// ============================================
+
 // 6. START SERVER
-// ============================================
+
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, '0.0.0.0', () => {
@@ -257,9 +249,9 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log('='.repeat(50));
 });
 
-// ============================================
+
 // 7. GRACEFUL SHUTDOWN
-// ============================================
+
 process.on('SIGINT', async () => {
   console.log('\n🛑 Shutting down server...');
   

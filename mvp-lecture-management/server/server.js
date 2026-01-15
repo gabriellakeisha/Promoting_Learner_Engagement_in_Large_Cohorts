@@ -15,6 +15,7 @@ const Membership = require('./models/Membership');
 
 // Import routes
 const authRoutes = require('./routes/auth');
+const profileRoutes = require('./routes/profile');
 const bulkUploadRoutes = require('./routes/bulk-upload');
 const sessionsRoutes = require('./routes/sessions');
 const messagesRoutes = require('./routes/messages');
@@ -32,9 +33,7 @@ const io = new Server(server, {
   },
 });
 
-// ========================================
-// CRITICAL FIX: Make io accessible in routes
-// ========================================
+// Make io accessible in routes
 app.set('io', io);
 
 // Connect to MongoDB
@@ -70,14 +69,18 @@ const sessionMiddleware = session({
 app.use(sessionMiddleware);
 
 // Serve static files from client directory
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use(express.static(path.join(__dirname, '../client')));
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/profile', profileRoutes);
 app.use('/api/bulk', bulkUploadRoutes);
 app.use('/api/sessions', sessionsRoutes);
 app.use('/api/messages', messagesRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/profile', profileRoutes);
+
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

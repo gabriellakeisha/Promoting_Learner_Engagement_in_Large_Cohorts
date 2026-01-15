@@ -36,6 +36,16 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  avatar: {
+    type: {
+      type: String,
+      enum: ['generated', 'uploaded'],
+      default: 'generated'
+    },
+    initials: String,
+    backgroundColor: String,
+    imageUrl: String
+  },
   createdAt: {
     type: Date,
     default: Date.now,
@@ -45,9 +55,9 @@ const userSchema = new mongoose.Schema({
 });
 
 // Hash password before saving
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
-  
+
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
@@ -58,12 +68,12 @@ userSchema.pre('save', async function(next) {
 });
 
 // Method to compare passwords
-userSchema.methods.comparePassword = async function(candidatePassword) {
+userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
 // Method to update login tracking
-userSchema.methods.updateLoginTracking = async function() {
+userSchema.methods.updateLoginTracking = async function () {
   this.lastLogin = new Date();
   this.loginCount += 1;
   this.isOnline = true;
@@ -71,7 +81,7 @@ userSchema.methods.updateLoginTracking = async function() {
 };
 
 // Method to set offline
-userSchema.methods.setOffline = async function() {
+userSchema.methods.setOffline = async function () {
   this.isOnline = false;
   await this.save();
 };

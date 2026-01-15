@@ -275,9 +275,9 @@ router.get('/session/:sessionId', isAuthenticated, verifySessionAccess, async (r
   }
 });
 
-// ========================================
+
 // NEW: DELETE MESSAGE (HARD DELETE)
-// ========================================
+
 router.delete('/:messageId', isAuthenticated, async (req, res) => {
   try {
     const { messageId } = req.params;
@@ -332,9 +332,9 @@ router.delete('/:messageId', isAuthenticated, async (req, res) => {
   }
 });
 
-// ========================================
+
 // NEW: REPORT MESSAGE (LECTURER ONLY)
-// ========================================
+
 router.post('/:messageId/report', isAuthenticated, async (req, res) => {
   try {
     const { messageId } = req.params;
@@ -394,9 +394,9 @@ router.post('/:messageId/report', isAuthenticated, async (req, res) => {
   }
 });
 
-// ========================================
+
 // NEW: UNREPORT MESSAGE (LECTURER ONLY)
-// ========================================
+
 router.delete('/:messageId/report', isAuthenticated, async (req, res) => {
   try {
     const { messageId } = req.params;
@@ -449,9 +449,9 @@ router.delete('/:messageId/report', isAuthenticated, async (req, res) => {
   }
 });
 
-// ========================================
+
 // NEW: GET REPORTED MESSAGES (LECTURER ONLY)
-// ========================================
+
 router.get('/session/:sessionId/reported', isAuthenticated, verifySessionAccess, async (req, res) => {
   try {
     const { sessionId } = req.params;

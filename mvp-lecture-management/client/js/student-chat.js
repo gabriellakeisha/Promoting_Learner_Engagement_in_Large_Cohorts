@@ -178,7 +178,7 @@ function initializeSocket() {
     socketJoined = true;
   });
   
-  // CRITICAL: Real-time message reception
+  // Real-time message reception
   socket.on('new-message', (message) => {
     console.log('📨 NEW MESSAGE RECEIVED via Socket.IO:', message);
     
@@ -559,8 +559,18 @@ function appendMessage(message) {
   messageDiv.className = messageClasses;
   messageDiv.dataset.messageId = message.id || message._id;
   
-  const usernameClass = isLecturer ? 'lecturer' : 'student';
-  const userIcon = isLecturer ? '👨‍🏫' : '👤';
+  // ========================================
+  // AVATAR GENERATION
+  // ========================================
+  const displayName = message.username || 'Anonymous';
+  const avatar = message.avatar; // If available from server
+  const avatarHTML = generateAvatarHTML(avatar, displayName, isLecturer);
+  
+  // ========================================
+  // LECTURER BADGE (as requested by supervisor!)
+  // ========================================
+  const lecturerBadge = isLecturer ? 
+    '<span class="lecturer-badge-inline">👨‍🏫 Lecturer</span>' : '';
   
   // Reply context
   let replyHTML = '';
@@ -569,67 +579,77 @@ function appendMessage(message) {
     const replyText = message.replyTo.text.length > 50 
       ? message.replyTo.text.substring(0, 50) + '...' 
       : message.replyTo.text;
-    
     replyHTML = `
-      <div class="message-reply-context" onclick="scrollToMessage('${message.replyTo.id}')">
-        <div class="reply-indicator">Replying to <strong>${escapeHtml(replyUsername)}</strong></div>
-        <div class="reply-text">${escapeHtml(replyText)}</div>
+      <div class="reply-context" onclick="scrollToMessage('${message.replyTo._id || message.replyTo.id}')">
+        <span class="reply-icon">↩️</span>
+        <span class="reply-to-user">${escapeHtml(replyUsername)}</span>
+        <span class="reply-preview">${escapeHtml(replyText)}</span>
       </div>
     `;
   }
   
-  // Announcement top label
-  let announcementLabelHTML = '';
-  if (message.isAnnouncement) {
-    announcementLabelHTML = '<div class="announcement-label">📢 IMPORTANT ANNOUNCEMENT</div>';
-  }
+  // Message type badge
+  const typeIcon = getTypeIcon(message.type);
   
-  // Badge logic
+  // Badges (pinned, announcement, reported)
   let badgeHTML = '';
+  if (message.isPinned) {
+    badgeHTML += '<span class="message-badge badge-pinned">📌 Pinned</span>';
+  }
+  if (message.isAnnouncement) {
+    badgeHTML += '<span class="message-badge badge-announcement">📢 Announcement</span>';
+  }
   if (message.isReported) {
-    badgeHTML = '<span class="message-badge badge-reported">🚩 REPORTED</span>';
-  } else if (message.isAnnouncement) {
-    badgeHTML = '<span class="message-badge badge-announcement">📢 ANNOUNCEMENT</span>';
-  } else if (message.isPinned) {
-    badgeHTML = '<span class="message-badge badge-pinned">📌 PINNED</span>';
-  } else if (!isLecturer) {
-    badgeHTML = `<span class="message-badge badge-${(message.type || 'COMMENT').toLowerCase()}">${getTypeIcon(message.type || 'COMMENT')} ${message.type || 'COMMENT'}</span>`;
+    badgeHTML += '<span class="message-badge badge-reported">🚩 Reported</span>';
   }
   
-  // Action buttons
+  // Action buttons based on role
   let actionButtonsHTML = '';
   
-  // Delete button: Show if own message OR if lecturer
-  if (isOwnMessage || currentUser.role === 'lecturer') {
-    actionButtonsHTML += `<button class="delete-btn" onclick="deleteMessage('${message.id || message._id}')">Delete</button>`;
-  }
+  // Reply button (everyone can reply)
+  actionButtonsHTML += `<button class="action-btn reply-btn" onclick="setReplyTo('${message.id || message._id}', '${escapeHtml(message.username)}', '${escapeHtml(message.text?.substring(0, 100) || '')}')" title="Reply">↩️ Reply</button>`;
   
-  // Report button: Show only for lecturers (on student messages)
-  if (currentUser.role === 'lecturer' && !isLecturer) {
+  if (currentUser && currentUser.role === 'lecturer') {
+    // Lecturer actions
+    actionButtonsHTML += `<button class="action-btn pin-btn" onclick="togglePin('${message.id || message._id}')" title="${message.isPinned ? 'Unpin' : 'Pin'}">${message.isPinned ? '📌 Unpin' : '📍 Pin'}</button>`;
+    
     if (message.isReported) {
-      actionButtonsHTML += `<button class="report-btn reported" onclick="unreportMessage('${message.id || message._id}')">Unreport</button>`;
+      actionButtonsHTML += `<button class="action-btn report-btn reported" onclick="unreportMessage('${message.id || message._id}')" title="Remove Report">✅ Unreport</button>`;
     } else {
-      actionButtonsHTML += `<button class="report-btn" onclick="reportMessage('${message.id || message._id}')">Report</button>`;
+      actionButtonsHTML += `<button class="action-btn report-btn" onclick="reportMessage('${message.id || message._id}')" title="Report">🚩 Report</button>`;
     }
+    
+    actionButtonsHTML += `<button class="action-btn delete-btn" onclick="deleteMessage('${message.id || message._id}')" title="Delete">🗑️ Delete</button>`;
+  } else if (isOwnMessage) {
+    // Own message actions (student can delete their own)
+    actionButtonsHTML += `<button class="action-btn delete-btn" onclick="deleteMessage('${message.id || message._id}')" title="Delete">🗑️ Delete</button>`;
   }
   
-  // Reply button
-  actionButtonsHTML += `<button class="reply-btn" onclick="setReplyTo('${message.id || message._id}', '${escapeHtml(message.username)}', '${escapeHtml(message.text).replace(/'/g, "&#39;")}')">Reply</button>`;
-  
+  // ========================================
+  // BUILD MESSAGE HTML WITH AVATAR
+  // ========================================
   messageDiv.innerHTML = `
-    ${announcementLabelHTML}
-    ${replyHTML}
-    <div class="message-header">
-      <span class="message-username ${usernameClass}">
-        ${userIcon} ${escapeHtml(message.username)}${isOwnMessage ? ' (You)' : ''}
-      </span>
-      <span class="message-time">${formatTime(message.timestamp || message.createdAt || new Date())}</span>
+    <div class="message-avatar-wrapper">
+      ${avatarHTML}
     </div>
-    <div class="message-text">${escapeHtml(message.text)}</div>
-    <div class="message-footer">
-      ${badgeHTML}
-      <div class="message-actions">
-        ${actionButtonsHTML}
+    <div class="message-content-wrapper">
+      <div class="message-header">
+        <span class="message-username ${isLecturer ? 'lecturer' : 'student'}">
+          ${escapeHtml(displayName)}${isOwnMessage ? ' (You)' : ''}
+        </span>
+        ${lecturerBadge}
+        <span class="message-time">${formatTime(message.timestamp || message.createdAt || new Date())}</span>
+      </div>
+      ${replyHTML}
+      <div class="message-body">
+        <span class="message-type-indicator">${typeIcon}</span>
+        <span class="message-text">${escapeHtml(message.text)}</span>
+      </div>
+      <div class="message-footer">
+        ${badgeHTML}
+        <div class="message-actions">
+          ${actionButtonsHTML}
+        </div>
       </div>
     </div>
   `;
@@ -638,6 +658,75 @@ function appendMessage(message) {
   console.log('✅ Message appended to DOM');
   
   container.scrollTop = container.scrollHeight;
+}
+
+// ========================================
+// AVATAR GENERATION HELPER
+// ========================================
+function generateAvatarHTML(avatar, displayName, isLecturer) {
+  const size = 40;
+  const initials = getAvatarInitials(displayName);
+  
+  // If user has uploaded avatar
+  if (avatar?.type === 'uploaded' && avatar.imageUrl) {
+    return `
+      <div class="message-avatar ${isLecturer ? 'lecturer-avatar' : ''}" style="width: ${size}px; height: ${size}px;">
+        <img src="${avatar.imageUrl}" alt="${escapeHtml(displayName)}" 
+             style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+      </div>
+    `;
+  }
+  
+  // Generated avatar with initials
+  const bgColor = avatar?.backgroundColor || generateColorFromName(displayName);
+  
+  return `
+    <div class="message-avatar ${isLecturer ? 'lecturer-avatar' : ''}" style="
+      width: ${size}px;
+      height: ${size}px;
+      border-radius: 50%;
+      background-color: ${bgColor};
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 14px;
+      flex-shrink: 0;
+      ${isLecturer ? 'border: 2px solid #667eea;' : ''}
+    ">${avatar?.initials || initials}</div>
+  `;
+}
+
+// ========================================
+// GET INITIALS FROM NAME
+// ========================================
+function getAvatarInitials(name) {
+  if (!name) return '??';
+  const parts = name.trim().split(' ').filter(p => p.length > 0);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
+}
+
+// ========================================
+// GENERATE CONSISTENT COLOR FROM NAME
+// ========================================
+function generateColorFromName(name) {
+  const colors = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+    '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
+    '#F1948A', '#82E0AA', '#F8B500', '#00CED1', '#FF69B4'
+  ];
+  
+  // Generate consistent index from name
+  let hash = 0;
+  for (let i = 0; i < (name || '').length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  
+  return colors[Math.abs(hash) % colors.length];
 }
 
 // DELETE MESSAGE FUNCTIONALITY
