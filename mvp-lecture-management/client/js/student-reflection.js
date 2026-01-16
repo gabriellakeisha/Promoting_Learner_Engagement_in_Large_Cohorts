@@ -1,12 +1,25 @@
+// Student Self-Reflection Module
+// Based on Zimmerman's SRL theory: Forethought (goals) → Performance → Self-Reflection
+// NOTE: This feature is ONLY for students, not lecturers
+
 let reflectionModal = null;
 let currentReflectionSessionId = null;
 
 function initStudentReflection() {
+  // IMPORTANT: Only initialize for students, not lecturers
+  if (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'lecturer') {
+    console.log('📊 Self-reflection disabled for lecturers');
+    return;
+  }
+  
   createReflectionModal();
   addReflectionButton();
 }
 
 function createReflectionModal() {
+  // Don't create if already exists
+  if (document.getElementById('reflection-modal')) return;
+  
   const modal = document.createElement('div');
   modal.id = 'reflection-modal';
   modal.className = 'reflection-overlay';
@@ -26,6 +39,11 @@ function createReflectionModal() {
 }
 
 function addReflectionButton() {
+  // IMPORTANT: Only add button for students
+  if (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'lecturer') {
+    return; // Don't add button for lecturers
+  }
+  
   const header = document.querySelector('.chat-header');
   if (header && !document.getElementById('reflection-btn')) {
     const btn = document.createElement('button');
@@ -39,6 +57,12 @@ function addReflectionButton() {
 }
 
 async function openReflectionModal() {
+  // Double-check: don't allow lecturers to open
+  if (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'lecturer') {
+    console.warn('Self-reflection is only available for students');
+    return;
+  }
+  
   if (!reflectionModal) createReflectionModal();
   
   currentReflectionSessionId = sessionId;
@@ -265,7 +289,7 @@ async function saveGoal() {
     
     const result = await response.json();
     if (result.success) {
-      openReflectionModal();
+      openReflectionModal(); // Refresh
     } else {
       alert('Failed to save goal');
     }
@@ -292,7 +316,7 @@ async function saveReflection() {
     
     const result = await response.json();
     if (result.success) {
-      openReflectionModal();
+      openReflectionModal(); // Refresh
     } else {
       alert('Failed to save reflection');
     }
@@ -301,6 +325,10 @@ async function saveReflection() {
   }
 }
 
+// Initialize when DOM is ready - with delay to ensure currentUser is loaded
 document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(initStudentReflection, 1000);
+  // Wait for currentUser to be populated from student-chat.js
+  setTimeout(() => {
+    initStudentReflection();
+  }, 1500);
 });
