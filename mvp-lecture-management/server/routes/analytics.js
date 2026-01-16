@@ -5,8 +5,6 @@ const Membership = require('../models/Membership');
 const Session = require('../models/Session');
 const User = require('../models/User');
 const { isAuthenticated, isLecturer } = require('../middleware/auth');
-
-// Get lecturer dashboard analytics for a session
 router.get('/lecturer/:sessionId', isAuthenticated, isLecturer, async (req, res) => {
   try {
     const { sessionId } = req.params;
@@ -28,7 +26,9 @@ router.get('/lecturer/:sessionId', isAuthenticated, isLecturer, async (req, res)
       });
     }
 
-    // 1. Total message count
+    // ========================================
+    // 1. BASIC COUNTS
+    // ========================================
     const totalMessages = await Message.countDocuments({
       sessionId,
       isDeleted: false,
@@ -36,152 +36,235 @@ router.get('/lecturer/:sessionId', isAuthenticated, isLecturer, async (req, res)
 
     // 2. Messages by type
     const messagesByType = await Message.aggregate([
-      {
-        $match: {
-          sessionId: session._id,
-          isDeleted: false,
-        },
-      },
-      {
-        $group: {
-          _id: '$type',
-          count: { $sum: 1 },
-        },
-      },
+      { $match: { sessionId: session._id, isDeleted: false } },
+      { $group: { _id: '$type', count: { $sum: 1 } } },
     ]);
 
-    const typeCounts = {
-      QUESTION: 0,
-      COMMENT: 0,
-      CONFUSION: 0,
-    };
-
+    const typeCounts = { QUESTION: 0, COMMENT: 0, CONFUSION: 0 };
     messagesByType.forEach(item => {
       typeCounts[item._id] = item.count;
     });
 
-    // 3. Active users count (users who sent at least 1 message)
-    const activeUsers = await Message.distinct('userId', {
+    // ========================================
+    // 3. ACTIVE USERS vs TOTAL MEMBERS (Contributors vs Consumers)
+    // ========================================
+    const activeUserIds = await Message.distinct('userId', {
       sessionId,
       isDeleted: false,
     });
+    const activeUserCount = activeUserIds.length;
 
-    const activeUserCount = activeUsers.length;
-
-    // 4. Total members count
     const totalMembers = await Membership.countDocuments({ sessionId });
-
-    // 5. Participation rate
+    
+    // Consumers = members who haven't posted
+    const consumersCount = totalMembers - activeUserCount;
+    
     const participationRate = totalMembers > 0 
       ? ((activeUserCount / totalMembers) * 100).toFixed(1)
       : 0;
 
-    // 6. Timeline data (messages per 5-minute interval)
-    const timelineData = await Message.aggregate([
-      {
-        $match: {
-          sessionId: session._id,
-          isDeleted: false,
-        },
-      },
+    // ========================================
+    // 4. ENGAGEMENT OVER TIME (Messages per 5-minute intervals)
+    // ========================================
+    const engagementTimeline = await Message.aggregate([
+      { $match: { sessionId: session._id, isDeleted: false } },
       {
         $group: {
           _id: {
-            $dateToString: {
-              format: '%Y-%m-%d %H:%M',
-              date: '$timestamp',
-            },
+            $toDate: {
+              $subtract: [
+                { $toLong: '$timestamp' },
+                { $mod: [{ $toLong: '$timestamp' }, 300000] } // 5 min = 300000ms
+              ]
+            }
           },
           count: { $sum: 1 },
         },
       },
-      {
-        $sort: { _id: 1 },
-      },
+      { $sort: { _id: 1 } },
     ]);
 
-    // 7. Top contributors
+    // Format timeline for chart
+    const timeline = engagementTimeline.map(t => ({
+      time: new Date(t._id).toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      }),
+      fullTime: t._id,
+      count: t.count,
+    }));
+
+    // ========================================
+    // 5. MESSAGES PER MINUTE (Recent activity rate)
+    // ========================================
+    const now = new Date();
+    const fiveMinutesAgo = new Date(now - 5 * 60 * 1000);
+    const tenMinutesAgo = new Date(now - 10 * 60 * 1000);
+
+    const messagesLast5Min = await Message.countDocuments({
+      sessionId,
+      isDeleted: false,
+      timestamp: { $gte: fiveMinutesAgo }
+    });
+
+    const messagesLast10Min = await Message.countDocuments({
+      sessionId,
+      isDeleted: false,
+      timestamp: { $gte: tenMinutesAgo }
+    });
+
+    const messagesPerMinute = (messagesLast5Min / 5).toFixed(1);
+
+    // ========================================
+    // 6. TOP 5 CONTRIBUTORS (Students only)
+    // ========================================
     const topContributors = await Message.aggregate([
+      { $match: { sessionId: session._id, isDeleted: false } },
       {
-        $match: {
-          sessionId: session._id,
-          isDeleted: false,
-        },
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'user'
+        }
       },
-      {
-        $group: {
-          _id: '$userId',
-          messageCount: { $sum: 1 },
-        },
-      },
-      {
-        $sort: { messageCount: -1 },
-      },
-      {
-        $limit: 10,
-      },
+      { $unwind: '$user' },
+      { $match: { 'user.role': { $ne: 'lecturer' } } },
+      { $group: { _id: '$userId', messageCount: { $sum: 1 } } },
+      { $sort: { messageCount: -1 } },
+      { $limit: 5 },
     ]);
 
-    // Populate user info for top contributors
     const topContributorsWithNames = await Promise.all(
-      topContributors.map(async (contributor) => {
-        const user = await User.findById(contributor._id).select('displayName email');
+      topContributors.map(async (c) => {
+        const user = await User.findById(c._id).select('displayName email');
         return {
-          userId: contributor._id,
-          displayName: user?.displayName || 'Unknown',
-          email: user?.email || '',
-          messageCount: contributor.messageCount,
+          userId: c._id,
+          displayName: user?.displayName || 'Anonymous',
+          email: user?.email || 'N/A',
+          messageCount: c.messageCount,
         };
       })
     );
 
-    // 8. Messages per type over time
-    const typeTimeline = await Message.aggregate([
-      {
-        $match: {
-          sessionId: session._id,
-          isDeleted: false,
-        },
-      },
-      {
-        $group: {
-          _id: {
-            time: {
-              $dateToString: {
-                format: '%Y-%m-%d %H:%M',
-                date: '$timestamp',
-              },
-            },
-            type: '$type',
-          },
-          count: { $sum: 1 },
-        },
-      },
-      {
-        $sort: { '_id.time': 1 },
+    // ========================================
+    // 7. IDENTITY MODE BREAKDOWN (NEW!)
+    // ========================================
+    const identityModeBreakdown = await Message.aggregate([
+      { $match: { sessionId: session._id, isDeleted: false } },
+      { 
+        $group: { 
+          _id: { $ifNull: ['$identityMode', 'identified'] }, 
+          count: { $sum: 1 } 
+        } 
       },
     ]);
 
+    const identityModes = { anonymous: 0, pseudonymous: 0, identified: 0 };
+    identityModeBreakdown.forEach(item => {
+      identityModes[item._id] = item.count;
+    });
+
+    // ========================================
+    // 8. KEYWORD FREQUENCY (Most common words)
+    // ========================================
+    const allMessages = await Message.find({
+      sessionId,
+      isDeleted: false,
+    }).select('text');
+
+    // Simple keyword extraction (exclude common stop words)
+    const stopWords = new Set([
+      'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+      'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
+      'should', 'may', 'might', 'must', 'shall', 'can', 'need', 'dare',
+      'ought', 'used', 'to', 'of', 'in', 'for', 'on', 'with', 'at', 'by',
+      'from', 'as', 'into', 'through', 'during', 'before', 'after', 'above',
+      'below', 'between', 'under', 'again', 'further', 'then', 'once',
+      'here', 'there', 'when', 'where', 'why', 'how', 'all', 'each', 'few',
+      'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only',
+      'own', 'same', 'so', 'than', 'too', 'very', 'just', 'and', 'but',
+      'if', 'or', 'because', 'until', 'while', 'this', 'that', 'these',
+      'those', 'what', 'which', 'who', 'whom', 'i', 'me', 'my', 'we', 'our',
+      'you', 'your', 'he', 'him', 'his', 'she', 'her', 'it', 'its', 'they',
+      'them', 'their', 'am', 'get', 'got', 'also', 'like', 'know', 'think',
+      'dont', "don't", 'im', "i'm", 'about', 'yes', 'yeah', 'ok', 'okay'
+    ]);
+
+    const wordCounts = {};
+    allMessages.forEach(msg => {
+      const words = msg.text.toLowerCase()
+        .replace(/[^\w\s]/g, '') // Remove punctuation
+        .split(/\s+/)
+        .filter(word => word.length > 2 && !stopWords.has(word));
+      
+      words.forEach(word => {
+        wordCounts[word] = (wordCounts[word] || 0) + 1;
+      });
+    });
+
+    // Get top 15 keywords
+    const keywords = Object.entries(wordCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 15)
+      .map(([word, count]) => ({ word, count }));
+
+    // ========================================
+    // 9. PEAK ACTIVITY TIME
+    // ========================================
+    const peakActivity = timeline.reduce((max, current) => 
+      current.count > (max?.count || 0) ? current : max, null
+    );
+
+    // ========================================
+    // 10. CONFUSION INDICATOR (% of confusion messages)
+    // ========================================
+    const confusionRate = totalMessages > 0 
+      ? ((typeCounts.CONFUSION / totalMessages) * 100).toFixed(1)
+      : 0;
+
+    // ========================================
+    // 11. QUESTION RATE
+    // ========================================
+    const questionRate = totalMessages > 0 
+      ? ((typeCounts.QUESTION / totalMessages) * 100).toFixed(1)
+      : 0;
+
+    // ========================================
+    // SEND RESPONSE
+    // ========================================
     res.json({
       success: true,
       analytics: {
+        // Summary stats
         summary: {
           totalMessages,
           activeUsers: activeUserCount,
           totalMembers,
+          consumersCount, // Users who only read, didn't post
           participationRate: parseFloat(participationRate),
+          messagesPerMinute: parseFloat(messagesPerMinute),
+          messagesLast5Min,
+          messagesLast10Min,
         },
+        
+        // Message breakdown
         messagesByType: typeCounts,
-        timeline: timelineData.map(t => ({
-          time: t._id,
-          count: t.count,
-        })),
-        typeTimeline: typeTimeline.map(t => ({
-          time: t._id.time,
-          type: t._id.type,
-          count: t.count,
-        })),
+        confusionRate: parseFloat(confusionRate),
+        questionRate: parseFloat(questionRate),
+        
+        // Identity mode stats (NEW!)
+        identityModes,
+        
+        // Timeline for charts
+        timeline,
+        peakActivity,
+        
+        // Top contributors
         topContributors: topContributorsWithNames,
+        
+        // Keywords (NEW!)
+        keywords,
       },
     });
   } catch (error) {
@@ -194,12 +277,13 @@ router.get('/lecturer/:sessionId', isAuthenticated, isLecturer, async (req, res)
   }
 });
 
-// Get student analytics for a session
+// ============================================
+// STUDENT ANALYTICS (Keep existing)
+// ============================================
 router.get('/student/:sessionId', isAuthenticated, async (req, res) => {
   try {
     const { sessionId } = req.params;
 
-    // Verify membership
     const membership = await Membership.findOne({
       userId: req.session.userId,
       sessionId,
@@ -212,14 +296,12 @@ router.get('/student/:sessionId', isAuthenticated, async (req, res) => {
       });
     }
 
-    // 1. Personal message count
     const myMessageCount = await Message.countDocuments({
       sessionId,
       userId: req.session.userId,
       isDeleted: false,
     });
 
-    // 2. Class average
     const totalMembers = await Membership.countDocuments({ sessionId });
     const totalMessages = await Message.countDocuments({
       sessionId,
@@ -230,7 +312,6 @@ router.get('/student/:sessionId', isAuthenticated, async (req, res) => {
       ? (totalMessages / totalMembers).toFixed(1)
       : 0;
 
-    // 3. My messages by type
     const myMessagesByType = await Message.aggregate([
       {
         $match: {
@@ -239,41 +320,18 @@ router.get('/student/:sessionId', isAuthenticated, async (req, res) => {
           isDeleted: false,
         },
       },
-      {
-        $group: {
-          _id: '$type',
-          count: { $sum: 1 },
-        },
-      },
+      { $group: { _id: '$type', count: { $sum: 1 } } },
     ]);
 
-    const myTypeCounts = {
-      QUESTION: 0,
-      COMMENT: 0,
-      CONFUSION: 0,
-    };
-
+    const myTypeCounts = { QUESTION: 0, COMMENT: 0, CONFUSION: 0 };
     myMessagesByType.forEach(item => {
       myTypeCounts[item._id] = item.count;
     });
 
-    // 4. Participation rank
     const allParticipants = await Message.aggregate([
-      {
-        $match: {
-          sessionId: membership.sessionId,
-          isDeleted: false,
-        },
-      },
-      {
-        $group: {
-          _id: '$userId',
-          count: { $sum: 1 },
-        },
-      },
-      {
-        $sort: { count: -1 },
-      },
+      { $match: { sessionId: membership.sessionId, isDeleted: false } },
+      { $group: { _id: '$userId', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
     ]);
 
     const myRank = allParticipants.findIndex(
@@ -313,7 +371,9 @@ router.get('/student/:sessionId', isAuthenticated, async (req, res) => {
   }
 });
 
-// Get real-time session stats (for both lecturer and students)
+// ============================================
+// LIVE STATS (Real-time updates)
+// ============================================
 router.get('/live/:sessionId', isAuthenticated, async (req, res) => {
   try {
     const { sessionId } = req.params;
@@ -327,42 +387,61 @@ router.get('/live/:sessionId', isAuthenticated, async (req, res) => {
       });
     }
 
-    // Check access
     const membership = await Membership.findOne({
       userId: req.session.userId,
       sessionId,
     });
 
-    const isLecturer = session.lecturer.toString() === req.session.userId;
+    const isLecturerUser = session.lecturer.toString() === req.session.userId;
 
-    if (!membership && !isLecturer) {
+    if (!membership && !isLecturerUser) {
       return res.status(403).json({
         success: false,
         message: 'Access denied.',
       });
     }
 
-    // Get live stats
+    // Live stats
+    const now = new Date();
+    const oneMinuteAgo = new Date(now - 60 * 1000);
+    const fiveMinutesAgo = new Date(now - 5 * 60 * 1000);
+
     const totalMessages = await Message.countDocuments({
+      sessionId,
+      isDeleted: false,
+    });
+
+    const messagesLastMinute = await Message.countDocuments({
+      sessionId,
+      isDeleted: false,
+      timestamp: { $gte: oneMinuteAgo }
+    });
+
+    const messagesLast5Min = await Message.countDocuments({
+      sessionId,
+      isDeleted: false,
+      timestamp: { $gte: fiveMinutesAgo }
+    });
+
+    const activeUsers = await Message.distinct('userId', {
       sessionId,
       isDeleted: false,
     });
 
     const totalMembers = await Membership.countDocuments({ sessionId });
 
-    // Get active users (those currently online - simplified version)
-    const recentActiveUsers = await Message.distinct('userId', {
-      sessionId,
-      timestamp: { $gte: new Date(Date.now() - 5 * 60 * 1000) }, // Last 5 minutes
-    });
-
     res.json({
       success: true,
-      liveStats: {
+      live: {
         totalMessages,
+        messagesLastMinute,
+        messagesLast5Min,
+        messagesPerMinute: (messagesLast5Min / 5).toFixed(1),
+        activeUsers: activeUsers.length,
         totalMembers,
-        activeUsers: recentActiveUsers.length,
-        sessionStatus: session.status,
+        participationRate: totalMembers > 0 
+          ? ((activeUsers.length / totalMembers) * 100).toFixed(1) 
+          : 0,
       },
     });
   } catch (error) {
@@ -375,115 +454,85 @@ router.get('/live/:sessionId', isAuthenticated, async (req, res) => {
   }
 });
 
-// Lecturer routes
-// NEW ROUTE: Export session analytics to CSV
+// ============================================
+// EXPORT CSV
+// ============================================
 router.get('/export-csv/:sessionId', isAuthenticated, isLecturer, async (req, res) => {
   try {
     const { sessionId } = req.params;
-    
-    // Get session details
+
     const session = await Session.findById(sessionId);
+    
     if (!session) {
-      return res.status(404).json({ error: 'Session not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'Session not found',
+      });
     }
-    
-    // Get all messages with user details
-    const messages = await Message.find({ sessionId })
-      .populate('userId', 'displayName email')
-      .sort({ createdAt: 1 });
-    
-    // Get membership data
-    const memberships = await Membership.find({ sessionId })
-      .populate('userId', 'displayName email');
-    
-    // Calculate analytics
+
+    if (session.lecturer.toString() !== req.session.userId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied.',
+      });
+    }
+
+    const messages = await Message.find({
+      sessionId,
+      isDeleted: false,
+    })
+    .populate('userId', 'displayName email role')
+    .sort({ timestamp: 1 });
+
     const totalMessages = messages.length;
-    const activeUsers = new Set(messages.map(m => m.userId?._id.toString())).size;
-    const totalMembers = memberships.length;
-    const participationRate = totalMembers > 0 
-      ? ((activeUsers / totalMembers) * 100).toFixed(2) 
-      : 0;
-    
-    // Message type breakdown
-    const messagesByType = messages.reduce((acc, msg) => {
-      acc[msg.type] = (acc[msg.type] || 0) + 1;
-      return acc;
-    }, {});
-    
-    // Create CSV content
+    const activeUsers = [...new Set(messages.map(m => m.userId?._id?.toString()))].length;
+    const totalMembers = await Membership.countDocuments({ sessionId });
+
+    const typeCounts = { QUESTION: 0, COMMENT: 0, CONFUSION: 0 };
+    messages.forEach(m => {
+      if (typeCounts[m.type] !== undefined) typeCounts[m.type]++;
+    });
+
     let csv = 'Session Analytics Export\n';
     csv += `Session Title,${session.title}\n`;
-    csv += `Module Code,${session.moduleCode}\n`;
+    csv += `Module Code,${session.moduleCode || 'N/A'}\n`;
     csv += `Join Code,${session.joinCode}\n`;
-    csv += `Status,${session.status}\n`;
-    csv += `Created At,${session.createdAt.toISOString()}\n`;
-    csv += '\n';
-    
+    csv += `Export Date,${new Date().toISOString()}\n\n`;
+
     csv += 'Summary Statistics\n';
     csv += `Total Messages,${totalMessages}\n`;
+    csv += `Active Contributors,${activeUsers}\n`;
     csv += `Total Members,${totalMembers}\n`;
-    csv += `Active Users,${activeUsers}\n`;
-    csv += `Participation Rate,${participationRate}%\n`;
-    csv += '\n';
-    
-    csv += 'Message Type Breakdown\n';
-    csv += `Questions,${messagesByType.QUESTION || 0}\n`;
-    csv += `Comments,${messagesByType.COMMENT || 0}\n`;
-    csv += `Confusion,${messagesByType.CONFUSION || 0}\n`;
-    csv += '\n';
-    
-    csv += 'Top Contributors\n';
-    csv += 'Name,Email,Message Count\n';
-    
-    // Calculate top contributors
-    const contributorMap = {};
-    messages.forEach(msg => {
-      if (msg.userId) {
-        const userId = msg.userId._id.toString();
-        if (!contributorMap[userId]) {
-          contributorMap[userId] = {
-            name: msg.userId.displayName,
-            email: msg.userId.email,
-            count: 0
-          };
-        }
-        contributorMap[userId].count++;
-      }
-    });
-    
-    const topContributors = Object.values(contributorMap)
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10);
-    
-    topContributors.forEach(c => {
-      csv += `"${c.name}","${c.email}",${c.count}\n`;
-    });
-    
-    csv += '\n';
-    csv += 'All Messages\n';
-    csv += 'Timestamp,User,Email,Type,Message\n';
+    csv += `Participation Rate,${totalMembers > 0 ? ((activeUsers / totalMembers) * 100).toFixed(1) : 0}%\n`;
+    csv += `Questions,${typeCounts.QUESTION}\n`;
+    csv += `Comments,${typeCounts.COMMENT}\n`;
+    csv += `Confusion,${typeCounts.CONFUSION}\n\n`;
+
+    csv += 'Message Log\n';
+    csv += 'Timestamp,User,Role,Type,Identity Mode,Message\n';
     
     messages.forEach(msg => {
-      const timestamp = msg.createdAt.toISOString();
-      const userName = msg.userId?.displayName || 'Anonymous';
-      const userEmail = msg.userId?.email || 'N/A';
-      const type = msg.type;
-      const text = msg.text.replace(/"/g, '""'); // Escape quotes
+      const timestamp = new Date(msg.timestamp).toISOString();
+      const user = msg.userId?.displayName || 'Unknown';
+      const role = msg.userId?.role || 'student';
+      const type = msg.type || 'COMMENT';
+      const identityMode = msg.identityMode || 'identified';
+      const text = `"${(msg.text || '').replace(/"/g, '""')}"`;
       
-      csv += `"${timestamp}","${userName}","${userEmail}","${type}","${text}"\n`;
+      csv += `${timestamp},${user},${role},${type},${identityMode},${text}\n`;
     });
-    
-    // Set headers for file download
-    const filename = `session_analytics_${session.joinCode}_${Date.now()}.csv`;
+
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    
-    // Send CSV
+    res.setHeader('Content-Disposition', `attachment; filename="session_${session.joinCode}_analytics.csv"`);
     res.send(csv);
-    
+
   } catch (error) {
-    console.error('Export CSV error:', error);
-    res.status(500).json({ error: 'Failed to export CSV' });
+    console.error('CSV export error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error exporting CSV',
+      error: error.message,
+    });
   }
 });
 
