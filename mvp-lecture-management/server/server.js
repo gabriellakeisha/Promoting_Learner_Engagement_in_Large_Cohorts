@@ -20,6 +20,7 @@ const bulkUploadRoutes = require('./routes/bulk-upload');
 const sessionsRoutes = require('./routes/sessions');
 const messagesRoutes = require('./routes/messages');
 const analyticsRoutes = require('./routes/analytics');
+const reflectionRoutes = require('./routes/reflection');
 
 // Initialize Express app
 const app = express();
@@ -80,6 +81,7 @@ app.use('/api/sessions', sessionsRoutes);
 app.use('/api/messages', messagesRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/reflection', reflectionRoutes);
 
 
 // Health check endpoint
