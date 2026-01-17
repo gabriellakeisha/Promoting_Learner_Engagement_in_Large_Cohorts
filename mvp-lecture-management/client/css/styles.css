@@ -1904,17 +1904,6 @@ body.dark-mode .confirm-dialog p {
   transition: opacity 0.2s ease;
 }
 
-/* Icons in buttons */
-.delete-btn::before {
-  content: '🗑️';
-  margin-right: 4px;
-}
-
-.report-btn:not(.reported)::before {
-  content: '🚩';
-  margin-right: 4px;
-}
-
 /* Tooltip for buttons (optional) */
 .delete-btn:hover::after,
 .report-btn:hover::after {
