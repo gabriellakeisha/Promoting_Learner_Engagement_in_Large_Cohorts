@@ -5,89 +5,68 @@ let sessionId = null;
 let replyingTo = null;
 let socketJoined = false;
 
-console.log('✅ student-chat.js loading...');
-
-// Extract session ID from URL
 function getSessionIdFromURL() {
   const urlParams = new URLSearchParams(window.location.search);
   return urlParams.get('sessionId');
 }
 
-// Check authentication
 async function checkAuth() {
   try {
-    console.log('🔐 Checking authentication...');
-    
     const authResponse = await fetch('/api/auth/me', {
       credentials: 'include'
     });
-    
+
     if (!authResponse.ok) {
-      console.error('❌ Auth failed, redirecting to login');
       window.location.href = '/login.html';
       return false;
     }
-    
+
     const authResult = await authResponse.json();
-    
+
     if (!authResult.success) {
       window.location.href = '/login.html';
       return false;
     }
-    
+
     currentUser = authResult.user;
-    console.log('✅ Authenticated as:', currentUser.displayName, `(${currentUser.role})`);
-    
     document.getElementById('user-name').textContent = currentUser.displayName;
-    
+
     return true;
-    
+
   } catch (error) {
-    console.error('💥 Auth check error:', error);
     window.location.href = '/login.html';
     return false;
   }
 }
 
-// Main initialization
 async function init() {
   try {
-    console.log('🚀 Chat initialization starting...');
-    
     sessionId = getSessionIdFromURL();
-    console.log('📍 Session ID:', sessionId);
-    
+
     if (!sessionId || sessionId.length !== 24) {
-      console.error('❌ Invalid session ID');
       alert('Invalid session ID');
       redirectToDashboard();
       return;
     }
 
-    console.log('✅ Valid session ID confirmed');
-    
     const authOk = await checkAuth();
     if (!authOk) return;
-    
+
     await loadSession();
     initializeSocket();
     await loadMessages();
     setupInputArea();
-    
-    console.log('✅ Initialization complete!');
-    
+
   } catch (error) {
-    console.error('❌ Init error:', error);
     removeLoadingSpinner();
     showError('Failed to load chat: ' + error.message);
-    
+
     setTimeout(() => {
       redirectToDashboard();
     }, 3000);
   }
 }
 
-// Redirect to appropriate dashboard
 function redirectToDashboard() {
   if (currentUser && currentUser.role === 'lecturer') {
     window.location.href = '/lecturer-dashboard.html';
@@ -96,43 +75,32 @@ function redirectToDashboard() {
   }
 }
 
-// Load session details
 async function loadSession() {
   try {
-    console.log('📡 Loading session:', sessionId);
-    
     const response = await fetch(`/api/sessions/${sessionId}`, {
       credentials: 'include'
     });
-    
+
     if (!response.ok) {
       throw new Error(`Session not found (HTTP ${response.status})`);
     }
-    
+
     const result = await response.json();
-    
+
     if (result.success && result.session) {
       currentSession = result.session;
-      console.log('✅ Session loaded:', currentSession.title);
-      
       document.getElementById('session-title').textContent = result.session.title;
-      document.getElementById('session-info').textContent = 
+      document.getElementById('session-info').textContent =
         `${result.session.moduleCode || 'No module'} • Join Code: ${result.session.joinCode}`;
     } else {
       throw new Error('Session data is invalid');
     }
   } catch (error) {
-    console.error('❌ Load session error:', error);
     throw new Error('Cannot load session: ' + error.message);
   }
 }
 
-// Initialize Socket.IO
 function initializeSocket() {
-  console.log('🔌 Initializing Socket.IO...');
-  console.log('🔌 Session ID:', sessionId);
-  console.log('🔌 User:', currentUser?.displayName);
-  
   socket = io({
     transports: ['websocket', 'polling'],
     reconnection: true,
@@ -140,28 +108,10 @@ function initializeSocket() {
     reconnectionAttempts: 5,
     forceNew: false
   });
-  
+
   socket.on('connect', () => {
-    console.log('✅ Socket connected:', socket.id);
-    console.log('📡 Socket ready, joining session...');
-    
-    if (!sessionId) {
-      console.error('❌ Cannot join: sessionId is null!');
-      return;
-    }
-    
-    if (!currentUser) {
-      console.error('❌ Cannot join: currentUser is null!');
-      return;
-    }
-    
-    console.log('📡 Emitting join-session with:', {
-      sessionId,
-      userId: currentUser._id,
-      displayName: currentUser.displayName,
-      role: currentUser.role
-    });
-    
+    if (!sessionId || !currentUser) return;
+
     socket.emit('join-session', {
       sessionId: sessionId,
       userId: currentUser._id,
@@ -169,23 +119,17 @@ function initializeSocket() {
       role: currentUser.role
     });
   });
-  
+
   socket.on('joined-session', (data) => {
-    console.log('✅ ✅ ✅ SUCCESSFULLY JOINED SESSION! ✅ ✅ ✅');
-    console.log('✅ Room joined:', data);
-    console.log('✅ NOW will receive real-time messages!');
     socketJoined = true;
   });
-  
-  // Real-time message reception - UPDATED WITH IDENTITY MODE
+
   socket.on('new-message', (message) => {
-    console.log('📨 NEW MESSAGE RECEIVED via Socket.IO:', message);
-    
-    // Format message properly - INCLUDING IDENTITY MODE FIELDS
     const formattedMessage = {
       id: message.id || message._id,
       username: message.user?.displayName || message.username,
       userRole: message.user?.role || message.userRole,
+      userId: message.userId || message.user?.id,
       text: message.text,
       type: message.type,
       timestamp: message.timestamp || message.createdAt,
@@ -193,21 +137,15 @@ function initializeSocket() {
       isPinned: message.isPinned,
       isAnnouncement: message.isAnnouncement,
       isReported: message.isReported,
-      // NEW: Identity mode fields
       identityMode: message.identityMode || 'identified',
       alias: message.alias
     };
-    
-    console.log('📨 Formatted message:', formattedMessage);
+
     appendMessage(formattedMessage);
     scrollToBottom();
-    console.log('✅ Message added to UI');
   });
-  
-  // Delete message event
+
   socket.on('message-deleted', (data) => {
-    console.log('🗑️ Message deleted:', data.messageId);
-    
     const messageElement = document.querySelector(`[data-message-id="${data.messageId}"]`);
     if (messageElement) {
       messageElement.style.transition = 'opacity 0.3s ease';
@@ -217,16 +155,13 @@ function initializeSocket() {
       }, 300);
     }
   });
-  
-  // Message reported/unreported event
+
   socket.on('message-reported', (data) => {
-    console.log('🚩 Message report status changed:', data);
-    
     const messageElement = document.querySelector(`[data-message-id="${data.messageId}"]`);
     if (messageElement) {
       if (data.isReported) {
         messageElement.classList.add('reported-message');
-        
+
         const footer = messageElement.querySelector('.message-footer');
         if (footer && !footer.querySelector('.badge-reported')) {
           const reportedBadge = document.createElement('span');
@@ -234,7 +169,7 @@ function initializeSocket() {
           reportedBadge.innerHTML = '🚩 REPORTED';
           footer.insertBefore(reportedBadge, footer.firstChild);
         }
-        
+
         const reportBtn = messageElement.querySelector('.report-btn');
         if (reportBtn) {
           reportBtn.textContent = 'Unreport';
@@ -242,12 +177,12 @@ function initializeSocket() {
         }
       } else {
         messageElement.classList.remove('reported-message');
-        
+
         const reportedBadge = messageElement.querySelector('.badge-reported');
         if (reportedBadge) {
           reportedBadge.remove();
         }
-        
+
         const reportBtn = messageElement.querySelector('.report-btn');
         if (reportBtn) {
           reportBtn.textContent = '🚩 Report';
@@ -256,54 +191,61 @@ function initializeSocket() {
       }
     }
   });
-  
-  socket.on('user-joined', (data) => {
-    console.log('👋 User joined:', data.displayName);
+
+  socket.on('message-edited', (data) => {
+    const messageElement = document.querySelector(`[data-message-id="${data.messageId}"]`);
+    if (messageElement) {
+      const textEl = messageElement.querySelector('.message-text');
+      if (textEl) {
+        textEl.textContent = data.text;
+      }
+      if (!messageElement.querySelector('.edited-badge')) {
+        const header = messageElement.querySelector('.message-header');
+        if (header) {
+          const editedBadge = document.createElement('span');
+          editedBadge.className = 'message-badge edited-badge';
+          editedBadge.textContent = '✏️ edited';
+          editedBadge.style.cssText = 'font-size:9px;padding:2px 6px;background:rgba(255,255,255,0.1);border-radius:4px;margin-left:4px;';
+          header.appendChild(editedBadge);
+        }
+      }
+    }
   });
-  
-  socket.on('user-left', (data) => {
-    console.log('👋 User left:', data.displayName);
-  });
-  
+
+  socket.on('user-joined', (data) => {});
+  socket.on('user-left', (data) => {});
+
   socket.on('disconnect', () => {
-    console.log('❌ Socket disconnected');
     socketJoined = false;
   });
-  
-  socket.on('connect_error', (error) => {
-    console.error('❌ Socket connection error:', error);
-  });
-  
-  socket.on('error', (error) => {
-    console.error('❌ Socket error:', error);
-  });
+
+  socket.on('connect_error', (error) => {});
+  socket.on('error', (error) => {});
 }
 
-// Load existing messages - UPDATED WITH IDENTITY MODE
 async function loadMessages() {
   try {
-    console.log('📥 Loading messages...');
     showLoadingSpinner();
-    
+
     const response = await fetch(`/api/messages/session/${sessionId}`, {
       credentials: 'include'
     });
-    
+
     if (!response.ok) {
       throw new Error(`Failed to load messages (HTTP ${response.status})`);
     }
-    
+
     const result = await response.json();
-    console.log('📦 Messages loaded:', result.messages?.length || 0);
-    
+
     removeLoadingSpinner();
-    
+
     if (result.success && result.messages && result.messages.length > 0) {
       result.messages.forEach(msg => {
         appendMessage({
           id: msg.id,
           username: msg.userId?.displayName || msg.username || 'Anonymous',
           userRole: msg.userId?.role || msg.userRole || 'student',
+          userId: msg.userId?._id || msg.userId,
           text: msg.text,
           type: msg.type,
           timestamp: msg.createdAt || msg.timestamp,
@@ -311,30 +253,25 @@ async function loadMessages() {
           isPinned: msg.isPinned,
           isAnnouncement: msg.isAnnouncement,
           isReported: msg.isReported,
-          // NEW: Identity mode fields
           identityMode: msg.identityMode || 'identified',
           alias: msg.alias
         });
       });
       scrollToBottom();
     } else {
-      console.log('ℹ️ No messages yet');
       showEmptyState();
     }
-    
+
   } catch (error) {
-    console.error('❌ Load messages error:', error);
     removeLoadingSpinner();
     showError('Failed to load messages: ' + error.message);
   }
 }
 
-// Setup input area based on user role - UPDATED WITH IDENTITY MODE SELECTOR
 function setupInputArea() {
   const inputContainer = document.querySelector('.chat-input-container');
-  
+
   if (currentUser.role === 'lecturer') {
-    // LECTURER UI - unchanged
     inputContainer.innerHTML = `
       <div id="reply-indicator" class="reply-indicator-container" style="display: none;"></div>
       
@@ -367,7 +304,6 @@ function setupInputArea() {
       </div>
     `;
   } else {
-    // STUDENT UI - UPDATED WITH IDENTITY MODE SELECTOR
     let replyIndicator = document.getElementById('reply-indicator');
     if (!replyIndicator) {
       replyIndicator = document.createElement('div');
@@ -376,22 +312,17 @@ function setupInputArea() {
       replyIndicator.style.display = 'none';
       inputContainer.insertBefore(replyIndicator, inputContainer.firstChild);
     }
-    
-    // NEW: Initialize identity mode selector for students
+
     if (typeof initIdentityModeSelector === 'function') {
       initIdentityModeSelector('.chat-input-container');
-      console.log('✅ Identity mode selector initialized');
-    } else {
-      console.warn('⚠️ initIdentityModeSelector not found - identity-mode.js may not be loaded');
     }
   }
-  
-  // Attach event listeners
+
   const sendBtn = document.getElementById('send-btn');
   if (sendBtn) {
     sendBtn.addEventListener('click', sendMessage);
   }
-  
+
   const input = document.getElementById('message-input');
   if (input) {
     input.addEventListener('keypress', (e) => {
@@ -403,22 +334,16 @@ function setupInputArea() {
   }
 }
 
-// Send message - UPDATED WITH IDENTITY MODE
 async function sendMessage() {
   const input = document.getElementById('message-input');
-  
-  if (!input) {
-    console.error('Input element not found');
-    return;
-  }
-  
+
+  if (!input) return;
+
   const text = input.value.trim();
-  
+
   if (!text) return;
-  
-  // Check if we're in the room
+
   if (!socketJoined) {
-    console.warn('⚠️ Not in room yet, attempting to rejoin...');
     socket.emit('join-session', {
       sessionId: sessionId,
       userId: currentUser._id,
@@ -426,14 +351,13 @@ async function sendMessage() {
       role: currentUser.role
     });
   }
-  
+
   let messageData;
-  
+
   if (currentUser.role === 'lecturer') {
-    // Lecturer message - unchanged
     const isAnnouncement = document.getElementById('is-announcement')?.checked || false;
     const shouldPin = document.getElementById('pin-message')?.checked || false;
-    
+
     messageData = {
       sessionId: sessionId,
       text: text,
@@ -441,9 +365,7 @@ async function sendMessage() {
       replyTo: replyingTo ? replyingTo.id : null,
       isAnnouncement: isAnnouncement
     };
-    
-    console.log('📤 Sending lecturer message:', messageData);
-    
+
     try {
       const response = await fetch('/api/messages/send', {
         method: 'POST',
@@ -451,65 +373,54 @@ async function sendMessage() {
         credentials: 'include',
         body: JSON.stringify(messageData)
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to send message');
       }
-      
+
       const result = await response.json();
-      console.log('✅ Message sent via API:', result);
-      
+
       if (shouldPin && result.messageData && result.messageData.id) {
         await fetch(`/api/messages/${result.messageData.id}/pin`, {
           method: 'POST',
           credentials: 'include'
         });
       }
-      
+
       input.value = '';
       const announceCheckbox = document.getElementById('is-announcement');
       const pinCheckbox = document.getElementById('pin-message');
       const respondCheckbox = document.getElementById('is-respond');
-      
+
       if (announceCheckbox) announceCheckbox.checked = false;
       if (pinCheckbox) pinCheckbox.checked = false;
       if (respondCheckbox) respondCheckbox.checked = false;
-      
+
       cancelReply();
       input.focus();
-      
-      console.log('⏳ Waiting for Socket.IO broadcast...');
-      
+
     } catch (error) {
-      console.error('💥 Send message error:', error);
       alert('Failed to send message: ' + error.message);
     }
-    
+
   } else {
-    // ============================================
-    // STUDENT MESSAGE - UPDATED WITH IDENTITY MODE
-    // ============================================
     const typeSelect = document.getElementById('message-type');
-    
-    // NEW: Get identity mode and alias
+
     const identityMode = typeof getIdentityMode === 'function' ? getIdentityMode() : 'anonymous';
-    const alias = identityMode === 'pseudonymous' && typeof getSessionAlias === 'function' 
-      ? getSessionAlias() 
+    const alias = identityMode === 'pseudonymous' && typeof getSessionAlias === 'function'
+      ? getSessionAlias()
       : null;
-    
+
     messageData = {
       sessionId: sessionId,
       text: text,
       type: typeSelect ? typeSelect.value : 'COMMENT',
       replyTo: replyingTo ? replyingTo.id : null,
-      // NEW: Identity mode fields
       identityMode: identityMode,
       alias: alias
     };
-    
-    console.log('📤 Sending student message with identity mode:', identityMode, alias ? `(${alias})` : '');
-    
+
     try {
       const response = await fetch('/api/messages/send', {
         method: 'POST',
@@ -517,85 +428,69 @@ async function sendMessage() {
         credentials: 'include',
         body: JSON.stringify(messageData)
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to send message');
       }
-      
-      console.log('✅ Message sent via API');
-      
+
       input.value = '';
       cancelReply();
       input.focus();
-      
-      console.log('⏳ Waiting for Socket.IO broadcast...');
-      
+
     } catch (error) {
-      console.error('💥 Send message error:', error);
       alert('Failed to send message: ' + error.message);
     }
   }
 }
 
-// Append message to chat - UPDATED WITH IDENTITY MODE RENDERING
 function appendMessage(message) {
-  console.log('🔵 appendMessage called with:', message);
-  
   const container = document.getElementById('messages-container');
-  if (!container) {
-    console.error('❌ messages-container NOT FOUND!');
-    return;
-  }
-  
+  if (!container) return;
+
   const emptyState = container.querySelector('.empty-state');
   if (emptyState) {
     emptyState.remove();
   }
-  
+
   const messageDiv = document.createElement('div');
-  
+
   const isLecturer = message.userRole === 'lecturer';
-  const isOwnMessage = currentUser && message.username === currentUser.displayName;
-  
-  // ============================================
-  // NEW: Get identity mode info
-  // ============================================
+  const isOwnMessage = currentUser && (
+    message.username === currentUser.displayName ||
+    message.userId === currentUser._id ||
+    (message.userId && message.userId._id === currentUser._id)
+  );
+
   const identityMode = message.identityMode || 'identified';
-  
+
   let messageClasses = `chat-message ${isLecturer ? 'lecturer-message' : 'student-message'}`;
-  
+
+  if (isOwnMessage) {
+    messageClasses += ' own-message';
+  }
   if (message.isAnnouncement) {
     messageClasses += ' announcement';
   }
-  
   if (message.isPinned) {
     messageClasses += ' pinned';
   }
-  
   if (message.isReported) {
     messageClasses += ' reported-message';
   }
-  
-  // NEW: Add identity mode class for students
   if (!isLecturer && identityMode !== 'identified') {
     messageClasses += ` ${identityMode}-message`;
   }
-  
+
   messageDiv.className = messageClasses;
   messageDiv.dataset.messageId = message.id || message._id;
-  
-  // ============================================
-  // AVATAR & DISPLAY NAME BASED ON IDENTITY MODE
-  // ============================================
+
   let displayName, avatarHTML, identityBadge = '';
-  
+
   if (isLecturer) {
-    // Lecturers always show real identity
     displayName = message.username || 'Lecturer';
     avatarHTML = generateAvatarHTML(message.avatar, displayName, true);
   } else {
-    // Students - apply identity mode
     switch (identityMode) {
       case 'anonymous':
         displayName = 'Anonymous';
@@ -616,7 +511,7 @@ function appendMessage(message) {
         `;
         identityBadge = '<span class="identity-badge anonymous">👤 Anon</span>';
         break;
-        
+
       case 'pseudonymous':
         displayName = message.alias || 'Student';
         const aliasInitials = displayName.substring(0, 2).toUpperCase();
@@ -637,7 +532,7 @@ function appendMessage(message) {
         `;
         identityBadge = '<span class="identity-badge pseudonymous">🎭 Alias</span>';
         break;
-        
+
       case 'identified':
       default:
         displayName = message.username || 'Student';
@@ -645,19 +540,14 @@ function appendMessage(message) {
         break;
     }
   }
-  
-  // ========================================
-  // LECTURER BADGE
-  // ========================================
-  const lecturerBadge = isLecturer ? 
-    '<span class="lecturer-badge-inline">👨‍🏫 Lecturer</span>' : '';
-  
-  // Reply context
+
+  const lecturerBadge = isLecturer ? '<span class="lecturer-badge-inline">👨‍🏫 LECTURER</span>' : '';
+
   let replyHTML = '';
   if (message.replyTo) {
     const replyUsername = message.replyTo.user?.displayName || message.replyTo.userId?.displayName || 'Unknown';
-    const replyText = message.replyTo.text.length > 50 
-      ? message.replyTo.text.substring(0, 50) + '...' 
+    const replyText = message.replyTo.text.length > 50
+      ? message.replyTo.text.substring(0, 50) + '...'
       : message.replyTo.text;
     replyHTML = `
       <div class="reply-context" onclick="scrollToMessage('${message.replyTo._id || message.replyTo.id}')">
@@ -667,11 +557,9 @@ function appendMessage(message) {
       </div>
     `;
   }
-  
-  // Message type badge
+
   const typeIcon = getTypeIcon(message.type);
-  
-  // Badges (pinned, announcement, reported)
+
   let badgeHTML = '';
   if (message.isPinned) {
     badgeHTML += '<span class="message-badge badge-pinned">📌 Pinned</span>';
@@ -682,32 +570,26 @@ function appendMessage(message) {
   if (message.isReported) {
     badgeHTML += '<span class="message-badge badge-reported">🚩 Reported</span>';
   }
-  
-  // Action buttons based on role
+
   let actionButtonsHTML = '';
-  
-  // Reply button (everyone can reply)
+
   actionButtonsHTML += `<button class="action-btn reply-btn" onclick="setReplyTo('${message.id || message._id}', '${escapeHtml(displayName)}', '${escapeHtml(message.text?.substring(0, 100) || '')}')" title="Reply">↩️ Reply</button>`;
-  
+
   if (currentUser && currentUser.role === 'lecturer') {
-    // Lecturer actions
     actionButtonsHTML += `<button class="action-btn pin-btn" onclick="togglePin('${message.id || message._id}')" title="${message.isPinned ? 'Unpin' : 'Pin'}">${message.isPinned ? '📌 Unpin' : '📍 Pin'}</button>`;
-    
+
     if (message.isReported) {
       actionButtonsHTML += `<button class="action-btn report-btn reported" onclick="unreportMessage('${message.id || message._id}')" title="Remove Report">✅ Unreport</button>`;
     } else {
       actionButtonsHTML += `<button class="action-btn report-btn" onclick="reportMessage('${message.id || message._id}')" title="Report">🚩 Report</button>`;
     }
-    
+
     actionButtonsHTML += `<button class="action-btn delete-btn" onclick="deleteMessage('${message.id || message._id}')" title="Delete">🗑️ Delete</button>`;
   } else if (isOwnMessage) {
-    // Own message actions (student can delete their own)
+    actionButtonsHTML += `<button class="action-btn edit-btn" onclick="editMessage('${message.id || message._id}')" title="Edit">✏️ Edit</button>`;
     actionButtonsHTML += `<button class="action-btn delete-btn" onclick="deleteMessage('${message.id || message._id}')" title="Delete">🗑️ Delete</button>`;
   }
-  
-  // ========================================
-  // BUILD MESSAGE HTML
-  // ========================================
+
   messageDiv.innerHTML = `
     <div class="message-avatar-wrapper">
       ${avatarHTML}
@@ -715,7 +597,7 @@ function appendMessage(message) {
     <div class="message-content-wrapper">
       <div class="message-header">
         <span class="message-username ${isLecturer ? 'lecturer' : 'student'}">
-          ${escapeHtml(displayName)}${isOwnMessage && identityMode === 'identified' ? ' (You)' : ''}
+          ${escapeHtml(displayName)}
         </span>
         ${lecturerBadge}
         ${identityBadge}
@@ -734,21 +616,15 @@ function appendMessage(message) {
       </div>
     </div>
   `;
-  
+
   container.appendChild(messageDiv);
-  console.log('✅ Message appended to DOM');
-  
   container.scrollTop = container.scrollHeight;
 }
 
-// ========================================
-// AVATAR GENERATION HELPER
-// ========================================
 function generateAvatarHTML(avatar, displayName, isLecturer) {
   const size = 40;
   const initials = getAvatarInitials(displayName);
-  
-  // If user has uploaded avatar
+
   if (avatar?.type === 'uploaded' && avatar.imageUrl) {
     return `
       <div class="message-avatar ${isLecturer ? 'lecturer-avatar' : ''}" style="width: ${size}px; height: ${size}px;">
@@ -757,10 +633,9 @@ function generateAvatarHTML(avatar, displayName, isLecturer) {
       </div>
     `;
   }
-  
-  // Generated avatar with initials
+
   const bgColor = avatar?.backgroundColor || generateColorFromName(displayName);
-  
+
   return `
     <div class="message-avatar ${isLecturer ? 'lecturer-avatar' : ''}" style="
       width: ${size}px;
@@ -779,9 +654,6 @@ function generateAvatarHTML(avatar, displayName, isLecturer) {
   `;
 }
 
-// ========================================
-// GET INITIALS FROM NAME
-// ========================================
 function getAvatarInitials(name) {
   if (!name) return '??';
   const parts = name.trim().split(' ').filter(p => p.length > 0);
@@ -791,45 +663,37 @@ function getAvatarInitials(name) {
   return name.substring(0, 2).toUpperCase();
 }
 
-// ========================================
-// GENERATE CONSISTENT COLOR FROM NAME
-// ========================================
 function generateColorFromName(name) {
   const colors = [
     '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
     '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
     '#F1948A', '#82E0AA', '#F8B500', '#00CED1', '#FF69B4'
   ];
-  
+
   let hash = 0;
   for (let i = 0; i < (name || '').length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
   }
-  
+
   return colors[Math.abs(hash) % colors.length];
 }
 
-// DELETE MESSAGE FUNCTIONALITY
 window.deleteMessage = async function(messageId) {
-  if (!confirm('Are you sure you want to permanently delete this message? This cannot be undone.')) {
+  if (!confirm('Are you sure you want to permanently delete this message?')) {
     return;
   }
-  
+
   try {
-    console.log('🗑️ Deleting message:', messageId);
-    
     const response = await fetch(`/api/messages/${messageId}`, {
       method: 'DELETE',
       credentials: 'include'
     });
-    
+
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || 'Failed to delete message');
     }
-    
-    console.log('✅ Message deleted successfully');
-    
+
     const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
     if (messageElement) {
       messageElement.style.transition = 'opacity 0.3s ease';
@@ -838,24 +702,65 @@ window.deleteMessage = async function(messageId) {
         messageElement.remove();
       }, 300);
     }
-    
+
   } catch (error) {
-    console.error('❌ Delete error:', error);
     alert('Failed to delete message: ' + error.message);
   }
 };
 
-// REPORT MESSAGE FUNCTIONALITY
+window.editMessage = async function(messageId) {
+  const messageEl = document.querySelector(`[data-message-id="${messageId}"]`);
+  if (!messageEl) return;
+
+  const textEl = messageEl.querySelector('.message-text');
+  if (!textEl) return;
+
+  const currentText = textEl.textContent.trim();
+  const newText = prompt('Edit your message:', currentText);
+
+  if (newText === null || newText.trim() === '' || newText.trim() === currentText) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/messages/${messageId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ text: newText.trim() })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to edit message');
+    }
+
+    textEl.textContent = newText.trim();
+
+    if (!messageEl.querySelector('.edited-badge')) {
+      const header = messageEl.querySelector('.message-header');
+      if (header) {
+        const editedBadge = document.createElement('span');
+        editedBadge.className = 'message-badge edited-badge';
+        editedBadge.textContent = '✏️ edited';
+        editedBadge.style.cssText = 'font-size:9px;padding:2px 6px;background:rgba(255,255,255,0.1);border-radius:4px;margin-left:4px;';
+        header.appendChild(editedBadge);
+      }
+    }
+
+  } catch (error) {
+    alert('Failed to edit message: ' + error.message);
+  }
+};
+
 window.reportMessage = async function(messageId) {
   const reason = prompt('Why are you reporting this message? (Optional)');
-  
+
   if (reason === null) {
     return;
   }
-  
+
   try {
-    console.log('🚩 Reporting message:', messageId);
-    
     const response = await fetch(`/api/messages/${messageId}/report`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -864,87 +769,74 @@ window.reportMessage = async function(messageId) {
         reason: reason || 'Violation reported by lecturer'
       })
     });
-    
+
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || 'Failed to report message');
     }
-    
-    console.log('✅ Message reported successfully');
+
     alert('Message reported successfully');
-    
+
   } catch (error) {
-    console.error('❌ Report error:', error);
     alert('Failed to report message: ' + error.message);
   }
 };
 
-// UNREPORT MESSAGE FUNCTIONALITY
 window.unreportMessage = async function(messageId) {
   if (!confirm('Remove the report flag from this message?')) {
     return;
   }
-  
+
   try {
-    console.log('✅ Unreporting message:', messageId);
-    
     const response = await fetch(`/api/messages/${messageId}/report`, {
       method: 'DELETE',
       credentials: 'include'
     });
-    
+
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || 'Failed to unreport message');
     }
-    
-    console.log('✅ Message unreported successfully');
+
     alert('Report removed successfully');
-    
+
   } catch (error) {
-    console.error('❌ Unreport error:', error);
     alert('Failed to unreport message: ' + error.message);
   }
 };
 
-// TOGGLE PIN FUNCTIONALITY
 window.togglePin = async function(messageId) {
   try {
     const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
     const isPinned = messageElement?.classList.contains('pinned');
-    
+
     const endpoint = isPinned ? 'unpin' : 'pin';
-    
+
     const response = await fetch(`/api/messages/${messageId}/${endpoint}`, {
       method: 'POST',
       credentials: 'include'
     });
-    
+
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || `Failed to ${endpoint} message`);
     }
-    
-    console.log(`✅ Message ${endpoint}ned successfully`);
-    
-    // Refresh messages to show updated state
+
     location.reload();
-    
+
   } catch (error) {
-    console.error('❌ Pin toggle error:', error);
     alert('Failed to update pin status: ' + error.message);
   }
 };
 
-// Set reply target
 function setReplyTo(messageId, username, text) {
   replyingTo = { id: messageId, username, text };
-  
+
   let replyIndicator = document.getElementById('reply-indicator');
   if (!replyIndicator) {
     replyIndicator = createReplyIndicator();
   }
-  
+
   const shortText = text.length > 60 ? text.substring(0, 60) + '...' : text;
   replyIndicator.innerHTML = `
     <div class="reply-indicator-content">
@@ -956,26 +848,24 @@ function setReplyTo(messageId, username, text) {
     </div>
   `;
   replyIndicator.style.display = 'block';
-  
+
   const input = document.getElementById('message-input');
   if (input) input.focus();
 }
 
-// Create reply indicator
 function createReplyIndicator() {
   const indicator = document.createElement('div');
   indicator.id = 'reply-indicator';
   indicator.className = 'reply-indicator-container';
-  
+
   const inputContainer = document.querySelector('.chat-input-container');
   if (inputContainer) {
     inputContainer.insertBefore(indicator, inputContainer.firstChild);
   }
-  
+
   return indicator;
 }
 
-// Cancel reply
 function cancelReply() {
   replyingTo = null;
   const indicator = document.getElementById('reply-indicator');
@@ -984,7 +874,6 @@ function cancelReply() {
   }
 }
 
-// Scroll to specific message
 function scrollToMessage(messageId) {
   const messageEl = document.querySelector(`[data-message-id="${messageId}"]`);
   if (messageEl) {
@@ -996,7 +885,6 @@ function scrollToMessage(messageId) {
   }
 }
 
-// Helper functions
 function showLoadingSpinner() {
   const loadingEl = document.getElementById('loading');
   if (loadingEl) {
@@ -1054,9 +942,9 @@ function escapeHtml(text) {
 
 function formatTime(timestamp) {
   const date = new Date(timestamp);
-  return date.toLocaleTimeString('en-US', { 
-    hour: '2-digit', 
-    minute: '2-digit' 
+  return date.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit'
   });
 }
 
@@ -1076,15 +964,10 @@ function scrollToBottom() {
   }
 }
 
-// Make functions available globally
 window.setReplyTo = setReplyTo;
 window.cancelReply = cancelReply;
 window.scrollToMessage = scrollToMessage;
 
-// Initialize on DOM load
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('✅ DOM loaded, calling init()');
   init();
 });
-
-console.log('✅ student-chat.js loaded successfully');
