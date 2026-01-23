@@ -359,6 +359,79 @@ router.delete('/:messageId', isAuthenticated, async (req, res) => {
   }
 });
 
+// EDIT MESSAGE (owner only)
+router.put('/:messageId', isAuthenticated, async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { text } = req.body;
+    const userId = req.session.userId;
+
+    if (!text || text.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Message text is required'
+      });
+    }
+
+    const message = await Message.findById(messageId).populate('sessionId');
+
+    if (!message) {
+      return res.status(404).json({
+        success: false,
+        message: 'Message not found'
+      });
+    }
+
+    // Check permissions: owner can edit own, lecturer can edit any
+    const isOwner = message.userId.toString() === userId;
+    const isLecturer = message.sessionId.lecturer.toString() === userId;
+
+    if (!isOwner && !isLecturer) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only edit your own messages'
+      });
+    }
+
+    // Update message
+    message.text = text.trim();
+    message.isEdited = true;
+    message.editedAt = new Date();
+    await message.save();
+
+    console.log(`✅ Message ${messageId} EDITED by ${userId}`);
+
+    // Broadcast edit via Socket.IO
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`session-${message.sessionId._id}`).emit('message-edited', {
+        messageId: messageId,
+        text: message.text,
+        isEdited: true,
+        editedAt: message.editedAt
+      });
+      console.log('📤 Edit broadcasted via Socket.IO');
+    }
+
+    res.json({
+      success: true,
+      message: 'Message edited successfully',
+      messageData: {
+        id: message._id,
+        text: message.text,
+        isEdited: message.isEdited,
+        editedAt: message.editedAt
+      }
+    });
+
+  } catch (error) {
+    console.error('Edit message error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to edit message'
+    });
+  }
+});
 
 // NEW: REPORT MESSAGE (LECTURER ONLY)
 
