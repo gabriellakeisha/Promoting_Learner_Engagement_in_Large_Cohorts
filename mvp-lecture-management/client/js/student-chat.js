@@ -6,7 +6,7 @@ let replyingTo = null;
 let socketJoined = false;
 let optionsMenuOpen = false;
 
-console.log('🚀 student-chat.js loaded');
+console.log('student-chat.js loaded');
 
 function getSessionIdFromURL() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -14,7 +14,7 @@ function getSessionIdFromURL() {
 }
 
 async function checkAuth() {
-  console.log('🔐 Checking auth...');
+  console.log('Checking auth...');
   try {
     const authResponse = await fetch('/api/auth/me', { credentials: 'include' });
     if (!authResponse.ok) { window.location.href = '/login.html'; return false; }
@@ -22,41 +22,41 @@ async function checkAuth() {
     if (!authResult.success) { window.location.href = '/login.html'; return false; }
     currentUser = authResult.user;
     currentUser._id = currentUser._id || currentUser.id;
-    console.log('✅ Auth OK, user:', currentUser._id, 'Role:', currentUser.role);
+    console.log('Auth OK, user:', currentUser._id, 'Role:', currentUser.role);
     document.getElementById('user-name').textContent = currentUser.displayName;
     return true;
   } catch (error) { 
-    console.error('❌ Auth error:', error);
+    console.error('Auth error:', error);
     window.location.href = '/login.html'; 
     return false; 
   }
 }
 
 async function init() {
-  console.log('🎬 Init starting...');
+  console.log('Init starting...');
   try {
     sessionId = getSessionIdFromURL();
-    console.log('📍 Session ID:', sessionId);
+    console.log('Session ID:', sessionId);
     if (!sessionId || sessionId.length !== 24) { alert('Invalid session ID'); redirectToDashboard(); return; }
     
     const authOk = await checkAuth();
     if (!authOk) return;
     
-    console.log('📚 Loading session...');
+    console.log('Loading session...');
     await loadSession();
     
-    console.log('🔌 Initializing socket...');
+    console.log('Initializing socket...');
     initializeSocket();
     
-    console.log('📥 About to load messages...');
+    console.log('About to load messages...');
     await loadMessages();
     
-    console.log('⌨️ Setting up input...');
+    console.log('Setting up input...');
     setupInputArea();
     
-    console.log('✅ Init complete!');
+    console.log('Init complete!');
   } catch (error) {
-    console.error('❌ Init error:', error);
+    console.error('Init error:', error);
     removeLoadingSpinner();
     showError('Failed to load chat: ' + error.message);
     setTimeout(function() { redirectToDashboard(); }, 3000);
@@ -87,16 +87,16 @@ async function loadSession() {
 function initializeSocket() {
   socket = io({ transports: ['websocket', 'polling'], reconnection: true, reconnectionDelay: 1000, reconnectionAttempts: 5, forceNew: false });
   socket.on('connect', function() {
-    console.log('🔌 Socket connected');
+    console.log('Socket connected');
     if (!sessionId || !currentUser) return;
     socket.emit('join-session', { sessionId: sessionId, userId: currentUser._id, displayName: currentUser.displayName, role: currentUser.role });
   });
   socket.on('joined-session', function(data) { 
     socketJoined = true; 
-    console.log('✅ Joined session room');
+    console.log('Joined session room');
   });
   socket.on('new-message', function(message) {
-    console.log('📨 New message received via socket');
+    console.log('New message received via socket');
     var visOwner = String(message.user?.id || message.userId?._id || message.userId || '');
     appendMessage({
       id: message.id || message._id,
@@ -131,44 +131,50 @@ function initializeSocket() {
     var el = document.querySelector('[data-message-id="' + data.messageId + '"]');
     if (el) { if (data.isPinned) el.classList.add('pinned'); else el.classList.remove('pinned'); }
   });
-  socket.on('disconnect', function() { socketJoined = false; console.log('🔌 Socket disconnected'); });
+  socket.on('profile-updated', function(data) {
+    var messages = document.querySelectorAll('.chat-message[data-user-id="' + data.userId + '"]');
+    messages.forEach(function(msg) {
+      var nameEl = msg.querySelector('.message-username');
+      if (nameEl && data.displayName) nameEl.textContent = data.displayName;
+    });
+  });
+  socket.on('disconnect', function() { socketJoined = false; console.log('Socket disconnected'); });
 }
 
 async function loadMessages() {
-  console.log('📥 loadMessages() called');
+  console.log('loadMessages() called');
   try {
     showLoadingSpinner();
-    console.log('📥 Fetching from /api/messages/session/' + sessionId);
+    console.log('Fetching from /api/messages/session/' + sessionId);
     const response = await fetch('/api/messages/session/' + sessionId + '?limit=200', { credentials: 'include' });
-    console.log('📥 Response status:', response.status);
+    console.log('Response status:', response.status);
     
     const text = await response.text();
-    console.log('📥 Raw response length:', text.length);
+    console.log('Raw response length:', text.length);
     
     let result;
     try {
       result = JSON.parse(text);
     } catch (parseError) {
-      console.error('❌ JSON parse error:', parseError);
-      console.log('📥 First 500 chars:', text.substring(0, 500));
+      console.error('JSON parse error:', parseError);
+      console.log('First 500 chars:', text.substring(0, 500));
       throw new Error('Invalid JSON response');
     }
     
     removeLoadingSpinner();
-    console.log('📥 Parsed result, messages:', result.messages?.length || 0);
+    console.log('Parsed result, messages:', result.messages?.length || 0);
     
     if (result.success && result.messages && result.messages.length > 0) {
       var container = document.getElementById('messages-container');
-      // Clear loading/empty states
       var loading = container.querySelector('#loading');
       var empty = container.querySelector('.empty-state');
       if (loading) loading.style.display = 'none';
       if (empty) empty.remove();
       
-      console.log('📥 Appending', result.messages.length, 'messages');
+      console.log('Appending', result.messages.length, 'messages');
       result.messages.forEach(function(msg, index) {
         var visOwner = String(msg.user?.id || msg.userId?._id || msg.userId || '');
-        if (index < 3) console.log('📥 Msg', index, '- id:', msg.id, 'owner:', visOwner);
+        if (index < 3) console.log('Msg', index, '- id:', msg.id, 'owner:', visOwner);
         appendMessage({
           id: msg.id || msg._id,
           username: msg.user?.displayName || msg.username || 'Anonymous',
@@ -186,13 +192,13 @@ async function loadMessages() {
         });
       });
       scrollToBottom();
-      console.log('📥 All messages appended');
+      console.log('All messages appended');
     } else { 
-      console.log('📥 No messages found');
+      console.log('No messages found');
       showEmptyState(); 
     }
   } catch (error) { 
-    console.error('❌ loadMessages error:', error);
+    console.error('loadMessages error:', error);
     removeLoadingSpinner(); 
     showError('Failed to load messages: ' + error.message); 
   }
@@ -202,29 +208,8 @@ function setupInputArea() {
   var inputContainer = document.querySelector('.chat-input-container');
   
   if (currentUser.role === 'lecturer') {
-    inputContainer.innerHTML = `
-      <div id="reply-indicator" class="reply-indicator-container" style="display:none;margin-bottom:8px;"></div>
-      <div id="options-menu" class="options-menu" style="display:none;position:absolute;bottom:70px;left:12px;background:#1e293b;border-radius:12px;padding:12px;box-shadow:0 4px 20px rgba(0,0,0,0.3);z-index:100;min-width:220px;">
-        <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;padding:0 4px;">Message Options</div>
-        <label style="display:flex;align-items:center;gap:10px;padding:10px 8px;cursor:pointer;border-radius:8px;transition:background 0.2s;" onmouseover="this.style.background='#334155'" onmouseout="this.style.background='transparent'">
-          <input type="checkbox" id="is-announcement" style="width:18px;height:18px;accent-color:#f59e0b;">
-          <span style="font-size:14px;">📢 Announcement</span>
-        </label>
-        <label style="display:flex;align-items:center;gap:10px;padding:10px 8px;cursor:pointer;border-radius:8px;transition:background 0.2s;" onmouseover="this.style.background='#334155'" onmouseout="this.style.background='transparent'">
-          <input type="checkbox" id="pin-message" style="width:18px;height:18px;accent-color:#00a884;">
-          <span style="font-size:14px;">📌 Pin Message</span>
-        </label>
-      </div>
-      <div class="wa-input-row" style="display:flex;align-items:center;gap:8px;position:relative;">
-        <button id="plus-btn" type="button" class="wa-plus-btn" style="width:44px;height:44px;border-radius:50%;border:none;background:#374151;color:white;font-size:24px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;">+</button>
-        <input type="text" id="message-input" class="wa-message-input" placeholder="Type a message" style="flex:1;padding:12px 16px;border-radius:24px;border:none;background:#1e293b;color:white;font-size:14px;outline:none;">
-        <button id="send-btn" type="button" class="wa-send-btn" style="width:44px;height:44px;border-radius:50%;border:none;background:#00a884;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-        </button>
-      </div>
-    `;
+    inputContainer.innerHTML = '<div id="reply-indicator" class="reply-indicator-container" style="display:none;margin-bottom:8px;"></div><div id="options-menu" class="options-menu" style="display:none;position:absolute;bottom:70px;left:12px;background:#1e293b;border-radius:12px;padding:12px;box-shadow:0 4px 20px rgba(0,0,0,0.3);z-index:100;min-width:220px;"><div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;padding:0 4px;">Message Options</div><label style="display:flex;align-items:center;gap:10px;padding:10px 8px;cursor:pointer;border-radius:8px;transition:background 0.2s;" onmouseover="this.style.background=\'#334155\'" onmouseout="this.style.background=\'transparent\'"><input type="checkbox" id="is-announcement" style="width:18px;height:18px;accent-color:#f59e0b;"><span style="font-size:14px;">📢 Announcement</span></label><label style="display:flex;align-items:center;gap:10px;padding:10px 8px;cursor:pointer;border-radius:8px;transition:background 0.2s;" onmouseover="this.style.background=\'#334155\'" onmouseout="this.style.background=\'transparent\'"><input type="checkbox" id="pin-message" style="width:18px;height:18px;accent-color:#00a884;"><span style="font-size:14px;">📌 Pin Message</span></label></div><div class="wa-input-row" style="display:flex;align-items:center;gap:8px;position:relative;"><button id="plus-btn" type="button" class="wa-plus-btn" style="width:44px;height:44px;border-radius:50%;border:none;background:#374151;color:white;font-size:24px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;">+</button><input type="text" id="message-input" class="wa-message-input" placeholder="Type a message" style="flex:1;padding:12px 16px;border-radius:24px;border:none;background:#1e293b;color:white;font-size:14px;outline:none;"><button id="send-btn" type="button" class="wa-send-btn" style="width:44px;height:44px;border-radius:50%;border:none;background:#00a884;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s;"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button></div>';
     
-    // Setup + button click handler
     var plusBtn = document.getElementById('plus-btn');
     if (plusBtn) {
       plusBtn.addEventListener('click', function(e) {
@@ -234,7 +219,6 @@ function setupInputArea() {
       });
     }
     
-    // Close menu when clicking outside
     document.addEventListener('click', function(e) {
       var menu = document.getElementById('options-menu');
       var plusBtn = document.getElementById('plus-btn');
@@ -296,59 +280,50 @@ async function sendMessage() {
     var isAnnouncement = document.getElementById('is-announcement')?.checked || false;
     var shouldPin = document.getElementById('pin-message')?.checked || false;
     
-    messageData = { sessionId: sessionId, text: text, type: 'COMMENT', replyTo: replyingTo ? replyingTo.id : null, isAnnouncement: isAnnouncement };
-    try {
-      var response = await fetch('/api/messages/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(messageData) });
-      if (!response.ok) { var errorData = await response.json(); throw new Error(errorData.message || 'Failed'); }
-      var result = await response.json();
-      if (shouldPin && result.messageData && result.messageData.id) { 
-        await fetch('/api/messages/' + result.messageData.id + '/pin', { method: 'POST', credentials: 'include' }); 
-      }
-      input.value = '';
-      var ac = document.getElementById('is-announcement'); if (ac) ac.checked = false;
-      var pc = document.getElementById('pin-message'); if (pc) pc.checked = false;
-      // Close options menu
-      var menu = document.getElementById('options-menu');
-      if (menu) menu.style.display = 'none';
-      optionsMenuOpen = false;
-      var plusBtn = document.getElementById('plus-btn');
-      if (plusBtn) { plusBtn.textContent = '+'; plusBtn.style.background = '#374151'; }
-      cancelReply(); 
-      input.focus();
-    } catch (error) { alert('Failed to send: ' + error.message); }
+    messageData = { sessionId: sessionId, text: text, type: 'COMMENT', replyTo: replyingTo ? replyingTo.id : null, isAnnouncement: isAnnouncement, shouldPin: shouldPin, identityMode: 'identified' };
+    
+    if (document.getElementById('is-announcement')) document.getElementById('is-announcement').checked = false;
+    if (document.getElementById('pin-message')) document.getElementById('pin-message').checked = false;
+    var menu = document.getElementById('options-menu');
+    if (menu) menu.style.display = 'none';
+    optionsMenuOpen = false;
+    var plusBtn = document.getElementById('plus-btn');
+    if (plusBtn) { plusBtn.textContent = '+'; plusBtn.style.background = '#374151'; }
   } else {
-    var typeSelect = document.getElementById('message-type');
     var identityMode = typeof getIdentityMode === 'function' ? getIdentityMode() : 'anonymous';
     var alias = identityMode === 'pseudonymous' && typeof getSessionAlias === 'function' ? getSessionAlias() : null;
-    messageData = { sessionId: sessionId, text: text, type: typeSelect ? typeSelect.value : 'COMMENT', replyTo: replyingTo ? replyingTo.id : null, identityMode: identityMode, alias: alias };
-    try {
-      var response = await fetch('/api/messages/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(messageData) });
-      if (!response.ok) { var errorData = await response.json(); throw new Error(errorData.message || 'Failed'); }
-      input.value = ''; cancelReply(); input.focus();
-    } catch (error) { alert('Failed to send: ' + error.message); }
+    var messageType = document.getElementById('message-type')?.value || 'QUESTION';
+    
+    messageData = { sessionId: sessionId, text: text, type: messageType, replyTo: replyingTo ? replyingTo.id : null, identityMode: identityMode, alias: alias };
   }
+  
+  input.value = '';
+  cancelReply();
+  
+  try {
+    var response = await fetch('/api/messages/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(messageData) });
+    var result = await response.json();
+    if (!result.success) { console.error('Send failed:', result.message); showError('Failed to send: ' + result.message); }
+  } catch (error) { console.error('Send error:', error); showError('Failed to send message'); }
 }
 
 function appendMessage(message) {
   var container = document.getElementById('messages-container');
   if (!container) return;
-  var emptyState = container.querySelector('.empty-state');
-  if (emptyState) emptyState.remove();
-
-  // Check for duplicate
-  var existingMsg = document.querySelector('[data-message-id="' + (message.id || message._id) + '"]');
-  if (existingMsg) {
-    console.log('⚠️ Duplicate message, skipping:', message.id);
-    return;
-  }
-
+  
+  if (document.querySelector('[data-message-id="' + (message.id || message._id) + '"]')) return;
+  
+  var loading = container.querySelector('#loading');
+  if (loading) loading.style.display = 'none';
+  var empty = container.querySelector('.empty-state');
+  if (empty) empty.remove();
+  
   var messageDiv = document.createElement('div');
   var isLecturer = message.userRole === 'lecturer';
-  var isOwnMessage = currentUser && message.visOwner && (message.visOwner === currentUser._id);
+  var isOwnMessage = currentUser && message.visOwner && String(message.visOwner) === String(currentUser._id);
   var identityMode = message.identityMode || 'identified';
   
-  var messageClasses = 'chat-message ' + (isLecturer ? 'lecturer-message' : 'student-message');
-  if (isOwnMessage && !message.isAnnouncement) messageClasses += ' own-message';
+  var messageClasses = 'chat-message ' + (isOwnMessage ? 'message-right own-message' : 'message-left') + ' ' + (isLecturer ? 'lecturer-message' : 'student-message');
   if (message.isAnnouncement) messageClasses += ' announcement';
   if (message.isPinned) messageClasses += ' pinned';
   if (message.isReported) messageClasses += ' reported-message';
@@ -356,6 +331,7 @@ function appendMessage(message) {
 
   messageDiv.className = messageClasses;
   messageDiv.dataset.messageId = message.id || message._id;
+  messageDiv.dataset.userId = message.visOwner || '';
 
   var displayName, avatarHTML, identityBadge = '';
   if (isLecturer) {
@@ -382,30 +358,25 @@ function appendMessage(message) {
   if (message.replyTo) {
     var ru = message.replyTo.user?.displayName || message.replyTo.userId?.displayName || 'Unknown';
     var rt = message.replyTo.text && message.replyTo.text.length > 50 ? message.replyTo.text.substring(0, 50) + '...' : (message.replyTo.text || '');
-    replyHTML = '<div class="reply-context" onclick="scrollToMessage(\'' + (message.replyTo._id || message.replyTo.id) + '\')"><span class="reply-icon">↩️</span><span class="reply-to-user">' + escapeHtml(ru) + '</span><span class="reply-preview">' + escapeHtml(rt) + '</span></div>';
+    replyHTML = '<div class="reply-reference" onclick="scrollToMessage(\'' + (message.replyTo._id || message.replyTo.id) + '\')" style="background:rgba(0,168,132,0.1);border-left:3px solid #00a884;padding:6px 10px;margin-bottom:8px;border-radius:4px;cursor:pointer;font-size:12px;"><span style="color:#00a884;font-weight:600;">↩ ' + escapeHtml(ru) + '</span><div style="color:#94a3b8;margin-top:2px;">' + escapeHtml(rt) + '</div></div>';
   }
 
   var typeIcon = getTypeIcon(message.type);
   var badgeHTML = '';
-  if (message.isPinned) badgeHTML += '<span class="message-badge badge-pinned">📌 Pinned</span>';
-  if (message.isAnnouncement) badgeHTML += '<span class="message-badge badge-announcement">📢 Announcement</span>';
-  if (message.isReported) badgeHTML += '<span class="message-badge badge-reported">🚩 Reported</span>';
+  if (message.isAnnouncement) badgeHTML += '<span class="message-badge announcement-badge">📢 Announcement</span>';
+  if (message.isPinned) badgeHTML += '<span class="message-badge pinned-badge">📌 Pinned</span>';
+  if (message.isEdited) badgeHTML += '<span class="message-badge edited-badge">✏️ edited</span>';
 
-  var actionButtonsHTML = '<button class="action-btn reply-btn" onclick="setReplyTo(\'' + (message.id || message._id) + '\', \'' + escapeHtml(displayName) + '\', \'' + escapeHtml((message.text || '').substring(0, 100)) + '\')" title="Reply">↩️ Reply</button>';
-
-  if (currentUser && currentUser.role === 'lecturer') {
-    actionButtonsHTML += '<button class="action-btn edit-btn" onclick="editMessage(\'' + (message.id || message._id) + '\')" title="Edit">✏️ Edit</button>';
-    actionButtonsHTML += '<button class="action-btn pin-btn" onclick="togglePin(\'' + (message.id || message._id) + '\')" title="' + (message.isPinned ? 'Unpin' : 'Pin') + '">' + (message.isPinned ? '📌 Unpin' : '📍 Pin') + '</button>';
-    actionButtonsHTML += message.isReported 
-      ? '<button class="action-btn report-btn reported" onclick="unreportMessage(\'' + (message.id || message._id) + '\')" title="Remove Report">✅ Unreport</button>'
-      : '<button class="action-btn report-btn" onclick="reportMessage(\'' + (message.id || message._id) + '\')" title="Report">🚩 Report</button>';
-    actionButtonsHTML += '<button class="action-btn delete-btn" onclick="deleteMessage(\'' + (message.id || message._id) + '\')" title="Delete">🗑️ Delete</button>';
-  } else if (isOwnMessage) {
-    actionButtonsHTML += '<button class="action-btn edit-btn" onclick="editMessage(\'' + (message.id || message._id) + '\')" title="Edit">✏️ Edit</button>';
-    actionButtonsHTML += '<button class="action-btn delete-btn" onclick="deleteMessage(\'' + (message.id || message._id) + '\')" title="Delete">🗑️ Delete</button>';
+  var actionButtonsHTML = '';
+  actionButtonsHTML += '<button class="msg-action-btn" onclick="setReplyTo(\'' + (message.id || message._id) + '\', \'' + escapeHtml(displayName) + '\', \'' + escapeHtml(message.text).substring(0, 50) + '\')" title="Reply">↩️</button>';
+  if (isOwnMessage) {
+    actionButtonsHTML += '<button class="msg-action-btn" onclick="editMessage(\'' + (message.id || message._id) + '\')" title="Edit">✏️</button>';
+    actionButtonsHTML += '<button class="msg-action-btn delete-btn" onclick="deleteMessage(\'' + (message.id || message._id) + '\')" title="Delete">🗑️</button>';
+  } else if (currentUser && currentUser.role === 'lecturer') {
+    actionButtonsHTML += '<button class="msg-action-btn delete-btn" onclick="deleteMessage(\'' + (message.id || message._id) + '\')" title="Delete">🗑️</button>';
   }
 
-  messageDiv.innerHTML = '<div class="message-avatar-wrapper">' + avatarHTML + '</div><div class="message-content-wrapper"><div class="message-header"><span class="message-username ' + (isLecturer ? 'lecturer' : 'student') + '">' + escapeHtml(displayName) + '</span>' + lecturerBadge + identityBadge + '<span class="message-time">' + formatTime(message.timestamp || message.createdAt || new Date()) + '</span></div>' + replyHTML + '<div class="message-body"><span class="message-type-indicator">' + typeIcon + '</span><span class="message-text">' + escapeHtml(message.text) + '</span></div><div class="message-footer">' + badgeHTML + '<div class="message-actions">' + actionButtonsHTML + '</div></div></div>';
+  messageDiv.innerHTML = '<div class="message-row" style="display:flex;gap:12px;">' + avatarHTML + '<div class="message-content" style="flex:1;min-width:0;"><div class="message-header" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;"><span class="message-username ' + (isLecturer ? 'lecturer' : 'student') + '">' + escapeHtml(displayName) + '</span>' + lecturerBadge + identityBadge + '<span class="message-time">' + formatTime(message.timestamp || message.createdAt || new Date()) + '</span></div>' + replyHTML + '<div class="message-body"><span class="message-type-indicator">' + typeIcon + '</span><span class="message-text">' + escapeHtml(message.text) + '</span></div><div class="message-footer">' + badgeHTML + '<div class="message-actions">' + actionButtonsHTML + '</div></div></div></div>';
 
   container.appendChild(messageDiv);
 }
@@ -435,70 +406,39 @@ window.deleteMessage = async function(messageId) {
   if (!confirm('Delete this message permanently?')) return;
   try {
     var response = await fetch('/api/messages/' + messageId, { method: 'DELETE', credentials: 'include' });
-    if (!response.ok) { var e = await response.json(); throw new Error(e.message || 'Failed'); }
-    var el = document.querySelector('[data-message-id="' + messageId + '"]');
-    if (el) { el.style.transition = 'opacity 0.3s'; el.style.opacity = '0'; setTimeout(function() { el.remove(); }, 300); }
-  } catch (error) { alert('Failed: ' + error.message); }
+    var result = await response.json();
+    if (result.success) {
+      var el = document.querySelector('[data-message-id="' + messageId + '"]');
+      if (el) { el.style.transition = 'opacity 0.3s'; el.style.opacity = '0'; setTimeout(function() { el.remove(); }, 300); }
+    } else { alert('Failed to delete: ' + result.message); }
+  } catch (error) { console.error('Delete error:', error); alert('Failed to delete message'); }
 };
 
 window.editMessage = async function(messageId) {
-  var el = document.querySelector('[data-message-id="' + messageId + '"]');
-  if (!el) return;
-  var textEl = el.querySelector('.message-text');
+  var messageEl = document.querySelector('[data-message-id="' + messageId + '"]');
+  if (!messageEl) return;
+  var textEl = messageEl.querySelector('.message-text');
   if (!textEl) return;
   var currentText = textEl.textContent.trim();
   var newText = prompt('Edit your message:', currentText);
   if (newText === null || newText.trim() === '' || newText.trim() === currentText) return;
   try {
     var response = await fetch('/api/messages/' + messageId, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ text: newText.trim() }) });
-    if (!response.ok) { var e = await response.json(); throw new Error(e.message || 'Failed'); }
+    if (!response.ok) { var errorData = await response.json(); throw new Error(errorData.message || 'Failed to edit message'); }
     textEl.textContent = newText.trim();
-  } catch (error) { alert('Failed: ' + error.message); }
-};
-
-window.reportMessage = async function(messageId) {
-  var reason = prompt('Why are you reporting this? (Optional)');
-  if (reason === null) return;
-  try {
-    var response = await fetch('/api/messages/' + messageId + '/report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ reason: reason || 'Violation' }) });
-    if (!response.ok) { var e = await response.json(); throw new Error(e.message || 'Failed'); }
-    alert('Reported');
-  } catch (error) { alert('Failed: ' + error.message); }
-};
-
-window.unreportMessage = async function(messageId) {
-  if (!confirm('Remove report?')) return;
-  try {
-    var response = await fetch('/api/messages/' + messageId + '/report', { method: 'DELETE', credentials: 'include' });
-    if (!response.ok) { var e = await response.json(); throw new Error(e.message || 'Failed'); }
-    alert('Removed');
-  } catch (error) { alert('Failed: ' + error.message); }
-};
-
-window.togglePin = async function(messageId) {
-  try {
-    var el = document.querySelector('[data-message-id="' + messageId + '"]');
-    var isPinned = el?.classList.contains('pinned');
-    var response = await fetch('/api/messages/' + messageId + '/pin', { method: 'POST', credentials: 'include' });
-    if (!response.ok) { var e = await response.json(); throw new Error(e.message || 'Failed'); }
-    if (el) {
-      if (isPinned) el.classList.remove('pinned');
-      else el.classList.add('pinned');
+    if (!messageEl.querySelector('.edited-badge')) {
+      var header = messageEl.querySelector('.message-header');
+      if (header) { var editedBadge = document.createElement('span'); editedBadge.className = 'message-badge edited-badge'; editedBadge.textContent = '✏️ edited'; editedBadge.style.cssText = 'font-size:9px;padding:2px 6px;background:rgba(255,255,255,0.1);border-radius:4px;margin-left:4px;'; header.appendChild(editedBadge); }
     }
-  } catch (error) { alert('Failed: ' + error.message); }
+    console.log('Message edited successfully');
+  } catch (error) { console.error('Edit error:', error); alert('Failed to edit message: ' + error.message); }
 };
 
 function setReplyTo(messageId, username, text) {
   replyingTo = { id: messageId, username: username, text: text };
   var indicator = document.getElementById('reply-indicator');
-  if (!indicator) { 
-    indicator = document.createElement('div'); 
-    indicator.id = 'reply-indicator'; 
-    indicator.className = 'reply-indicator-container'; 
-    var inputContainer = document.querySelector('.chat-input-container');
-    inputContainer.insertBefore(indicator, inputContainer.firstChild); 
-  }
-  indicator.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(0,168,132,0.15);border-left:3px solid #00a884;border-radius:8px;"><div><div style="font-size:12px;color:#00a884;font-weight:600;">Replying to ' + escapeHtml(username) + '</div><div style="font-size:13px;color:#94a3b8;margin-top:2px;">' + escapeHtml(text.length > 60 ? text.substring(0, 60) + '...' : text) + '</div></div><button onclick="cancelReply()" style="background:none;border:none;font-size:20px;color:#94a3b8;cursor:pointer;padding:4px 8px;">×</button></div>';
+  if (!indicator) return;
+  indicator.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;background:rgba(0,168,132,0.1);border-left:3px solid #00a884;padding:8px 12px;border-radius:4px;"><div><span style="color:#00a884;font-weight:600;font-size:12px;">↩ Replying to ' + escapeHtml(username) + '</span><div style="color:#94a3b8;font-size:12px;margin-top:2px;">' + (text.length > 60 ? escapeHtml(text.substring(0, 60)) + '...' : escapeHtml(text)) + '</div></div><button onclick="cancelReply()" style="background:none;border:none;font-size:20px;color:#94a3b8;cursor:pointer;padding:4px 8px;">×</button></div>';
   indicator.style.display = 'block';
   indicator.style.marginBottom = '8px';
   var input = document.getElementById('message-input'); if (input) input.focus();
@@ -542,6 +482,6 @@ window.scrollToMessage = scrollToMessage;
 window.toggleOptionsMenu = toggleOptionsMenu;
 
 document.addEventListener('DOMContentLoaded', function() { 
-  console.log('📄 DOM ready, calling init()');
+  console.log('DOM ready, calling init()');
   init(); 
 });
