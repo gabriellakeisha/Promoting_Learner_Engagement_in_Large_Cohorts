@@ -117,7 +117,6 @@ router.post('/send', isAuthenticated, async (req, res) => {
       type,
       replyTo: replyTo || null,
       isAnnouncement: isAnnouncement || false,
-      // NEW: Identity mode fields
       identityMode: identityMode || 'anonymous',
       alias: identityMode === 'pseudonymous' ? alias : null
     });
@@ -132,8 +131,9 @@ router.post('/send', isAuthenticated, async (req, res) => {
 
     // SOCKET.IO BROADCAST
     try {
+      // FIXED: Include 'avatar' in populate
       const populatedMessage = await Message.findById(message._id)
-        .populate('userId', 'displayName role')
+        .populate('userId', 'displayName role avatar')
         .populate({
           path: 'replyTo',
           select: 'text userId type timestamp',
@@ -158,7 +158,6 @@ router.post('/send', isAuthenticated, async (req, res) => {
           isAnnouncement: populatedMessage.isAnnouncement,
           isReported: populatedMessage.isReported,
 
-          // NEW: Identity mode fields
           identityMode: populatedMessage.identityMode || 'identified',
           alias: populatedMessage.alias,
 
@@ -177,7 +176,8 @@ router.post('/send', isAuthenticated, async (req, res) => {
             id: populatedMessage.userId._id,
             displayName: populatedMessage.userId.displayName,
             role: populatedMessage.userId.role,
-            avatarUrl: populatedMessage.userId.avatarUrl
+            // FIXED: Correct path to avatar
+            avatarUrl: populatedMessage.userId.avatar?.imageUrl || null
           },
           userId: {
             _id: populatedMessage.userId._id,
@@ -185,12 +185,12 @@ router.post('/send', isAuthenticated, async (req, res) => {
             role: populatedMessage.userId.role
           },
           username: populatedMessage.userId.displayName,
-          userRole: populatedMessage.userId.role
+          userRole: populatedMessage.userId.role,
+          // FIXED: Also at top level
+          avatarUrl: populatedMessage.userId.avatar?.imageUrl || null
         };
 
-
         io.to(`session-${sessionId}`).emit('new-message', messageData);
-
         console.log('✅ Message broadcasted via Socket.IO');
       } else {
         console.error('❌ Socket.IO instance not found!');
@@ -238,7 +238,8 @@ router.get('/session/:sessionId', isAuthenticated, verifySessionAccess, async (r
       .sort({ createdAt: 1 })
       .skip(skip)
       .limit(limit)
-      .populate('userId', 'displayName role')
+      // FIXED: Include 'avatar' in populate
+      .populate('userId', 'displayName role avatar')
       .populate({
         path: 'replyTo',
         select: 'text userId type timestamp',
@@ -262,7 +263,6 @@ router.get('/session/:sessionId', isAuthenticated, verifySessionAccess, async (r
       isReported: msg.isReported,
       reactions: msg.reactions,
 
-      // NEW: Identity fields
       identityMode: msg.identityMode || 'identified',
       alias: msg.alias,
 
@@ -276,16 +276,19 @@ router.get('/session/:sessionId', isAuthenticated, verifySessionAccess, async (r
           role: msg.replyTo.userId?.role || 'student'
         }
       } : null,
+
       user: {
         id: msg.userId?._id,
         displayName: msg.userId?.displayName || 'Unknown',
         role: msg.userId?.role || 'student',
-        avatarUrl: msg.userId?.avatarUrl
+        // FIXED: Correct path to avatar
+        avatarUrl: msg.userId?.avatar?.imageUrl || null
       },
       username: msg.userId?.displayName || 'Unknown',
-      userRole: msg.userId?.role || 'student'
-    }))
-
+      userRole: msg.userId?.role || 'student',
+      // FIXED: Also at top level for easy access
+      avatarUrl: msg.userId?.avatar?.imageUrl || null
+    }));
 
     res.json({
       success: true,
@@ -302,9 +305,7 @@ router.get('/session/:sessionId', isAuthenticated, verifySessionAccess, async (r
   }
 });
 
-
-// NEW: DELETE MESSAGE (HARD DELETE)
-
+// DELETE MESSAGE (HARD DELETE)
 router.delete('/:messageId', isAuthenticated, async (req, res) => {
   try {
     const { messageId } = req.params;
@@ -319,7 +320,6 @@ router.delete('/:messageId', isAuthenticated, async (req, res) => {
       });
     }
 
-    // Check permissions: owner can delete own, lecturer can delete any
     const isOwner = message.userId.toString() === userId;
     const isLecturer = message.sessionId.lecturer.toString() === userId;
 
@@ -330,19 +330,16 @@ router.delete('/:messageId', isAuthenticated, async (req, res) => {
       });
     }
 
-    // HARD DELETE from MongoDB
     await Message.findByIdAndDelete(messageId);
 
     console.log(`✅ Message ${messageId} DELETED from MongoDB by ${userId}`);
 
-    // Broadcast deletion via Socket.IO
     const io = req.app.get('io');
     if (io) {
       io.to(`session-${message.sessionId._id}`).emit('message-deleted', {
         messageId: messageId,
         deletedBy: userId
       });
-      console.log('📤 Deletion broadcasted via Socket.IO');
     }
 
     res.json({
@@ -359,7 +356,7 @@ router.delete('/:messageId', isAuthenticated, async (req, res) => {
   }
 });
 
-// EDIT MESSAGE (owner only)
+// EDIT MESSAGE
 router.put('/:messageId', isAuthenticated, async (req, res) => {
   try {
     const { messageId } = req.params;
@@ -382,7 +379,6 @@ router.put('/:messageId', isAuthenticated, async (req, res) => {
       });
     }
 
-    // Check permissions: owner can edit own, lecturer can edit any
     const isOwner = message.userId.toString() === userId;
     const isLecturer = message.sessionId.lecturer.toString() === userId;
 
@@ -393,35 +389,23 @@ router.put('/:messageId', isAuthenticated, async (req, res) => {
       });
     }
 
-    // Update message
     message.text = text.trim();
     message.isEdited = true;
     message.editedAt = new Date();
     await message.save();
 
-    console.log(`✅ Message ${messageId} EDITED by ${userId}`);
-
-    // Broadcast edit via Socket.IO
     const io = req.app.get('io');
     if (io) {
       io.to(`session-${message.sessionId._id}`).emit('message-edited', {
         messageId: messageId,
         text: message.text,
-        isEdited: true,
-        editedAt: message.editedAt
+        isEdited: true
       });
-      console.log('📤 Edit broadcasted via Socket.IO');
     }
 
     res.json({
       success: true,
-      message: 'Message edited successfully',
-      messageData: {
-        id: message._id,
-        text: message.text,
-        isEdited: message.isEdited,
-        editedAt: message.editedAt
-      }
+      message: 'Message updated successfully'
     });
 
   } catch (error) {
@@ -433,15 +417,13 @@ router.put('/:messageId', isAuthenticated, async (req, res) => {
   }
 });
 
-// NEW: REPORT MESSAGE (LECTURER ONLY)
-
+// REPORT MESSAGE
 router.post('/:messageId/report', isAuthenticated, async (req, res) => {
   try {
     const { messageId } = req.params;
-    const { reason } = req.body;
     const userId = req.session.userId;
 
-    const message = await Message.findById(messageId).populate('sessionId');
+    const message = await Message.findById(messageId);
 
     if (!message) {
       return res.status(404).json({
@@ -450,39 +432,22 @@ router.post('/:messageId/report', isAuthenticated, async (req, res) => {
       });
     }
 
-    // Check if user is lecturer
-    const isLecturer = message.sessionId.lecturer.toString() === userId;
-    if (!isLecturer) {
-      return res.status(403).json({
-        success: false,
-        message: 'Only lecturers can report messages'
-      });
-    }
+    message.isReported = true;
+    message.reportedBy = userId;
+    message.reportedAt = new Date();
+    await message.save();
 
-    // Report the message
-    await message.reportMessage(userId, reason || 'Violation reported by lecturer');
-
-    console.log(`🚩 Message ${messageId} REPORTED by ${userId}`);
-
-    // Broadcast report via Socket.IO
     const io = req.app.get('io');
     if (io) {
-      io.to(`session-${message.sessionId._id}`).emit('message-reported', {
+      io.to(`session-${message.sessionId}`).emit('message-reported', {
         messageId: messageId,
-        isReported: true,
-        reportedBy: userId
+        isReported: true
       });
-      console.log('📤 Report broadcasted via Socket.IO');
     }
 
     res.json({
       success: true,
-      message: 'Message reported successfully',
-      messageData: {
-        id: message._id,
-        isReported: message.isReported,
-        reportedAt: message.reportedAt
-      }
+      message: 'Message reported successfully'
     });
 
   } catch (error) {
@@ -494,94 +459,7 @@ router.post('/:messageId/report', isAuthenticated, async (req, res) => {
   }
 });
 
-
-// NEW: UNREPORT MESSAGE (LECTURER ONLY)
-
-router.delete('/:messageId/report', isAuthenticated, async (req, res) => {
-  try {
-    const { messageId } = req.params;
-    const userId = req.session.userId;
-
-    const message = await Message.findById(messageId).populate('sessionId');
-
-    if (!message) {
-      return res.status(404).json({
-        success: false,
-        message: 'Message not found'
-      });
-    }
-
-    // Check if user is lecturer
-    const isLecturer = message.sessionId.lecturer.toString() === userId;
-    if (!isLecturer) {
-      return res.status(403).json({
-        success: false,
-        message: 'Only lecturers can unreport messages'
-      });
-    }
-
-    // Unreport the message
-    await message.unreportMessage();
-
-    console.log(`✅ Message ${messageId} UNREPORTED by ${userId}`);
-
-    // Broadcast unreport via Socket.IO
-    const io = req.app.get('io');
-    if (io) {
-      io.to(`session-${message.sessionId._id}`).emit('message-reported', {
-        messageId: messageId,
-        isReported: false
-      });
-      console.log('📤 Unreport broadcasted via Socket.IO');
-    }
-
-    res.json({
-      success: true,
-      message: 'Report removed successfully'
-    });
-
-  } catch (error) {
-    console.error('Unreport message error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to unreport message'
-    });
-  }
-});
-
-
-// NEW: GET REPORTED MESSAGES (LECTURER ONLY)
-
-router.get('/session/:sessionId/reported', isAuthenticated, verifySessionAccess, async (req, res) => {
-  try {
-    const { sessionId } = req.params;
-
-    // Check if user is lecturer
-    if (!req.isLecturer) {
-      return res.status(403).json({
-        success: false,
-        message: 'Only lecturers can view reported messages'
-      });
-    }
-
-    const reportedMessages = await Message.getReportedMessages(sessionId);
-
-    res.json({
-      success: true,
-      messages: reportedMessages,
-      count: reportedMessages.length
-    });
-
-  } catch (error) {
-    console.error('Get reported messages error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch reported messages'
-    });
-  }
-});
-
-// Pin/Unpin message (lecturer only)
+// PIN/UNPIN MESSAGE (Lecturer only)
 router.post('/:messageId/pin', isAuthenticated, async (req, res) => {
   try {
     const { messageId } = req.params;
@@ -596,7 +474,6 @@ router.post('/:messageId/pin', isAuthenticated, async (req, res) => {
       });
     }
 
-    // Check if user is lecturer
     const isLecturer = message.sessionId.lecturer.toString() === userId;
     if (!isLecturer) {
       return res.status(403).json({
@@ -605,9 +482,9 @@ router.post('/:messageId/pin', isAuthenticated, async (req, res) => {
       });
     }
 
-    await message.togglePin();
+    message.isPinned = !message.isPinned;
+    await message.save();
 
-    // Broadcast pin status via Socket.IO
     const io = req.app.get('io');
     if (io) {
       io.to(`session-${message.sessionId._id}`).emit('message-pinned', {
@@ -618,7 +495,7 @@ router.post('/:messageId/pin', isAuthenticated, async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Message pin status updated',
+      message: message.isPinned ? 'Message pinned' : 'Message unpinned',
       isPinned: message.isPinned
     });
 
