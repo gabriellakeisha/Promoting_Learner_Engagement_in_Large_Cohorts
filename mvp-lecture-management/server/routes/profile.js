@@ -102,4 +102,68 @@ router.put('/password', isAuthenticated, async (req, res) => {
   }
 });
 
+// PUT /api/profile/avatar - Save avatar to database
+router.put('/avatar', isAuthenticated, async (req, res) => {
+  try {
+    const { avatarUrl } = req.body;
+
+    if (!avatarUrl) {
+      return res.status(400).json({ success: false, message: 'Avatar URL is required' });
+    }
+
+    if (avatarUrl.length > 500000) {
+      return res.status(400).json({ success: false, message: 'Avatar image is too large' });
+    }
+
+    const user = await User.findById(req.session.userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    user.avatar = {
+      type: 'uploaded',
+      imageUrl: avatarUrl,
+      initials: null,
+      backgroundColor: null
+    };
+    await user.save();
+
+    console.log('Avatar saved to database for user:', user._id);
+
+    res.json({
+      success: true,
+      message: 'Avatar updated successfully',
+      avatarUrl: avatarUrl
+    });
+    
+  } catch (error) {
+    console.error('Update avatar error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// DELETE /api/profile/avatar - Remove avatar (use initials)
+router.delete('/avatar', isAuthenticated, async (req, res) => {
+  try {
+    const user = await User.findById(req.session.userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    user.avatar = {
+      type: 'generated',
+      imageUrl: null,
+      initials: null,
+      backgroundColor: null
+    };
+    await user.save();
+
+    res.json({ success: true, message: 'Avatar removed successfully' });
+    
+  } catch (error) {
+    console.error('Remove avatar error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 module.exports = router;

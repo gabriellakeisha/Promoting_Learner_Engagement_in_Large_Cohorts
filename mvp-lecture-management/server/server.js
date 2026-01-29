@@ -46,8 +46,8 @@ app.use(cors({
   credentials: true,
 }));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Session configuration
 const sessionMiddleware = session({
@@ -57,10 +57,10 @@ const sessionMiddleware = session({
   store: MongoStore.create({
     mongoUrl: process.env.MONGODB_URI,
     collectionName: 'user_sessions',
-    touchAfter: 24 * 3600, // Update session once per 24 hours unless changed
+    touchAfter: 24 * 3600,
   }),
   cookie: {
-    maxAge: parseInt(process.env.SESSION_MAX_AGE) || 86400000, // 24 hours
+    maxAge: parseInt(process.env.SESSION_MAX_AGE) || 86400000,
     httpOnly: true,
     secure: false,
     sameSite: 'lax'
@@ -80,7 +80,6 @@ app.use('/api/bulk', bulkUploadRoutes);
 app.use('/api/sessions', sessionsRoutes);
 app.use('/api/messages', messagesRoutes);
 app.use('/api/analytics', analyticsRoutes);
-app.use('/api/profile', profileRoutes);
 app.use('/api/reflection', reflectionRoutes);
 
 
@@ -120,13 +119,13 @@ io.engine.use(sessionMiddleware);
 
 // Socket.IO connection handling
 io.on('connection', async (socket) => {
-  console.log('✅ New socket connection:', socket.id);
+  console.log('New socket connection:', socket.id);
 
   // Get user from session
   const session = socket.request.session;
 
   if (!session || !session.userId) {
-    console.log('❌ Unauthorized socket connection');
+    console.log('Unauthorized socket connection');
     socket.disconnect();
     return;
   }
@@ -134,7 +133,7 @@ io.on('connection', async (socket) => {
   const userId = session.userId;
   const userRole = session.userRole;
 
-  console.log(`👤 User connected: ${session.displayName} (${userRole})`);
+  console.log(`User connected: ${session.displayName} (${userRole})`);
 
   // Set user online
   try {
@@ -168,7 +167,7 @@ io.on('connection', async (socket) => {
       socket.join(`session-${sessionId}`);
       socket.currentSession = sessionId;
 
-      console.log(`📡 User ${session.displayName} joined session room: ${sessionId}`);
+      console.log(`User ${session.displayName} joined session room: ${sessionId}`);
 
       // Notify others in the room
       socket.to(`session-${sessionId}`).emit('user-joined', {
@@ -230,8 +229,8 @@ io.on('connection', async (socket) => {
         await membership.incrementMessageCount();
       }
 
-      // Populate user info and reply data
-      await message.populate('userId', 'displayName role');
+      // Populate user info INCLUDING AVATAR and reply data
+      await message.populate('userId', 'displayName role avatar');
       await message.populate({
         path: 'replyTo',
         select: 'text userId type timestamp',
@@ -263,6 +262,7 @@ io.on('connection', async (socket) => {
           id: message.userId._id,
           displayName: message.userId.displayName,
           role: message.userId.role,
+          avatarUrl: message.userId.avatar?.imageUrl || null
         },
         userId: {
           _id: message.userId._id,
@@ -270,7 +270,8 @@ io.on('connection', async (socket) => {
           role: message.userId.role
         },
         username: message.userId.displayName,
-        userRole: message.userId.role
+        userRole: message.userId.role,
+        avatarUrl: message.userId.avatar?.imageUrl || null
       };
 
       io.to(`session-${sessionId}`).emit('new-message', messageData);
@@ -401,9 +402,19 @@ io.on('connection', async (socket) => {
     });
   });
 
+  // Handle profile updates - broadcast to all users
+  socket.on('profile-update', (data) => {
+    console.log('Profile update received:', data);
+    socket.broadcast.emit('profile-updated', {
+      userId: data.userId,
+      displayName: data.displayName,
+      avatarUrl: data.avatarUrl
+    });
+  });
+
   // Handle disconnect
   socket.on('disconnect', async () => {
-    console.log(`👋 User disconnected: ${session.displayName}`);
+    console.log(`User disconnected: ${session.displayName}`);
 
     // Set user offline
     try {

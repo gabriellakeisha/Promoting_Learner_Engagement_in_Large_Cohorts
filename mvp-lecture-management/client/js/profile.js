@@ -49,12 +49,9 @@ async function loadProfile() {
 
         if (result.success && result.user) {
             userProfile = result.user;
-
-            // Check if user has uploaded avatar (stored in localStorage for now)
-            const storedAvatar = localStorage.getItem(`avatar_${userProfile.id}`);
-            if (storedAvatar) {
-                userProfile.avatarUrl = storedAvatar;
-            }
+            // CHANGED: Get avatarUrl from server response (database)
+            // No more localStorage check needed
+            userProfile.avatarUrl = result.user.avatarUrl || null;
 
             console.log('✅ Profile loaded:', userProfile);
             updateNavbarAvatar();
@@ -742,7 +739,7 @@ function closeCropperModal() {
     }
 }
 
-function saveCroppedImage() {
+async function saveCroppedImage() {
     if (!cropper) {
         showProfileStatus('Cropper not ready', 'error');
         return;
@@ -758,14 +755,27 @@ function saveCroppedImage() {
 
         const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
 
-        // Store in localStorage
-        localStorage.setItem(`avatar_${userProfile.id}`, dataUrl);
-        userProfile.avatarUrl = dataUrl;
+        // CHANGED: Save to database instead of localStorage
+        showProfileStatus('Saving...', 'success');
+        
+        const response = await fetch('/api/profile/avatar', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ avatarUrl: dataUrl })
+        });
 
-        closeCropperModal();
-        updateProfileDisplay();
-        updateNavbarAvatar();
-        showProfileStatus('✓ Photo saved!', 'success');
+        const result = await response.json();
+
+        if (result.success) {
+            userProfile.avatarUrl = dataUrl;
+            closeCropperModal();
+            updateProfileDisplay();
+            updateNavbarAvatar();
+            showProfileStatus('✓ Photo saved!', 'success');
+        } else {
+            showProfileStatus(result.message || 'Failed to save', 'error');
+        }
 
     } catch (error) {
         console.error('Save error:', error);
@@ -773,16 +783,33 @@ function saveCroppedImage() {
     }
 }
 
+
 // ========================================
 // REMOVE AVATAR (back to initials)
 // ========================================
-function removeAvatar() {
+async function removeAvatar() {
     if (userProfile && userProfile.id) {
-        localStorage.removeItem(`avatar_${userProfile.id}`);
-        userProfile.avatarUrl = null;
-        updateProfileDisplay();
-        updateNavbarAvatar();
-        showProfileStatus('✓ Using initials avatar', 'success');
+        try {
+            // CHANGED: Call API instead of just localStorage
+            const response = await fetch('/api/profile/avatar', {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                userProfile.avatarUrl = null;
+                updateProfileDisplay();
+                updateNavbarAvatar();
+                showProfileStatus('✓ Using initials avatar', 'success');
+            } else {
+                showProfileStatus(result.message || 'Failed', 'error');
+            }
+        } catch (error) {
+            console.error('Remove error:', error);
+            showProfileStatus('Error removing avatar', 'error');
+        }
     }
 }
 

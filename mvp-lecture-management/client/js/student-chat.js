@@ -25,10 +25,10 @@ async function checkAuth() {
     console.log('✅ Auth OK, user:', currentUser._id, 'Role:', currentUser.role);
     document.getElementById('user-name').textContent = currentUser.displayName;
     return true;
-  } catch (error) { 
+  } catch (error) {
     console.error('❌ Auth error:', error);
-    window.location.href = '/login.html'; 
-    return false; 
+    window.location.href = '/login.html';
+    return false;
   }
 }
 
@@ -38,28 +38,28 @@ async function init() {
     sessionId = getSessionIdFromURL();
     console.log('📍 Session ID:', sessionId);
     if (!sessionId || sessionId.length !== 24) { alert('Invalid session ID'); redirectToDashboard(); return; }
-    
+
     const authOk = await checkAuth();
     if (!authOk) return;
-    
+
     console.log('📚 Loading session...');
     await loadSession();
-    
+
     console.log('🔌 Initializing socket...');
     initializeSocket();
-    
+
     console.log('📥 About to load messages...');
     await loadMessages();
-    
+
     console.log('⌨️ Setting up input...');
     setupInputArea();
-    
+
     console.log('✅ Init complete!');
   } catch (error) {
     console.error('❌ Init error:', error);
     removeLoadingSpinner();
     showError('Failed to load chat: ' + error.message);
-    setTimeout(function() { redirectToDashboard(); }, 3000);
+    setTimeout(function () { redirectToDashboard(); }, 3000);
   }
 }
 
@@ -86,23 +86,24 @@ async function loadSession() {
 
 function initializeSocket() {
   socket = io({ transports: ['websocket', 'polling'], reconnection: true, reconnectionDelay: 1000, reconnectionAttempts: 5, forceNew: false });
-  socket.on('connect', function() {
+  socket.on('connect', function () {
     console.log('🔌 Socket connected');
     if (!sessionId || !currentUser) return;
     socket.emit('join-session', { sessionId: sessionId, userId: currentUser._id, displayName: currentUser.displayName, role: currentUser.role });
   });
-  socket.on('joined-session', function(data) { 
-    socketJoined = true; 
+  socket.on('joined-session', function (data) {
+    socketJoined = true;
     console.log('✅ Joined session room');
   });
-  socket.on('new-message', function(message) {
-    console.log('📨 New message received via socket');
+  socket.on('new-message', function (message) {
+    console.log('New message received via socket');
     var visOwner = String(message.user?.id || message.userId?._id || message.userId || '');
     appendMessage({
       id: message.id || message._id,
       username: message.user?.displayName || message.username,
       userRole: message.user?.role || message.userRole,
       visOwner: visOwner,
+      avatarUrl: message.avatarUrl || message.user?.avatarUrl || null,  // ADD THIS LINE
       text: message.text,
       type: message.type,
       timestamp: message.timestamp || message.createdAt,
@@ -115,23 +116,23 @@ function initializeSocket() {
     });
     scrollToBottom();
   });
-  socket.on('message-deleted', function(data) {
+  socket.on('message-deleted', function (data) {
     var el = document.querySelector('[data-message-id="' + data.messageId + '"]');
-    if (el) { el.style.transition = 'opacity 0.3s'; el.style.opacity = '0'; setTimeout(function() { el.remove(); }, 300); }
+    if (el) { el.style.transition = 'opacity 0.3s'; el.style.opacity = '0'; setTimeout(function () { el.remove(); }, 300); }
   });
-  socket.on('message-reported', function(data) {
+  socket.on('message-reported', function (data) {
     var el = document.querySelector('[data-message-id="' + data.messageId + '"]');
     if (el) { if (data.isReported) el.classList.add('reported-message'); else el.classList.remove('reported-message'); }
   });
-  socket.on('message-edited', function(data) {
+  socket.on('message-edited', function (data) {
     var el = document.querySelector('[data-message-id="' + data.messageId + '"]');
     if (el) { var textEl = el.querySelector('.message-text'); if (textEl) textEl.textContent = data.text; }
   });
-  socket.on('message-pinned', function(data) {
+  socket.on('message-pinned', function (data) {
     var el = document.querySelector('[data-message-id="' + data.messageId + '"]');
     if (el) { if (data.isPinned) el.classList.add('pinned'); else el.classList.remove('pinned'); }
   });
-  socket.on('disconnect', function() { socketJoined = false; console.log('🔌 Socket disconnected'); });
+  socket.on('disconnect', function () { socketJoined = false; console.log('🔌 Socket disconnected'); });
 }
 
 async function loadMessages() {
@@ -141,10 +142,10 @@ async function loadMessages() {
     console.log('📥 Fetching from /api/messages/session/' + sessionId);
     const response = await fetch('/api/messages/session/' + sessionId + '?limit=200', { credentials: 'include' });
     console.log('📥 Response status:', response.status);
-    
+
     const text = await response.text();
     console.log('📥 Raw response length:', text.length);
-    
+
     let result;
     try {
       result = JSON.parse(text);
@@ -153,10 +154,10 @@ async function loadMessages() {
       console.log('📥 First 500 chars:', text.substring(0, 500));
       throw new Error('Invalid JSON response');
     }
-    
+
     removeLoadingSpinner();
     console.log('📥 Parsed result, messages:', result.messages?.length || 0);
-    
+
     if (result.success && result.messages && result.messages.length > 0) {
       var container = document.getElementById('messages-container');
       // Clear loading/empty states
@@ -164,9 +165,9 @@ async function loadMessages() {
       var empty = container.querySelector('.empty-state');
       if (loading) loading.style.display = 'none';
       if (empty) empty.remove();
-      
+
       console.log('📥 Appending', result.messages.length, 'messages');
-      result.messages.forEach(function(msg, index) {
+      result.messages.forEach(function (msg, index) {
         var visOwner = String(msg.user?.id || msg.userId?._id || msg.userId || '');
         if (index < 3) console.log('📥 Msg', index, '- id:', msg.id, 'owner:', visOwner);
         appendMessage({
@@ -174,6 +175,7 @@ async function loadMessages() {
           username: msg.user?.displayName || msg.username || 'Anonymous',
           userRole: msg.user?.role || msg.userRole || 'student',
           visOwner: visOwner,
+          avatarUrl: msg.avatarUrl || msg.user?.avatarUrl || null,
           text: msg.text,
           type: msg.type,
           timestamp: msg.createdAt || msg.timestamp,
@@ -187,20 +189,20 @@ async function loadMessages() {
       });
       scrollToBottom();
       console.log('📥 All messages appended');
-    } else { 
+    } else {
       console.log('📥 No messages found');
-      showEmptyState(); 
+      showEmptyState();
     }
-  } catch (error) { 
+  } catch (error) {
     console.error('❌ loadMessages error:', error);
-    removeLoadingSpinner(); 
-    showError('Failed to load messages: ' + error.message); 
+    removeLoadingSpinner();
+    showError('Failed to load messages: ' + error.message);
   }
 }
 
 function setupInputArea() {
   var inputContainer = document.querySelector('.chat-input-container');
-  
+
   if (currentUser.role === 'lecturer') {
     inputContainer.innerHTML = `
       <div id="reply-indicator" class="reply-indicator-container" style="display:none;margin-bottom:8px;"></div>
@@ -223,19 +225,19 @@ function setupInputArea() {
         </button>
       </div>
     `;
-    
+
     // Setup + button click handler
     var plusBtn = document.getElementById('plus-btn');
     if (plusBtn) {
-      plusBtn.addEventListener('click', function(e) {
+      plusBtn.addEventListener('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
         toggleOptionsMenu();
       });
     }
-    
+
     // Close menu when clicking outside
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
       var menu = document.getElementById('options-menu');
       var plusBtn = document.getElementById('plus-btn');
       if (menu && optionsMenuOpen && !menu.contains(e.target) && e.target !== plusBtn) {
@@ -256,17 +258,17 @@ function setupInputArea() {
     }
     if (typeof initIdentityModeSelector === 'function') { initIdentityModeSelector('.chat-input-container'); }
   }
-  
+
   var sendBtn = document.getElementById('send-btn');
   if (sendBtn) sendBtn.addEventListener('click', sendMessage);
   var input = document.getElementById('message-input');
-  if (input) { 
-    input.addEventListener('keypress', function(e) { 
-      if (e.key === 'Enter' && !e.shiftKey) { 
-        e.preventDefault(); 
-        sendMessage(); 
-      } 
-    }); 
+  if (input) {
+    input.addEventListener('keypress', function (e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
   }
 }
 
@@ -274,7 +276,7 @@ function toggleOptionsMenu() {
   var menu = document.getElementById('options-menu');
   var plusBtn = document.getElementById('plus-btn');
   if (!menu || !plusBtn) return;
-  
+
   optionsMenuOpen = !optionsMenuOpen;
   menu.style.display = optionsMenuOpen ? 'block' : 'none';
   plusBtn.textContent = optionsMenuOpen ? '×' : '+';
@@ -286,23 +288,23 @@ async function sendMessage() {
   if (!input) return;
   var text = input.value.trim();
   if (!text) return;
-  
-  if (!socketJoined) { 
-    socket.emit('join-session', { sessionId: sessionId, userId: currentUser._id, displayName: currentUser.displayName, role: currentUser.role }); 
+
+  if (!socketJoined) {
+    socket.emit('join-session', { sessionId: sessionId, userId: currentUser._id, displayName: currentUser.displayName, role: currentUser.role });
   }
-  
+
   var messageData;
   if (currentUser.role === 'lecturer') {
     var isAnnouncement = document.getElementById('is-announcement')?.checked || false;
     var shouldPin = document.getElementById('pin-message')?.checked || false;
-    
+
     messageData = { sessionId: sessionId, text: text, type: 'COMMENT', replyTo: replyingTo ? replyingTo.id : null, isAnnouncement: isAnnouncement };
     try {
       var response = await fetch('/api/messages/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(messageData) });
       if (!response.ok) { var errorData = await response.json(); throw new Error(errorData.message || 'Failed'); }
       var result = await response.json();
-      if (shouldPin && result.messageData && result.messageData.id) { 
-        await fetch('/api/messages/' + result.messageData.id + '/pin', { method: 'POST', credentials: 'include' }); 
+      if (shouldPin && result.messageData && result.messageData.id) {
+        await fetch('/api/messages/' + result.messageData.id + '/pin', { method: 'POST', credentials: 'include' });
       }
       input.value = '';
       var ac = document.getElementById('is-announcement'); if (ac) ac.checked = false;
@@ -313,7 +315,7 @@ async function sendMessage() {
       optionsMenuOpen = false;
       var plusBtn = document.getElementById('plus-btn');
       if (plusBtn) { plusBtn.textContent = '+'; plusBtn.style.background = '#374151'; }
-      cancelReply(); 
+      cancelReply();
       input.focus();
     } catch (error) { alert('Failed to send: ' + error.message); }
   } else {
@@ -346,7 +348,7 @@ function appendMessage(message) {
   var isLecturer = message.userRole === 'lecturer';
   var isOwnMessage = currentUser && message.visOwner && (message.visOwner === currentUser._id);
   var identityMode = message.identityMode || 'identified';
-  
+
   var messageClasses = 'chat-message ' + (isLecturer ? 'lecturer-message' : 'student-message');
   if (isOwnMessage && !message.isAnnouncement) messageClasses += ' own-message';
   if (message.isAnnouncement) messageClasses += ' announcement';
@@ -360,7 +362,7 @@ function appendMessage(message) {
   var displayName, avatarHTML, identityBadge = '';
   if (isLecturer) {
     displayName = message.username || 'Lecturer';
-    avatarHTML = generateAvatarHTML(displayName, true);
+    avatarHTML = generateAvatarHTML(displayName, true, message.avatarUrl);  
   } else {
     if (identityMode === 'anonymous') {
       displayName = 'Anonymous';
@@ -373,7 +375,7 @@ function appendMessage(message) {
       identityBadge = '<span class="identity-badge pseudonymous">🎭 Alias</span>';
     } else {
       displayName = message.username || 'Student';
-      avatarHTML = generateAvatarHTML(displayName, false);
+      avatarHTML = generateAvatarHTML(displayName, false, message.avatarUrl);
     }
   }
 
@@ -396,7 +398,7 @@ function appendMessage(message) {
   if (currentUser && currentUser.role === 'lecturer') {
     actionButtonsHTML += '<button class="action-btn edit-btn" onclick="editMessage(\'' + (message.id || message._id) + '\')" title="Edit">✏️ Edit</button>';
     actionButtonsHTML += '<button class="action-btn pin-btn" onclick="togglePin(\'' + (message.id || message._id) + '\')" title="' + (message.isPinned ? 'Unpin' : 'Pin') + '">' + (message.isPinned ? '📌 Unpin' : '📍 Pin') + '</button>';
-    actionButtonsHTML += message.isReported 
+    actionButtonsHTML += message.isReported
       ? '<button class="action-btn report-btn reported" onclick="unreportMessage(\'' + (message.id || message._id) + '\')" title="Remove Report">✅ Unreport</button>'
       : '<button class="action-btn report-btn" onclick="reportMessage(\'' + (message.id || message._id) + '\')" title="Report">🚩 Report</button>';
     actionButtonsHTML += '<button class="action-btn delete-btn" onclick="deleteMessage(\'' + (message.id || message._id) + '\')" title="Delete">🗑️ Delete</button>';
@@ -410,7 +412,12 @@ function appendMessage(message) {
   container.appendChild(messageDiv);
 }
 
-function generateAvatarHTML(displayName, isLecturer) {
+function generateAvatarHTML(displayName, isLecturer, avatarUrl) {
+  if (avatarUrl) {
+    var border = isLecturer ? 'border:2px solid #667eea;' : '';
+    return '<img src="' + avatarUrl + '" class="message-avatar ' + (isLecturer ? 'lecturer-avatar' : '') + '" style="width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;' + border + '">';
+  }
+  // Original code for initials:
   var initials = getAvatarInitials(displayName);
   var bgColor = generateColorFromName(displayName);
   var border = isLecturer ? 'border:2px solid #667eea;' : '';
@@ -419,7 +426,7 @@ function generateAvatarHTML(displayName, isLecturer) {
 
 function getAvatarInitials(name) {
   if (!name) return '??';
-  var parts = name.trim().split(' ').filter(function(p) { return p.length > 0; });
+  var parts = name.trim().split(' ').filter(function (p) { return p.length > 0; });
   if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   return name.substring(0, 2).toUpperCase();
 }
@@ -431,17 +438,17 @@ function generateColorFromName(name) {
   return colors[Math.abs(hash) % colors.length];
 }
 
-window.deleteMessage = async function(messageId) {
+window.deleteMessage = async function (messageId) {
   if (!confirm('Delete this message permanently?')) return;
   try {
     var response = await fetch('/api/messages/' + messageId, { method: 'DELETE', credentials: 'include' });
     if (!response.ok) { var e = await response.json(); throw new Error(e.message || 'Failed'); }
     var el = document.querySelector('[data-message-id="' + messageId + '"]');
-    if (el) { el.style.transition = 'opacity 0.3s'; el.style.opacity = '0'; setTimeout(function() { el.remove(); }, 300); }
+    if (el) { el.style.transition = 'opacity 0.3s'; el.style.opacity = '0'; setTimeout(function () { el.remove(); }, 300); }
   } catch (error) { alert('Failed: ' + error.message); }
 };
 
-window.editMessage = async function(messageId) {
+window.editMessage = async function (messageId) {
   var el = document.querySelector('[data-message-id="' + messageId + '"]');
   if (!el) return;
   var textEl = el.querySelector('.message-text');
@@ -456,7 +463,7 @@ window.editMessage = async function(messageId) {
   } catch (error) { alert('Failed: ' + error.message); }
 };
 
-window.reportMessage = async function(messageId) {
+window.reportMessage = async function (messageId) {
   var reason = prompt('Why are you reporting this? (Optional)');
   if (reason === null) return;
   try {
@@ -466,7 +473,7 @@ window.reportMessage = async function(messageId) {
   } catch (error) { alert('Failed: ' + error.message); }
 };
 
-window.unreportMessage = async function(messageId) {
+window.unreportMessage = async function (messageId) {
   if (!confirm('Remove report?')) return;
   try {
     var response = await fetch('/api/messages/' + messageId + '/report', { method: 'DELETE', credentials: 'include' });
@@ -475,7 +482,7 @@ window.unreportMessage = async function(messageId) {
   } catch (error) { alert('Failed: ' + error.message); }
 };
 
-window.togglePin = async function(messageId) {
+window.togglePin = async function (messageId) {
   try {
     var el = document.querySelector('[data-message-id="' + messageId + '"]');
     var isPinned = el?.classList.contains('pinned');
@@ -491,12 +498,12 @@ window.togglePin = async function(messageId) {
 function setReplyTo(messageId, username, text) {
   replyingTo = { id: messageId, username: username, text: text };
   var indicator = document.getElementById('reply-indicator');
-  if (!indicator) { 
-    indicator = document.createElement('div'); 
-    indicator.id = 'reply-indicator'; 
-    indicator.className = 'reply-indicator-container'; 
+  if (!indicator) {
+    indicator = document.createElement('div');
+    indicator.id = 'reply-indicator';
+    indicator.className = 'reply-indicator-container';
     var inputContainer = document.querySelector('.chat-input-container');
-    inputContainer.insertBefore(indicator, inputContainer.firstChild); 
+    inputContainer.insertBefore(indicator, inputContainer.firstChild);
   }
   indicator.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(0,168,132,0.15);border-left:3px solid #00a884;border-radius:8px;"><div><div style="font-size:12px;color:#00a884;font-weight:600;">Replying to ' + escapeHtml(username) + '</div><div style="font-size:13px;color:#94a3b8;margin-top:2px;">' + escapeHtml(text.length > 60 ? text.substring(0, 60) + '...' : text) + '</div></div><button onclick="cancelReply()" style="background:none;border:none;font-size:20px;color:#94a3b8;cursor:pointer;padding:4px 8px;">×</button></div>';
   indicator.style.display = 'block';
@@ -504,32 +511,32 @@ function setReplyTo(messageId, username, text) {
   var input = document.getElementById('message-input'); if (input) input.focus();
 }
 
-function cancelReply() { 
-  replyingTo = null; 
-  var indicator = document.getElementById('reply-indicator'); 
-  if (indicator) indicator.style.display = 'none'; 
+function cancelReply() {
+  replyingTo = null;
+  var indicator = document.getElementById('reply-indicator');
+  if (indicator) indicator.style.display = 'none';
 }
 
 function scrollToMessage(messageId) {
   var el = document.querySelector('[data-message-id="' + messageId + '"]');
-  if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('message-highlighted'); setTimeout(function() { el.classList.remove('message-highlighted'); }, 2000); }
+  if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('message-highlighted'); setTimeout(function () { el.classList.remove('message-highlighted'); }, 2000); }
 }
 
 function showLoadingSpinner() { var el = document.getElementById('loading'); if (el) el.style.display = 'flex'; }
 function removeLoadingSpinner() { var el = document.getElementById('loading'); if (el) el.style.display = 'none'; }
-function showEmptyState() { 
-  var container = document.getElementById('messages-container'); 
-  var div = document.createElement('div'); 
-  div.className = 'empty-state'; 
-  div.style.cssText = 'text-align:center;padding:60px 20px;color:#94a3b8;'; 
-  div.innerHTML = '<div style="font-size:48px;margin-bottom:16px;">💬</div><h3 style="color:white;margin-bottom:8px;">No messages yet</h3><p>Be the first to start the conversation!</p>'; 
-  container.appendChild(div); 
+function showEmptyState() {
+  var container = document.getElementById('messages-container');
+  var div = document.createElement('div');
+  div.className = 'empty-state';
+  div.style.cssText = 'text-align:center;padding:60px 20px;color:#94a3b8;';
+  div.innerHTML = '<div style="font-size:48px;margin-bottom:16px;">💬</div><h3 style="color:white;margin-bottom:8px;">No messages yet</h3><p>Be the first to start the conversation!</p>';
+  container.appendChild(div);
 }
-function showError(message) { 
-  var container = document.getElementById('messages-container'); 
-  var div = document.createElement('div'); 
-  div.innerHTML = '<div style="text-align:center;padding:60px;color:#ef4444;"><div style="font-size:48px;">⚠️</div><h3>Error</h3><p>' + escapeHtml(message) + '</p></div>'; 
-  container.appendChild(div); 
+function showError(message) {
+  var container = document.getElementById('messages-container');
+  var div = document.createElement('div');
+  div.innerHTML = '<div style="text-align:center;padding:60px;color:#ef4444;"><div style="font-size:48px;">⚠️</div><h3>Error</h3><p>' + escapeHtml(message) + '</p></div>';
+  container.appendChild(div);
 }
 function escapeHtml(text) { var div = document.createElement('div'); div.textContent = text || ''; return div.innerHTML; }
 function formatTime(timestamp) { return new Date(timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }); }
@@ -541,7 +548,7 @@ window.cancelReply = cancelReply;
 window.scrollToMessage = scrollToMessage;
 window.toggleOptionsMenu = toggleOptionsMenu;
 
-document.addEventListener('DOMContentLoaded', function() { 
+document.addEventListener('DOMContentLoaded', function () {
   console.log('📄 DOM ready, calling init()');
-  init(); 
+  init();
 });

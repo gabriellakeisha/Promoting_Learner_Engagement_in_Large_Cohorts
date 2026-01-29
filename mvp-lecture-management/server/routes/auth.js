@@ -166,21 +166,41 @@ router.post('/logout', async (req, res) => {
 });
 
 // Get current user
-router.get('/me', (req, res) => {
-  if (req.session && req.session.userId) {
+router.get('/me', async (req, res) => {
+  try {
+    if (!req.session.userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Not authenticated',
+      });
+    }
+
+    const user = await User.findById(req.session.userId).select('-password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
     res.json({
       success: true,
       user: {
-        id: req.session.userId,
-        email: req.session.userEmail,
-        displayName: req.session.displayName,
-        role: req.session.userRole,
+        id: user._id,
+        email: user.email,
+        displayName: user.displayName,
+        role: user.role,
+        isOnline: user.isOnline,
+        lastLogin: user.lastLogin,
+        loginCount: user.loginCount,
+        avatarUrl: user.avatar?.imageUrl || null,
       },
     });
-  } else {
-    res.status(401).json({
+  } catch (error) {
+    console.error('Get current user error:', error);
+    res.status(500).json({
       success: false,
-      message: 'Not authenticated',
+      message: 'Server error',
     });
   }
 });
