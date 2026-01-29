@@ -81,8 +81,8 @@ router.post('/send', isAuthenticated, async (req, res) => {
       });
     }
 
-    // Validate message type
-    const validTypes = ['QUESTION', 'COMMENT', 'CONFUSION'];
+    // Validate message type (NONE is default for students)
+    const validTypes = ['NONE', 'QUESTION', 'COMMENT', 'CONFUSION'];
     if (!validTypes.includes(type)) {
       return res.status(400).json({
         success: false,

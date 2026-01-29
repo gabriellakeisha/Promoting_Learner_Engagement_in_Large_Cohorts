@@ -540,7 +540,7 @@ function showError(message) {
 }
 function escapeHtml(text) { var div = document.createElement('div'); div.textContent = text || ''; return div.innerHTML; }
 function formatTime(timestamp) { return new Date(timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }); }
-function getTypeIcon(type) { return { 'QUESTION': '❓', 'COMMENT': '💬', 'CONFUSION': '❗' }[type] || '💬'; }
+function getTypeIcon(type) { return { 'NONE': '📝', 'QUESTION': '❓', 'COMMENT': '💬', 'CONFUSION': '❗' }[type] || '📝'; }
 function scrollToBottom() { var container = document.getElementById('messages-container'); if (container) container.scrollTop = container.scrollHeight; }
 
 window.setReplyTo = setReplyTo;

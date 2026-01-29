@@ -18,25 +18,22 @@ const messageSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['QUESTION', 'COMMENT', 'CONFUSION'],
-    default: 'COMMENT',
+    enum: ['NONE', 'QUESTION', 'COMMENT', 'CONFUSION'],  // ADDED 'NONE'
+    default: 'NONE',  // Changed default to NONE
   },
   
   identityMode: {
     type: String,
     enum: ['anonymous', 'pseudonymous', 'identified'],
-    default: 'anonymous', // Default to anonymous for max engagement
+    default: 'anonymous',
   },
   
-  // Alias for pseudonymous mode
   alias: {
     type: String,
     default: null,
     maxLength: 50,
   },
-  // ============================================
   
-  // Reply reference
   replyTo: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Message',
@@ -83,6 +80,6 @@ const messageSchema = new mongoose.Schema({
 // Indexes for performance
 messageSchema.index({ sessionId: 1, timestamp: -1 });
 messageSchema.index({ userId: 1 });
-messageSchema.index({ sessionId: 1, identityMode: 1 }); // For analytics by mode
+messageSchema.index({ sessionId: 1, identityMode: 1 });
 
 module.exports = mongoose.model('Message', messageSchema);
