@@ -289,7 +289,23 @@ router.get('/session/:sessionId', isAuthenticated, verifySessionAccess, async (r
       username: msg.userId?.displayName || 'Unknown',
       userRole: msg.userId?.role || 'student',
       // FIXED: Also at top level for easy access
-      avatarUrl: msg.userId?.avatar?.imageUrl || null
+      avatarUrl: msg.userId?.avatar?.imageUrl || null,
+      
+      // POLL DATA
+      isPoll: msg.isPoll || false,
+      poll: msg.isPoll && msg.poll ? {
+        question: msg.poll.question,
+        options: msg.poll.options.map(opt => ({
+          id: opt.id,
+          text: opt.text,
+          voteCount: opt.votes ? opt.votes.length : 0,
+          hasVoted: opt.votes ? opt.votes.some(v => v.toString() === req.session.userId) : false
+        })),
+        allowMultiple: msg.poll.allowMultiple,
+        isAnonymous: msg.poll.isAnonymous,
+        isClosed: msg.poll.isClosed,
+        totalVotes: msg.poll.options.reduce((sum, opt) => sum + (opt.votes ? opt.votes.length : 0), 0)
+      } : null
     }));
 
     res.json({
@@ -603,6 +619,251 @@ router.post('/:messageId/react', isAuthenticated, async (req, res) => {
       success: false,
       message: 'Failed to add reaction'
     });
+  }
+});
+
+router.post('/poll/create', isAuthenticated, async (req, res) => {
+  try {
+    const { sessionId, question, options, allowMultiple, isAnonymous } = req.body;
+    const userId = req.session.userId;
+
+    const session = await Session.findById(sessionId);
+    if (!session) {
+      return res.status(404).json({ success: false, message: 'Session not found' });
+    }
+
+    if (session.lecturer.toString() !== userId) {
+      return res.status(403).json({ success: false, message: 'Only lecturers can create polls' });
+    }
+
+    if (!question || !options || options.length < 2) {
+      return res.status(400).json({ success: false, message: 'Poll must have a question and at least 2 options' });
+    }
+
+    if (options.length > 10) {
+      return res.status(400).json({ success: false, message: 'Poll cannot have more than 10 options' });
+    }
+
+    const pollOptions = options.map((opt, index) => ({
+      id: `opt_${index}_${Date.now()}`,
+      text: opt.trim(),
+      votes: []
+    }));
+
+    const message = new Message({
+      sessionId,
+      userId,
+      text: question,
+      type: 'POLL',
+      isPoll: true,
+      poll: {
+        question,
+        options: pollOptions,
+        allowMultiple: allowMultiple || false,
+        isAnonymous: isAnonymous !== false,
+        isClosed: false
+      }
+    });
+
+    await message.save();
+
+    const populatedMessage = await Message.findById(message._id)
+      .populate('userId', 'displayName role avatar');
+
+    const io = req.app.get('io');
+    if (io) {
+      const pollData = {
+        id: populatedMessage._id.toString(),
+        text: populatedMessage.text,
+        type: 'POLL',
+        timestamp: populatedMessage.createdAt,
+        isPoll: true,
+        poll: {
+          question: populatedMessage.poll.question,
+          options: populatedMessage.poll.options.map(opt => ({
+            id: opt.id,
+            text: opt.text,
+            voteCount: opt.votes.length
+          })),
+          allowMultiple: populatedMessage.poll.allowMultiple,
+          isAnonymous: populatedMessage.poll.isAnonymous,
+          isClosed: populatedMessage.poll.isClosed,
+          totalVotes: populatedMessage.poll.options.reduce((sum, opt) => sum + opt.votes.length, 0)
+        },
+        user: {
+          id: populatedMessage.userId._id,
+          displayName: populatedMessage.userId.displayName,
+          role: populatedMessage.userId.role,
+          avatarUrl: populatedMessage.userId.avatar?.imageUrl || null
+        },
+        username: populatedMessage.userId.displayName,
+        userRole: populatedMessage.userId.role
+      };
+      io.to('session-' + sessionId).emit('new-message', pollData);
+    }
+
+    res.json({ success: true, message: 'Poll created', pollId: message._id });
+  } catch (error) {
+    console.error('Create poll error:', error);
+    res.status(500).json({ success: false, message: 'Failed to create poll' });
+  }
+});
+
+router.post('/poll/:pollId/vote', isAuthenticated, async (req, res) => {
+  try {
+    const { pollId } = req.params;
+    const { optionIds } = req.body;
+    const userId = req.session.userId;
+
+    const message = await Message.findById(pollId);
+    if (!message || !message.isPoll) {
+      return res.status(404).json({ success: false, message: 'Poll not found' });
+    }
+
+    if (message.poll.isClosed) {
+      return res.status(400).json({ success: false, message: 'Poll is closed' });
+    }
+
+    if (message.poll.endsAt && new Date() > message.poll.endsAt) {
+      message.poll.isClosed = true;
+      await message.save();
+      return res.status(400).json({ success: false, message: 'Poll has ended' });
+    }
+
+    const membership = await Membership.findOne({ userId, sessionId: message.sessionId });
+    const session = await Session.findById(message.sessionId);
+    const isLecturer = session && session.lecturer.toString() === userId;
+
+    if (!membership && !isLecturer) {
+      return res.status(403).json({ success: false, message: 'You must be a member of this session to vote' });
+    }
+
+    if (!Array.isArray(optionIds) || optionIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'Please select at least one option' });
+    }
+
+    if (!message.poll.allowMultiple && optionIds.length > 1) {
+      return res.status(400).json({ success: false, message: 'This poll only allows one vote' });
+    }
+
+    const hasVoted = message.poll.options.some(opt => 
+      opt.votes.some(v => v.toString() === userId)
+    );
+
+    if (hasVoted) {
+      message.poll.options.forEach(opt => {
+        opt.votes = opt.votes.filter(v => v.toString() !== userId);
+      });
+    }
+
+    optionIds.forEach(optId => {
+      const option = message.poll.options.find(opt => opt.id === optId);
+      if (option && !option.votes.some(v => v.toString() === userId)) {
+        option.votes.push(userId);
+      }
+    });
+
+    await message.save();
+
+    const io = req.app.get('io');
+    if (io) {
+      const pollUpdate = {
+        pollId: message._id.toString(),
+        visOwnerId: userId,
+        options: message.poll.options.map(opt => ({
+          id: opt.id,
+          text: opt.text,
+          voteCount: opt.votes.length,
+          hasVoted: opt.votes.some(v => v.toString() === userId)
+        })),
+        totalVotes: message.poll.options.reduce((sum, opt) => sum + opt.votes.length, 0)
+      };
+      io.to('session-' + message.sessionId.toString()).emit('poll-update', pollUpdate);
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'Vote recorded',
+      options: message.poll.options.map(opt => ({
+        id: opt.id,
+        text: opt.text,
+        voteCount: opt.votes.length,
+        hasVoted: opt.votes.some(v => v.toString() === userId)
+      })),
+      totalVotes: message.poll.options.reduce((sum, opt) => sum + opt.votes.length, 0)
+    });
+  } catch (error) {
+    console.error('Vote error:', error);
+    res.status(500).json({ success: false, message: 'Failed to record vote' });
+  }
+});
+
+router.post('/poll/:pollId/close', isAuthenticated, async (req, res) => {
+  try {
+    const { pollId } = req.params;
+    const userId = req.session.userId;
+
+    const message = await Message.findById(pollId).populate('sessionId');
+    if (!message || !message.isPoll) {
+      return res.status(404).json({ success: false, message: 'Poll not found' });
+    }
+
+    if (message.sessionId.lecturer.toString() !== userId) {
+      return res.status(403).json({ success: false, message: 'Only the lecturer can close polls' });
+    }
+
+    message.poll.isClosed = true;
+    await message.save();
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to('session-' + message.sessionId._id.toString()).emit('poll-closed', { pollId: message._id.toString() });
+    }
+
+    res.json({ success: true, message: 'Poll closed' });
+  } catch (error) {
+    console.error('Close poll error:', error);
+    res.status(500).json({ success: false, message: 'Failed to close poll' });
+  }
+});
+
+router.get('/poll/:pollId/results', isAuthenticated, async (req, res) => {
+  try {
+    const { pollId } = req.params;
+    const userId = req.session.userId;
+
+    const message = await Message.findById(pollId)
+      .populate('poll.options.votes', 'displayName');
+    
+    if (!message || !message.isPoll) {
+      return res.status(404).json({ success: false, message: 'Poll not found' });
+    }
+
+    const results = {
+      question: message.poll.question,
+      isClosed: message.poll.isClosed,
+      isAnonymous: message.poll.isAnonymous,
+      totalVotes: message.poll.options.reduce((sum, opt) => sum + opt.votes.length, 0),
+      options: message.poll.options.map(opt => ({
+        id: opt.id,
+        text: opt.text,
+        voteCount: opt.votes.length,
+        percentage: 0,
+        hasVoted: opt.votes.some(v => (v._id || v).toString() === userId),
+        voters: message.poll.isAnonymous ? [] : opt.votes.map(v => v.displayName || 'Anonymous')
+      }))
+    };
+
+    if (results.totalVotes > 0) {
+      results.options.forEach(opt => {
+        opt.percentage = Math.round((opt.voteCount / results.totalVotes) * 100);
+      });
+    }
+
+    res.json({ success: true, results });
+  } catch (error) {
+    console.error('Get poll results error:', error);
+    res.status(500).json({ success: false, message: 'Failed to get poll results' });
   }
 });
 

@@ -6,6 +6,7 @@ let replyingTo = null;
 let socketJoined = false;
 let optionsMenuOpen = false;
 let activeReactionPicker = null;
+let pollCreatorOpen = false;
 
 console.log('🚀 student-chat.js loaded');
 
@@ -241,7 +242,9 @@ function initializeSocket() {
       isReported: message.isReported,
       identityMode: message.identityMode || 'identified',
       alias: message.alias,
-      reactions: message.reactions || {}
+      reactions: message.reactions || {},
+      isPoll: message.isPoll || false,
+      poll: message.poll || null
     });
     scrollToBottom();
     
@@ -296,6 +299,21 @@ function initializeSocket() {
   socket.on('message-reaction', function (data) {
     console.log('Reaction update received:', data);
     updateMessageReactions(data.messageId, data.reactions);
+  });
+  
+  // Poll real-time handlers
+  socket.on('poll-update', function (data) {
+    console.log('Poll update:', data);
+    updatePollUI(data.pollId, data.options, data.totalVotes);
+  });
+  
+  socket.on('poll-closed', function (data) {
+    console.log('Poll closed:', data);
+    var pollContainer = document.querySelector('.poll-container[data-poll-id="' + data.pollId + '"]');
+    if (pollContainer) {
+      // Mark as closed and refresh that poll
+      loadMessages();
+    }
   });
   
   socket.on('disconnect', function (reason) { 
@@ -364,7 +382,9 @@ async function loadMessages() {
           isReported: msg.isReported,
           identityMode: msg.identityMode || 'identified',
           alias: msg.alias,
-          reactions: msg.reactions || {}
+          reactions: msg.reactions || {},
+          isPoll: msg.isPoll || false,
+          poll: msg.poll || null
         });
       });
       scrollToBottom();
@@ -402,6 +422,7 @@ function setupInputArea() {
   if (currentUser.role === 'lecturer') {
     inputContainer.innerHTML = `
       <div id="reply-indicator" class="reply-indicator-container" style="display:none;margin-bottom:8px;"></div>
+      <div id="poll-creator" style="display:none;"></div>
       <div id="options-menu" class="options-menu" style="display:none;position:absolute;bottom:70px;left:12px;background:#1e293b;border-radius:12px;padding:12px;box-shadow:0 4px 20px rgba(0,0,0,0.3);z-index:100;min-width:220px;">
         <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;padding:0 4px;">Message Options</div>
         <label style="display:flex;align-items:center;gap:10px;padding:10px 8px;cursor:pointer;border-radius:8px;transition:background 0.2s;" onmouseover="this.style.background='#334155'" onmouseout="this.style.background='transparent'">
@@ -412,6 +433,11 @@ function setupInputArea() {
           <input type="checkbox" id="pin-message" style="width:18px;height:18px;accent-color:#00a884;">
           <span style="font-size:14px;">📌 Pin Message</span>
         </label>
+        <div style="height:1px;background:#334155;margin:8px 0;"></div>
+        <button type="button" onclick="openPollCreator()" style="display:flex;align-items:center;gap:10px;padding:10px 8px;cursor:pointer;border-radius:8px;transition:background 0.2s;color:white;background:transparent;border:none;width:100%;text-align:left;font-size:14px;" onmouseover="this.style.background='#334155'" onmouseout="this.style.background='transparent'">
+          <span style="font-size:18px;">📊</span>
+          <span>Create Poll</span>
+        </button>
       </div>
       <div class="other-input-row" style="display:flex;align-items:center;gap:8px;position:relative;">
         <button id="plus-btn" type="button" class="other-plus-btn" style="width:44px;height:44px;border-radius:50%;border:none;background:#374151;color:white;font-size:24px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;">+</button>
@@ -434,7 +460,8 @@ function setupInputArea() {
     document.addEventListener('click', function (e) {
       var menu = document.getElementById('options-menu');
       var plusBtn = document.getElementById('plus-btn');
-      if (menu && optionsMenuOpen && !menu.contains(e.target) && e.target !== plusBtn) {
+      var pollCreator = document.getElementById('poll-creator');
+      if (menu && optionsMenuOpen && !menu.contains(e.target) && e.target !== plusBtn && (!pollCreator || !pollCreator.contains(e.target))) {
         menu.style.display = 'none';
         optionsMenuOpen = false;
         plusBtn.textContent = '+';
@@ -611,7 +638,14 @@ function appendMessage(message) {
 
   var reactionsHTML = renderReactions(msgId, message.reactions);
 
-  messageDiv.innerHTML = '<div class="message-avatar-wrapper">' + avatarHTML + '</div><div class="message-content-wrapper"><div class="message-header"><span class="message-username ' + (isLecturer ? 'lecturer' : 'student') + '">' + escapeHtml(displayName) + '</span>' + lecturerBadge + identityBadge + '<span class="message-time">' + formatTime(message.timestamp || message.createdAt || new Date()) + '</span></div>' + replyHTML + '<div class="message-body"><span class="message-type-indicator">' + typeIcon + '</span><span class="message-text">' + escapeHtml(message.text) + '</span></div>' + reactionsHTML + '<div class="message-footer">' + badgeHTML + '<div class="message-actions">' + actionButtonsHTML + '</div></div></div>';
+  // Poll rendering - WhatsApp style
+  var pollHTML = '';
+  if (message.isPoll && message.poll) {
+    pollHTML = renderPollHTML(message);
+  }
+  var messageBodyHTML = message.isPoll ? '' : '<div class="message-body"><span class="message-type-indicator">' + typeIcon + '</span><span class="message-text">' + escapeHtml(message.text) + '</span></div>';
+
+  messageDiv.innerHTML = '<div class="message-avatar-wrapper">' + avatarHTML + '</div><div class="message-content-wrapper"><div class="message-header"><span class="message-username ' + (isLecturer ? 'lecturer' : 'student') + '">' + escapeHtml(displayName) + '</span>' + lecturerBadge + identityBadge + '<span class="message-time">' + formatTime(message.timestamp || message.createdAt || new Date()) + '</span></div>' + replyHTML + messageBodyHTML + pollHTML + reactionsHTML + '<div class="message-footer">' + badgeHTML + '<div class="message-actions">' + actionButtonsHTML + '</div></div></div>';
 
   container.appendChild(messageDiv);
   console.log('✅ Message appended to DOM:', msgId, '- Total messages now:', container.querySelectorAll('.chat-message').length);
@@ -917,7 +951,7 @@ function showError(message) {
 }
 function escapeHtml(text) { var div = document.createElement('div'); div.textContent = text || ''; return div.innerHTML; }
 function formatTime(timestamp) { return new Date(timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }); }
-function getTypeIcon(type) { return { 'NONE': '📝', 'QUESTION': '❓', 'COMMENT': '💬', 'CONFUSION': '❗' }[type] || '📝'; }
+function getTypeIcon(type) { return { 'NONE': '📝', 'QUESTION': '❓', 'COMMENT': '💬', 'CONFUSION': '❗', 'POLL': '📊' }[type] || '📝'; }
 function scrollToBottom() { 
   var container = document.getElementById('messages-container'); 
   if (container) {
@@ -933,6 +967,247 @@ window.setReplyTo = setReplyTo;
 window.cancelReply = cancelReply;
 window.scrollToMessage = scrollToMessage;
 window.toggleOptionsMenu = toggleOptionsMenu;
+
+// ========================================
+// POLL SYSTEM - WhatsApp Style
+// ========================================
+
+function openPollCreator() {
+  var menu = document.getElementById('options-menu');
+  var plusBtn = document.getElementById('plus-btn');
+  if (menu) menu.style.display = 'none';
+  optionsMenuOpen = false;
+  if (plusBtn) { plusBtn.textContent = '+'; plusBtn.style.background = '#374151'; }
+  
+  var pollCreator = document.getElementById('poll-creator');
+  if (!pollCreator) return;
+  pollCreatorOpen = true;
+  pollCreator.style.display = 'block';
+  pollCreator.innerHTML = `
+    <div style="background:#1e293b;border-radius:12px;padding:16px;margin:0 0 12px 0;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:20px;">📊</span>
+          <span style="font-size:16px;font-weight:600;color:white;">Create Poll</span>
+        </div>
+        <button onclick="closePollCreator()" style="background:none;border:none;color:#94a3b8;font-size:24px;cursor:pointer;padding:0;line-height:1;">&times;</button>
+      </div>
+      <div style="margin-bottom:12px;">
+        <input type="text" id="poll-question" placeholder="Ask a question..." style="width:100%;padding:12px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:white;font-size:14px;outline:none;box-sizing:border-box;">
+      </div>
+      <div id="poll-options-container">
+        <div class="poll-option-row" style="display:flex;gap:8px;margin-bottom:8px;">
+          <input type="text" class="poll-option-input" placeholder="Option 1" style="flex:1;padding:10px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:white;font-size:14px;outline:none;">
+          <button onclick="removePollOption(this)" style="background:#374151;border:none;color:#9ca3af;width:36px;height:36px;border-radius:8px;cursor:pointer;font-size:18px;">×</button>
+        </div>
+        <div class="poll-option-row" style="display:flex;gap:8px;margin-bottom:8px;">
+          <input type="text" class="poll-option-input" placeholder="Option 2" style="flex:1;padding:10px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:white;font-size:14px;outline:none;">
+          <button onclick="removePollOption(this)" style="background:#374151;border:none;color:#9ca3af;width:36px;height:36px;border-radius:8px;cursor:pointer;font-size:18px;">×</button>
+        </div>
+      </div>
+      <button onclick="addPollOption()" style="width:100%;padding:10px;border-radius:8px;border:1px dashed #475569;background:transparent;color:#94a3b8;font-size:14px;cursor:pointer;margin-bottom:12px;">+ Add Option</button>
+      <div style="display:flex;gap:12px;margin-bottom:16px;">
+        <label style="display:flex;align-items:center;gap:6px;color:#94a3b8;font-size:13px;cursor:pointer;">
+          <input type="checkbox" id="poll-multiple" style="accent-color:#00a884;">
+          <span>Allow multiple answers</span>
+        </label>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="closePollCreator()" style="flex:1;padding:12px;border-radius:8px;border:none;background:#374151;color:white;font-size:14px;cursor:pointer;">Cancel</button>
+        <button onclick="submitPoll()" style="flex:1;padding:12px;border-radius:8px;border:none;background:#00a884;color:white;font-size:14px;font-weight:600;cursor:pointer;">Create Poll</button>
+      </div>
+    </div>
+  `;
+  setTimeout(function() { var q = document.getElementById('poll-question'); if (q) q.focus(); }, 100);
+}
+
+function closePollCreator() {
+  var pollCreator = document.getElementById('poll-creator');
+  if (pollCreator) { pollCreator.style.display = 'none'; pollCreator.innerHTML = ''; }
+  pollCreatorOpen = false;
+}
+
+function addPollOption() {
+  var container = document.getElementById('poll-options-container');
+  if (!container) return;
+  var optionCount = container.querySelectorAll('.poll-option-row').length;
+  if (optionCount >= 10) { alert('Maximum 10 options allowed'); return; }
+  var newRow = document.createElement('div');
+  newRow.className = 'poll-option-row';
+  newRow.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;';
+  newRow.innerHTML = '<input type="text" class="poll-option-input" placeholder="Option ' + (optionCount + 1) + '" style="flex:1;padding:10px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:white;font-size:14px;outline:none;"><button onclick="removePollOption(this)" style="background:#374151;border:none;color:#9ca3af;width:36px;height:36px;border-radius:8px;cursor:pointer;font-size:18px;">×</button>';
+  container.appendChild(newRow);
+  newRow.querySelector('input').focus();
+}
+
+function removePollOption(btn) {
+  btn.parentElement.remove();
+  updatePollOptionNumbers();
+}
+
+function updatePollOptionNumbers() {
+  var inputs = document.querySelectorAll('.poll-option-input');
+  inputs.forEach(function(input, index) { input.placeholder = 'Option ' + (index + 1); });
+}
+
+async function submitPoll() {
+  var question = document.getElementById('poll-question')?.value?.trim();
+  var optionInputs = document.querySelectorAll('.poll-option-input');
+  var allowMultiple = document.getElementById('poll-multiple')?.checked || false;
+  if (!question) { alert('Please enter a question'); return; }
+  var options = [];
+  optionInputs.forEach(function(input) { var val = input.value.trim(); if (val) options.push(val); });
+  if (options.length < 2) { alert('Please add at least 2 options'); return; }
+  try {
+    var response = await fetch('/api/messages/poll/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ sessionId: sessionId, question: question, options: options, allowMultiple: allowMultiple, isAnonymous: true }) });
+    var result = await response.json();
+    if (result.success) { closePollCreator(); } else { alert(result.message || 'Failed to create poll'); }
+  } catch (error) { console.error('Poll creation error:', error); alert('Failed to create poll'); }
+}
+
+async function votePoll(pollId, optionId) {
+  try {
+    var response = await fetch('/api/messages/poll/' + pollId + '/vote', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ optionIds: [optionId] }) });
+    var result = await response.json();
+    if (result.success) {
+      // Update UI immediately with returned data
+      updatePollUI(pollId, result.options, null);
+    } else { 
+      alert(result.message || 'Failed to vote'); 
+    }
+  } catch (error) { console.error('Vote error:', error); alert('Failed to vote'); }
+}
+
+async function closePollById(pollId) {
+  if (!confirm('Close this poll? Students will no longer be able to vote.')) return;
+  try {
+    var response = await fetch('/api/messages/poll/' + pollId + '/close', { method: 'POST', credentials: 'include' });
+    var result = await response.json();
+    if (result.success) {
+      loadMessages();
+    } else { 
+      alert(result.message || 'Failed to close poll'); 
+    }
+  } catch (error) { console.error('Close poll error:', error); alert('Failed to close poll'); }
+}
+
+async function viewPollVotes(pollId) {
+  try {
+    var response = await fetch('/api/messages/poll/' + pollId + '/results', { credentials: 'include' });
+    var result = await response.json();
+    if (result.success) {
+      var r = result.results;
+      var voterInfo = r.options.map(function(opt) {
+        return opt.text + ': ' + opt.voteCount + ' votes' + (opt.voters && opt.voters.length > 0 ? ' (' + opt.voters.join(', ') + ')' : '');
+      }).join('\n');
+      alert('Poll Results:\n\n' + voterInfo + '\n\nTotal: ' + r.totalVotes + ' votes');
+    }
+  } catch (error) { console.error('View votes error:', error); }
+}
+
+// Update poll UI without full page reload
+function updatePollUI(pollId, options, totalVotes) {
+  var pollContainer = document.querySelector('.poll-container[data-poll-id="' + pollId + '"]');
+  if (!pollContainer) return;
+  
+  // Calculate total votes if not provided
+  if (totalVotes === null || totalVotes === undefined) {
+    totalVotes = options.reduce(function(sum, opt) { return sum + (opt.voteCount || 0); }, 0);
+  }
+  
+  var hasVoted = options.some(function(opt) { return opt.hasVoted; });
+  var isLecturer = currentUser && currentUser.role === 'lecturer';
+  
+  // Get the question from existing poll
+  var questionEl = pollContainer.querySelector('div > div:first-child');
+  var question = questionEl ? questionEl.textContent : '';
+  
+  // Rebuild options HTML
+  var optionsHTML = options.map(function(opt) {
+    var voteCount = opt.voteCount || 0;
+    var percentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
+    var voted = opt.hasVoted;
+    
+    var circleHTML = voted ? 
+      '<div style="width:24px;height:24px;border-radius:50%;border:2px solid #00a884;background:#00a884;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>' :
+      '<div style="width:24px;height:24px;border-radius:50%;border:2px solid #4a5568;flex-shrink:0;"></div>';
+    
+    var progressHTML = hasVoted ? 
+      '<div style="height:4px;background:#2d3748;border-radius:2px;margin-top:8px;overflow:hidden;"><div style="height:100%;width:' + percentage + '%;background:' + (voted ? '#00a884' : '#4a5568') + ';border-radius:2px;transition:width 0.3s;"></div></div>' : '';
+    
+    var clickHandler = !hasVoted ? ' onclick="votePoll(\'' + pollId + '\', \'' + opt.id + '\')" style="cursor:pointer;"' : '';
+    
+    return '<div' + clickHandler + ' style="padding:12px 0;border-bottom:1px solid #2d3748;' + (!hasVoted ? 'cursor:pointer;' : '') + '"><div style="display:flex;align-items:center;justify-content:space-between;"><div style="display:flex;align-items:center;gap:12px;">' + circleHTML + '<span style="color:white;font-size:15px;">' + escapeHtml(opt.text) + '</span></div><span style="color:#94a3b8;font-size:14px;">' + voteCount + '</span></div>' + progressHTML + '</div>';
+  }).join('');
+  
+  // Update the poll options container
+  var optionsContainer = pollContainer.querySelector('.poll-options');
+  if (optionsContainer) {
+    optionsContainer.innerHTML = optionsHTML;
+  }
+}
+
+// WhatsApp Style Poll Rendering
+function renderPollHTML(message) {
+  var poll = message.poll;
+  if (!poll) return '';
+  var totalVotes = poll.totalVotes || poll.options.reduce(function(sum, opt) { return sum + (opt.voteCount || opt.votes?.length || 0); }, 0);
+  var hasVoted = poll.options.some(function(opt) { return opt.hasVoted; });
+  var isClosed = poll.isClosed;
+  var isLecturer = currentUser && currentUser.role === 'lecturer';
+  var msgId = message.id || message._id;
+  
+  // WhatsApp style header
+  var headerHTML = '<div style="margin-bottom:12px;"><div style="font-size:16px;font-weight:600;color:white;margin-bottom:4px;">' + escapeHtml(poll.question) + '</div><div style="display:flex;align-items:center;gap:6px;color:#00a884;font-size:13px;"><span>📊</span><span>' + (poll.allowMultiple ? 'Select one or more' : 'Select one option') + '</span></div></div>';
+  
+  // WhatsApp style options
+  var optionsHTML = poll.options.map(function(opt) {
+    var voteCount = opt.voteCount || opt.votes?.length || 0;
+    var percentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
+    var voted = opt.hasVoted;
+    
+    // Radio circle style (like WhatsApp)
+    var circleHTML = voted ? 
+      '<div style="width:24px;height:24px;border-radius:50%;border:2px solid #00a884;background:#00a884;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>' :
+      '<div style="width:24px;height:24px;border-radius:50%;border:2px solid #4a5568;flex-shrink:0;"></div>';
+    
+    // Progress bar (shown after voting or if closed)
+    var progressHTML = (hasVoted || isClosed) ? 
+      '<div style="height:4px;background:#2d3748;border-radius:2px;margin-top:8px;overflow:hidden;"><div style="height:100%;width:' + percentage + '%;background:' + (voted ? '#00a884' : '#4a5568') + ';border-radius:2px;transition:width 0.3s;"></div></div>' : '';
+    
+    var clickHandler = (!hasVoted && !isClosed) ? ' onclick="votePoll(\'' + msgId + '\', \'' + opt.id + '\')" style="cursor:pointer;"' : '';
+    
+    return '<div' + clickHandler + ' style="padding:12px 0;border-bottom:1px solid #2d3748;' + (!hasVoted && !isClosed ? 'cursor:pointer;' : '') + '"><div style="display:flex;align-items:center;justify-content:space-between;"><div style="display:flex;align-items:center;gap:12px;">' + circleHTML + '<span style="color:white;font-size:15px;">' + escapeHtml(opt.text) + '</span></div><span style="color:#94a3b8;font-size:14px;">' + voteCount + '</span></div>' + progressHTML + '</div>';
+  }).join('');
+  
+  // Footer with timestamp and view votes (lecturer only)
+  var footerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:8px;">';
+  footerHTML += '<span style="color:#8b9caa;font-size:12px;">' + formatTime(message.timestamp || message.createdAt || new Date()) + ' ✓✓</span>';
+  
+  if (isLecturer) {
+    if (!isClosed) {
+      footerHTML += '<div style="display:flex;gap:8px;"><button onclick="viewPollVotes(\'' + msgId + '\')" style="background:#2d3748;border:none;color:#00a884;padding:8px 16px;border-radius:20px;font-size:13px;cursor:pointer;">View votes</button><button onclick="closePollById(\'' + msgId + '\')" style="background:none;border:none;color:#ef4444;font-size:12px;cursor:pointer;">Close</button></div>';
+    } else {
+      footerHTML += '<button onclick="viewPollVotes(\'' + msgId + '\')" style="background:#2d3748;border:none;color:#00a884;padding:8px 16px;border-radius:20px;font-size:13px;cursor:pointer;">View votes</button>';
+    }
+  } else if (isClosed) {
+    footerHTML += '<span style="color:#f59e0b;font-size:12px;">Poll closed</span>';
+  }
+  footerHTML += '</div>';
+  
+  return '<div class="poll-container" data-poll-id="' + msgId + '" style="background:#1a2e35;border-radius:12px;padding:16px;margin-top:8px;max-width:320px;">' + headerHTML + '<div class="poll-options">' + optionsHTML + '</div>' + footerHTML + '</div>';
+}
+
+window.openPollCreator = openPollCreator;
+window.closePollCreator = closePollCreator;
+window.addPollOption = addPollOption;
+window.removePollOption = removePollOption;
+window.updatePollOptionNumbers = updatePollOptionNumbers;
+window.submitPoll = submitPoll;
+window.votePoll = votePoll;
+window.closePollById = closePollById;
+window.viewPollVotes = viewPollVotes;
+window.updatePollUI = updatePollUI;
 
 document.addEventListener('DOMContentLoaded', function () {
   console.log('📄 DOM ready, calling init()');
