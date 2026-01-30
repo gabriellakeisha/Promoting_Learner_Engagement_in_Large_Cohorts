@@ -170,151 +170,255 @@ function displayAnalytics(analytics) {
   const questRate = questionRate || (summary.totalMessages > 0 ? ((messagesByType?.QUESTION || 0) / summary.totalMessages * 100).toFixed(1) : 0);
 
   container.innerHTML = `
-    <div class="analytics-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;">
-      <div class="stat-card" style="background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 12px; padding: 20px; color: white;">
-        <div class="stat-label" style="font-size: 12px; opacity: 0.9;">Total Messages</div>
-        <div class="stat-value" style="font-size: 32px; font-weight: 700;">${summary.totalMessages || 0}</div>
+    <div class="analytics-stats-row">
+      <div class="analytics-stat-card stat-purple">
+        <div class="stat-label">Total Messages</div>
+        <div class="stat-value">${summary.totalMessages || 0}</div>
       </div>
-      <div class="stat-card" style="background: linear-gradient(135deg, #10b981, #059669); border-radius: 12px; padding: 20px; color: white;">
-        <div class="stat-label" style="font-size: 12px; opacity: 0.9;">Contributors / Total</div>
-        <div class="stat-value" style="font-size: 32px; font-weight: 700;">${summary.activeUsers || 0}/${summary.totalMembers || 0}</div>
-        <div style="font-size: 11px; opacity: 0.8; margin-top: 4px;">${consumersCount} consumers (read only)</div>
+      <div class="analytics-stat-card stat-green">
+        <div class="stat-label">Contributors / Total</div>
+        <div class="stat-value">${summary.activeUsers || 0}/${summary.totalMembers || 0}</div>
+        <div class="stat-sub">${consumersCount} consumers (read only)</div>
       </div>
-      <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 12px; padding: 20px; color: white;">
-        <div class="stat-label" style="font-size: 12px; opacity: 0.9;">Participation Rate</div>
-        <div class="stat-value" style="font-size: 32px; font-weight: 700;">${summary.participationRate || 0}%</div>
+      <div class="analytics-stat-card stat-orange">
+        <div class="stat-label">Participation Rate</div>
+        <div class="stat-value">${summary.participationRate || 0}%</div>
       </div>
-      <div class="stat-card" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 12px; padding: 20px; color: white;">
-        <div class="stat-label" style="font-size: 12px; opacity: 0.9;">Messages/Minute</div>
-        <div class="stat-value" style="font-size: 32px; font-weight: 700;">${summary.messagesPerMinute || 0}</div>
-        <div style="font-size: 11px; opacity: 0.8; margin-top: 4px;">Last 5 min: ${summary.messagesLast5Min || 0}</div>
+      <div class="analytics-stat-card stat-blue">
+        <div class="stat-label">Messages/Minute</div>
+        <div class="stat-value">${summary.messagesPerMinute || 0}</div>
+        <div class="stat-sub">Last 5 min: ${summary.messagesLast5Min || 0}</div>
       </div>
     </div>
 
-    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px;">
-      <div class="indicator-card" style="background: var(--bg-secondary); border-radius: 12px; padding: 20px; border-left: 4px solid #ef4444;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <div>
-            <div style="font-size: 14px; color: var(--text-secondary);">😕 Confusion Rate</div>
-            <div style="font-size: 28px; font-weight: 700; color: ${parseFloat(confRate) > 20 ? '#ef4444' : 'var(--text-color)'};">${confRate}%</div>
+    <div class="analytics-indicators-row">
+      <div class="indicator-card indicator-confusion">
+        <div class="indicator-content">
+          <div class="indicator-info">
+            <div class="indicator-label">😕 Confusion Rate</div>
+            <div class="indicator-value ${parseFloat(confRate) > 20 ? 'text-danger' : ''}">${confRate}%</div>
           </div>
-          <div style="font-size: 48px;">😕</div>
+          <div class="indicator-emoji">😕</div>
         </div>
-        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 8px;">
+        <div class="indicator-footer">
           ${parseFloat(confRate) > 20 ? '⚠️ High confusion - consider clarifying recent topics' : '✅ Normal confusion levels'}
         </div>
       </div>
-      <div class="indicator-card" style="background: var(--bg-secondary); border-radius: 12px; padding: 20px; border-left: 4px solid #3b82f6;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <div>
-            <div style="font-size: 14px; color: var(--text-secondary);">❓ Question Rate</div>
-            <div style="font-size: 28px; font-weight: 700; color: var(--text-color);">${questRate}%</div>
+      <div class="indicator-card indicator-question">
+        <div class="indicator-content">
+          <div class="indicator-info">
+            <div class="indicator-label">❓ Question Rate</div>
+            <div class="indicator-value">${questRate}%</div>
           </div>
-          <div style="font-size: 48px;">❓</div>
+          <div class="indicator-emoji">❓</div>
         </div>
-        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 8px;">
+        <div class="indicator-footer">
           ${messagesByType?.QUESTION || 0} questions asked during session
         </div>
       </div>
     </div>
 
-    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 24px;">
-      <div class="analytics-chart-card" style="background: var(--bg-secondary); border-radius: 12px; padding: 20px;">
-        <h3 style="margin-bottom: 16px; color: var(--text-color); font-size: 16px;">📈 Engagement Over Time</h3>
-        <div style="height: 200px; max-height: 200px;">
+    <div class="analytics-charts-row">
+      <div class="analytics-chart-card chart-wide">
+        <h3 class="chart-title">📈 Engagement Over Time</h3>
+        <div class="chart-container">
           <canvas id="timeline-chart"></canvas>
         </div>
-        ${peakActivity ? `<div style="font-size: 12px; color: var(--text-secondary); margin-top: 12px;">
-          🔥 Peak activity: <strong>${peakActivity.time}</strong> (${peakActivity.count} messages)
-        </div>` : ''}
+        ${peakActivity ? `<div class="peak-activity">🔥 Peak activity: <strong>${peakActivity.time}</strong> (${peakActivity.count} messages)</div>` : ''}
       </div>
       
-      <div class="analytics-chart-card" style="background: var(--bg-secondary); border-radius: 12px; padding: 20px;">
-        <h3 style="margin-bottom: 16px; color: var(--text-color); font-size: 16px;">📊 Message Types</h3>
-        <div style="height: 200px; max-height: 200px;">
+      <div class="analytics-chart-card chart-narrow">
+        <h3 class="chart-title">📊 Message Types</h3>
+        <div class="chart-container">
           <canvas id="type-chart"></canvas>
         </div>
       </div>
     </div>
 
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
-      <div class="analytics-chart-card" style="background: var(--bg-secondary); border-radius: 12px; padding: 20px;">
-        <h3 style="margin-bottom: 16px; color: var(--text-color); font-size: 16px;">🔒 Identity Mode Usage</h3>
-        <div style="height: 150px; max-height: 150px;">
+    <div class="analytics-bottom-row">
+      <div class="analytics-chart-card">
+        <h3 class="chart-title">🔒 Identity Mode Usage</h3>
+        <div class="chart-container-small">
           <canvas id="identity-chart"></canvas>
         </div>
-        <div style="display: flex; justify-content: space-around; margin-top: 16px; font-size: 12px;">
-          <div style="text-align: center;">
-            <div style="font-size: 20px;">👤</div>
-            <div style="color: var(--text-secondary);">Anonymous</div>
-            <div style="font-weight: 700; color: var(--text-color);">${identityModes?.anonymous || 0}</div>
+        <div class="identity-legend">
+          <div class="identity-item">
+            <div class="identity-icon">👤</div>
+            <div class="identity-label">Anonymous</div>
+            <div class="identity-count">${identityModes?.anonymous || 0}</div>
           </div>
-          <div style="text-align: center;">
-            <div style="font-size: 20px;">🎭</div>
-            <div style="color: var(--text-secondary);">Alias</div>
-            <div style="font-weight: 700; color: var(--text-color);">${identityModes?.pseudonymous || 0}</div>
+          <div class="identity-item">
+            <div class="identity-icon">🎭</div>
+            <div class="identity-label">Alias</div>
+            <div class="identity-count">${identityModes?.pseudonymous || 0}</div>
           </div>
-          <div style="text-align: center;">
-            <div style="font-size: 20px;">😊</div>
-            <div style="color: var(--text-secondary);">Real Name</div>
-            <div style="font-weight: 700; color: var(--text-color);">${identityModes?.identified || 0}</div>
+          <div class="identity-item">
+            <div class="identity-icon">😊</div>
+            <div class="identity-label">Real Name</div>
+            <div class="identity-count">${identityModes?.identified || 0}</div>
           </div>
         </div>
       </div>
 
-      <div class="analytics-chart-card" style="background: var(--bg-secondary); border-radius: 12px; padding: 20px;">
-        <h3 style="margin-bottom: 16px; color: var(--text-color); font-size: 16px;">🔤 Top Keywords</h3>
-        <div id="keyword-cloud" style="display: flex; flex-wrap: wrap; gap: 8px; max-height: 220px; overflow-y: auto;">
+      <div class="analytics-chart-card">
+        <h3 class="chart-title">🔤 Top Keywords</h3>
+        <div class="keyword-cloud">
           ${(keywords || []).length > 0 ? 
             keywords.map((k, i) => {
-              const size = Math.max(12, 24 - i * 1.5);
+              const size = Math.max(12, 20 - i * 1.2);
               const opacity = Math.max(0.6, 1 - i * 0.04);
-              return `<span style="
-                padding: 6px 14px;
-                background: linear-gradient(135deg, rgba(102, 126, 234, ${opacity}), rgba(118, 75, 162, ${opacity}));
-                color: #ffffff;
-                border-radius: 16px;
-                font-size: ${size}px;
-                font-weight: ${i < 3 ? '600' : '500'};
-                text-shadow: 0 1px 2px rgba(0,0,0,0.2);
-              ">${k.word} <small style="opacity: 0.85;">(${k.count})</small></span>`;
-            }).join('') :
-            '<p style="color: var(--text-secondary); text-align: center; width: 100%;">No keywords yet</p>'
+              return `<span class="keyword-tag" style="font-size: ${size}px; opacity: ${opacity};">${k.word} (${k.count})</span>`;
+            }).join('') 
+            : '<div class="no-keywords">No keywords detected yet</div>'
           }
         </div>
       </div>
     </div>
 
-    <div class="analytics-table-card" style="background: var(--bg-secondary); border-radius: 12px; padding: 20px;">
-      <h3 style="margin-bottom: 16px; color: var(--text-color); font-size: 16px;">🏆 Top 5 Student Contributors</h3>
-      <table style="width: 100%; border-collapse: collapse;">
-        <thead>
-          <tr style="border-bottom: 2px solid var(--border-color);">
-            <th style="text-align: left; padding: 12px; color: var(--text-color); font-size: 13px;">Rank</th>
-            <th style="text-align: left; padding: 12px; color: var(--text-color); font-size: 13px;">Name</th>
-            <th style="text-align: left; padding: 12px; color: var(--text-color); font-size: 13px;">Email</th>
-            <th style="text-align: right; padding: 12px; color: var(--text-color); font-size: 13px;">Messages</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${(topContributors || []).map((c, i) => `
-            <tr style="border-bottom: 1px solid var(--border-color);">
-              <td style="padding: 12px; color: var(--text-color);">
-                ${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}
-              </td>
-              <td style="padding: 12px; color: var(--text-color); font-weight: 500;">${c.displayName || 'Anonymous'}</td>
-              <td style="padding: 12px; color: var(--text-secondary); font-size: 13px;">${c.email || 'N/A'}</td>
-              <td style="padding: 12px; text-align: right; font-weight: 600; color: #667eea;">${c.messageCount || 0}</td>
-            </tr>
+    ${topContributors && topContributors.length > 0 ? `
+    <div class="analytics-contributors">
+      <div class="analytics-chart-card">
+        <h3 class="chart-title">🏆 Top Contributors</h3>
+        <div class="contributors-list">
+          ${topContributors.slice(0, 5).map((c, i) => `
+            <div class="contributor-item">
+              <div class="contributor-rank">#${i + 1}</div>
+              <div class="contributor-name">${c.displayName || c.alias || 'Anonymous'}</div>
+              <div class="contributor-count">${c.count} msgs</div>
+            </div>
           `).join('')}
-          ${(topContributors || []).length === 0 ? 
-            '<tr><td colspan="4" style="padding: 20px; text-align: center; color: var(--text-secondary);">No student contributors yet</td></tr>' : ''}
-        </tbody>
-      </table>
+        </div>
+      </div>
     </div>
+    ` : ''}
   `;
 
-  createEnhancedCharts(analytics);
+  setTimeout(() => initializeCharts(analytics), 100);
+}
+
+function initializeCharts(analytics) {
+  const { messagesByType, identityModes, timeline } = analytics;
+  
+  if (window.chartInstances) {
+    Object.values(window.chartInstances).forEach(chart => {
+      if (chart && typeof chart.destroy === 'function') {
+        chart.destroy();
+      }
+    });
+  }
+  window.chartInstances = {};
+
+  const typeCtx = document.getElementById('type-chart')?.getContext('2d');
+  if (typeCtx) {
+    window.chartInstances.typeChart = new Chart(typeCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Questions', 'Comments', 'Confusion'],
+        datasets: [{
+          data: [
+            messagesByType?.QUESTION || 0,
+            messagesByType?.COMMENT || 0,
+            messagesByType?.CONFUSION || 0
+          ],
+          backgroundColor: ['#3b82f6', '#10b981', '#f59e0b'],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '60%',
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              padding: 12,
+              font: { size: 11 }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  const timelineCtx = document.getElementById('timeline-chart')?.getContext('2d');
+  if (timelineCtx && timeline?.length > 0) {
+    window.chartInstances.timelineChart = new Chart(timelineCtx, {
+      type: 'line',
+      data: {
+        labels: timeline.map(d => d.time),
+        datasets: [{
+          label: 'Messages',
+          data: timeline.map(d => d.count),
+          borderColor: '#667eea',
+          backgroundColor: 'rgba(102, 126, 234, 0.15)',
+          tension: 0.4,
+          fill: true,
+          pointRadius: 4,
+          pointBackgroundColor: '#667eea'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: { 
+            beginAtZero: true,
+            grid: { color: 'rgba(255,255,255,0.1)' },
+            ticks: { color: getComputedStyle(document.body).getPropertyValue('--text-secondary') || '#9ca3af' }
+          },
+          x: {
+            grid: { display: false },
+            ticks: { 
+              color: getComputedStyle(document.body).getPropertyValue('--text-secondary') || '#9ca3af',
+              maxRotation: 45
+            }
+          }
+        }
+      }
+    });
+  }
+
+  const identityCtx = document.getElementById('identity-chart')?.getContext('2d');
+  if (identityCtx) {
+    window.chartInstances.identityChart = new Chart(identityCtx, {
+      type: 'bar',
+      data: {
+        labels: ['Anonymous', 'Alias', 'Real Name'],
+        datasets: [{
+          data: [
+            identityModes?.anonymous || 0,
+            identityModes?.pseudonymous || 0,
+            identityModes?.identified || 0
+          ],
+          backgroundColor: ['#6b7280', '#667eea', '#10b981'],
+          borderRadius: 8,
+          borderSkipped: false
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: { 
+            beginAtZero: true,
+            grid: { color: 'rgba(255,255,255,0.1)' },
+            ticks: { color: getComputedStyle(document.body).getPropertyValue('--text-secondary') || '#9ca3af' }
+          },
+          x: {
+            grid: { display: false },
+            ticks: { color: getComputedStyle(document.body).getPropertyValue('--text-secondary') || '#9ca3af' }
+          }
+        }
+      }
+    });
+  }
 }
 
 let chartInstances = {};
