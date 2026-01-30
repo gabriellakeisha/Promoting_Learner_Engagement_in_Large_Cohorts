@@ -5,14 +5,55 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chat Room - Lecture Engagement</title>
 <link rel="stylesheet" href="/css/styles.css">
-<link rel="stylesheet" href="/css/compact.css"> 
+<link rel="stylesheet" href="/css/compact.css">
+<link rel="stylesheet" href="/css/announcement-pin.css">
 <script src="/socket.io/socket.io.js"></script>
+<!-- Emoji Picker Library -->
+<script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
+<style>
+  /* Dark theme for emoji picker */
+  emoji-picker {
+    --background: #1f2c34;
+    --border-color: #334155;
+    --indicator-color: #00a884;
+    --input-border-color: #475569;
+    --input-font-color: #e2e8f0;
+    --input-placeholder-color: #94a3b8;
+    --outline-color: #00a884;
+    --category-font-color: #94a3b8;
+    --button-active-background: #334155;
+    --button-hover-background: #475569;
+    width: 100%;
+    max-width: 350px;
+    height: 400px;
+    border-radius: 12px;
+  }
+  
+  /* Header content wrapper */
+  .chat-header .header-content {
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .chat-header .header-content h2 {
+    margin: 0 0 4px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .chat-header .header-content p {
+    margin: 0;
+    font-size: 13px;
+    color: #94a3b8;
+  }
+</style>
 </head>
 <body>
 <nav class="navbar">
 <div class="navbar-content">
 <div class="navbar-brand">
-<a href="/student-dashboard.html" style="text-decoration: none; color: inherit;">
+<a href="/student-dashboard.html" id="back-link" style="text-decoration: none; color: inherit;">
           ← Back to Dashboard
 </a>
 </div>
@@ -60,9 +101,12 @@ rows="3"
 <button id="send-btn" class="send-btn-corner">➤</button>
 </div>
 </div>
+</div>
+</div>
 
 <script src="/js/profile.js"></script>
 <script src="/js/identity-mode.js"></script>
+<script src="/js/announcement-pin.js"></script>
 <script src="/js/student-chat.js"></script>
 <script src="/js/dark-mode.js"></script>
 <script src="/js/student-reflection.js"></script>

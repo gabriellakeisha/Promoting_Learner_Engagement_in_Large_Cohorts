@@ -192,7 +192,7 @@ io.on('connection', async (socket) => {
 
       console.log(`✅ ${effectiveDisplayName} joined room: ${roomName}`);
 
-      // Notify others
+      // Notify other-s
       socket.to(roomName).emit('user-joined', {
         userId: effectiveUserId,
         displayName: effectiveDisplayName,
@@ -325,7 +325,7 @@ io.on('connection', async (socket) => {
 
       // Check ownership
       if (message.userId.toString() !== effectiveUserId) {
-        socket.emit('error', { message: 'Cannot edit others\' messages' });
+        socket.emit('error', { message: 'Cannot edit other-s\' messages' });
         return;
       }
 
@@ -461,7 +461,7 @@ io.on('connection', async (socket) => {
       }
     }
 
-    // Notify others in current session
+    // Notify other-s in current session
     if (socket.currentSession) {
       socket.to(`session-${socket.currentSession}`).emit('user-left', {
         userId: effectiveUserId,

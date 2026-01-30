@@ -6,6 +6,7 @@ let replyingTo = null;
 let socketJoined = false;
 let optionsMenuOpen = false;
 let activeReactionPicker = null;
+let pollCreatorOpen = false;
 
 console.log('🚀 student-chat.js loaded');
 
@@ -24,10 +25,6 @@ console.log('🚀 student-chat.js loaded');
       z-index: 9999;
       animation: reactionPopIn 0.2s ease;
       max-width: 320px;
-    }
-    .reaction-quick-bar {
-      display: flex;
-      gap: 2px;
     }
     @keyframes reactionPopIn {
       from { transform: scale(0.8); opacity: 0; }
@@ -51,69 +48,6 @@ console.log('🚀 student-chat.js loaded');
     .reaction-picker-btn:hover {
       background: rgba(255,255,255,0.15);
       transform: scale(1.2);
-    }
-    .reaction-more-btn {
-      background: rgba(255,255,255,0.1);
-      color: #aebac1;
-    }
-    .reaction-more-btn:hover {
-      background: rgba(0,168,132,0.3) !important;
-    }
-    
-    /* Full Emoji Picker (expands below quick bar) */
-    .emoji-full-picker {
-      margin-top: 8px;
-      border-top: 1px solid rgba(255,255,255,0.1);
-      padding-top: 8px;
-    }
-    .emoji-category-tabs {
-      display: flex;
-      gap: 2px;
-      margin-bottom: 8px;
-      overflow-x: auto;
-      padding-bottom: 4px;
-    }
-    .emoji-tab {
-      background: none;
-      border: none;
-      font-size: 18px;
-      padding: 6px 8px;
-      border-radius: 8px;
-      cursor: pointer;
-      opacity: 0.6;
-      transition: all 0.2s;
-      flex-shrink: 0;
-    }
-    .emoji-tab:hover {
-      background: rgba(255,255,255,0.1);
-      opacity: 1;
-    }
-    .emoji-tab.active {
-      background: rgba(0,168,132,0.2);
-      opacity: 1;
-    }
-    .emoji-grid-container {
-      max-height: 200px;
-      overflow-y: auto;
-      overflow-x: hidden;
-    }
-    .emoji-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 2px;
-    }
-    .emoji-grid-btn {
-      background: none;
-      border: none;
-      font-size: 22px;
-      padding: 6px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .emoji-grid-btn:hover {
-      background: rgba(255,255,255,0.15);
-      transform: scale(1.15);
     }
     
     /* Reaction Chips on Messages */
@@ -162,7 +96,7 @@ console.log('🚀 student-chat.js loaded');
       font-size: 14px !important;
     }
     
-    /* Full Emoji Picker Overlay (when clicking +) */
+    /* Full Emoji Picker Overlay */
     .emoji-picker-overlay {
       position: fixed;
       inset: 0;
@@ -177,130 +111,12 @@ console.log('🚀 student-chat.js loaded');
       from { opacity: 0; }
       to { opacity: 1; }
     }
-    .full-emoji-picker {
-      background: #1f2c34;
-      border-radius: 16px;
-      width: 90%;
-      max-width: 360px;
-      max-height: 70vh;
-      display: flex;
-      flex-direction: column;
+    .emoji-picker-wrapper {
       animation: scaleIn 0.2s ease;
-      overflow: hidden;
     }
     @keyframes scaleIn {
       from { transform: scale(0.9); opacity: 0; }
       to { transform: scale(1); opacity: 1; }
-    }
-    .emoji-picker-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 14px 16px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      font-size: 16px;
-      font-weight: 600;
-      color: #e9edef;
-    }
-    .emoji-picker-close {
-      background: none;
-      border: none;
-      font-size: 28px;
-      color: #8696a0;
-      cursor: pointer;
-      padding: 0;
-      line-height: 1;
-    }
-    .emoji-picker-close:hover {
-      color: #ffffff;
-    }
-    .emoji-search-box {
-      padding: 10px 14px;
-    }
-    .emoji-search-box input {
-      width: 100%;
-      padding: 10px 14px;
-      border: none;
-      border-radius: 20px;
-      background: rgba(255,255,255,0.1);
-      color: #e9edef;
-      font-size: 14px;
-      outline: none;
-      box-sizing: border-box;
-    }
-    .emoji-search-box input::placeholder {
-      color: #8696a0;
-    }
-    .emoji-category-tabs {
-      display: flex;
-      gap: 2px;
-      padding: 6px 10px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      overflow-x: auto;
-    }
-    .emoji-tab {
-      background: none;
-      border: none;
-      font-size: 20px;
-      padding: 8px 10px;
-      border-radius: 8px;
-      cursor: pointer;
-      opacity: 0.5;
-      transition: all 0.2s;
-      flex-shrink: 0;
-    }
-    .emoji-tab:hover {
-      background: rgba(255,255,255,0.1);
-      opacity: 1;
-    }
-    .emoji-tab.active {
-      background: rgba(0,168,132,0.25);
-      opacity: 1;
-    }
-    .emoji-grid-container {
-      flex: 1;
-      overflow-y: auto;
-      padding: 8px;
-    }
-    .emoji-category-section {
-      margin-bottom: 12px;
-    }
-    .emoji-category-title {
-      font-size: 12px;
-      color: #8696a0;
-      padding: 6px 8px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      font-weight: 600;
-    }
-    .emoji-grid {
-      display: grid;
-      grid-template-columns: repeat(8, 1fr);
-      gap: 2px;
-    }
-    .emoji-btn {
-      background: none;
-      border: none;
-      font-size: 24px;
-      padding: 8px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .emoji-btn:hover {
-      background: rgba(255,255,255,0.15);
-      transform: scale(1.15);
-    }
-    
-    /* Mobile responsive */
-    @media (max-width: 480px) {
-      .emoji-grid {
-        grid-template-columns: repeat(6, 1fr);
-      }
-      .full-emoji-picker {
-        width: 95%;
-        max-height: 60vh;
-      }
     }
   `;
   document.head.appendChild(style);
@@ -426,9 +242,31 @@ function initializeSocket() {
       isReported: message.isReported,
       identityMode: message.identityMode || 'identified',
       alias: message.alias,
-      reactions: message.reactions || {}
+      reactions: message.reactions || {},
+      isPoll: message.isPoll || false,
+      poll: message.poll || null
     });
     scrollToBottom();
+    
+    // Track new announcements and pinned messages
+    if (message.isAnnouncement && typeof addAnnouncement === 'function') {
+      addAnnouncement({
+        id: message.id || message._id,
+        username: message.user?.displayName || message.username,
+        text: message.text,
+        timestamp: message.timestamp || message.createdAt,
+        isAnnouncement: true
+      });
+    }
+    if (message.isPinned && typeof addPinnedMessage === 'function') {
+      addPinnedMessage({
+        id: message.id || message._id,
+        username: message.user?.displayName || message.username,
+        text: message.text,
+        timestamp: message.timestamp || message.createdAt,
+        isPinned: true
+      });
+    }
   });
   
   socket.on('message-deleted', function (data) {
@@ -443,15 +281,39 @@ function initializeSocket() {
     var el = document.querySelector('[data-message-id="' + data.messageId + '"]');
     if (el) { var textEl = el.querySelector('.message-text'); if (textEl) textEl.textContent = data.text; }
   });
+  
+  // Updated message-pinned handler with pin bar update
   socket.on('message-pinned', function (data) {
-    var el = document.querySelector('[data-message-id="' + data.messageId + '"]');
-    if (el) { if (data.isPinned) el.classList.add('pinned'); else el.classList.remove('pinned'); }
+    var msgId = data.messageId || data.id;
+    var el = document.querySelector('[data-message-id="' + msgId + '"]');
+    if (el) { 
+      if (data.isPinned) el.classList.add('pinned'); 
+      else el.classList.remove('pinned'); 
+    }
+    if (typeof handlePinUpdate === 'function') {
+      handlePinUpdate(data);
+    }
   });
   
   // Handle reaction updates in real-time
   socket.on('message-reaction', function (data) {
     console.log('Reaction update received:', data);
     updateMessageReactions(data.messageId, data.reactions);
+  });
+  
+  // Poll real-time handlers
+  socket.on('poll-update', function (data) {
+    console.log('Poll update:', data);
+    updatePollUI(data.pollId, data.options, data.totalVotes);
+  });
+  
+  socket.on('poll-closed', function (data) {
+    console.log('Poll closed:', data);
+    var pollContainer = document.querySelector('.poll-container[data-poll-id="' + data.pollId + '"]');
+    if (pollContainer) {
+      // Mark as closed and refresh that poll
+      loadMessages();
+    }
   });
   
   socket.on('disconnect', function (reason) { 
@@ -461,7 +323,6 @@ function initializeSocket() {
   
   socket.on('reconnect', function (attemptNumber) {
     console.log('🔄 Socket reconnected after', attemptNumber, 'attempts');
-    // Rejoin session room after reconnect
     if (sessionId && currentUser) {
       socket.emit('join-session', { sessionId: sessionId, userId: currentUser._id, displayName: currentUser.displayName, role: currentUser.role });
     }
@@ -521,11 +382,29 @@ async function loadMessages() {
           isReported: msg.isReported,
           identityMode: msg.identityMode || 'identified',
           alias: msg.alias,
-          reactions: msg.reactions || {}
+          reactions: msg.reactions || {},
+          isPoll: msg.isPoll || false,
+          poll: msg.poll || null
         });
       });
       scrollToBottom();
       console.log('📥 All messages appended');
+      
+      // Initialize announcement and pinned messages feature
+      var formattedForFeature = result.messages.map(function(msg) {
+        return {
+          id: msg.id || msg._id,
+          username: msg.user?.displayName || msg.username || 'Anonymous',
+          text: msg.text,
+          timestamp: msg.createdAt || msg.timestamp,
+          isPinned: msg.isPinned,
+          isAnnouncement: msg.isAnnouncement
+        };
+      });
+      if (typeof initializeAnnouncementAndPinFeature === 'function') {
+        initializeAnnouncementAndPinFeature(formattedForFeature);
+      }
+      
     } else {
       console.log('📥 No messages found');
       showEmptyState();
@@ -543,6 +422,7 @@ function setupInputArea() {
   if (currentUser.role === 'lecturer') {
     inputContainer.innerHTML = `
       <div id="reply-indicator" class="reply-indicator-container" style="display:none;margin-bottom:8px;"></div>
+      <div id="poll-creator" style="display:none;"></div>
       <div id="options-menu" class="options-menu" style="display:none;position:absolute;bottom:70px;left:12px;background:#1e293b;border-radius:12px;padding:12px;box-shadow:0 4px 20px rgba(0,0,0,0.3);z-index:100;min-width:220px;">
         <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;padding:0 4px;">Message Options</div>
         <label style="display:flex;align-items:center;gap:10px;padding:10px 8px;cursor:pointer;border-radius:8px;transition:background 0.2s;" onmouseover="this.style.background='#334155'" onmouseout="this.style.background='transparent'">
@@ -553,11 +433,16 @@ function setupInputArea() {
           <input type="checkbox" id="pin-message" style="width:18px;height:18px;accent-color:#00a884;">
           <span style="font-size:14px;">📌 Pin Message</span>
         </label>
+        <div style="height:1px;background:#334155;margin:8px 0;"></div>
+        <button type="button" onclick="openPollCreator()" style="display:flex;align-items:center;gap:10px;padding:10px 8px;cursor:pointer;border-radius:8px;transition:background 0.2s;color:white;background:transparent;border:none;width:100%;text-align:left;font-size:14px;" onmouseover="this.style.background='#334155'" onmouseout="this.style.background='transparent'">
+          <span style="font-size:18px;">📊</span>
+          <span>Create Poll</span>
+        </button>
       </div>
-      <div class="wa-input-row" style="display:flex;align-items:center;gap:8px;position:relative;">
-        <button id="plus-btn" type="button" class="wa-plus-btn" style="width:44px;height:44px;border-radius:50%;border:none;background:#374151;color:white;font-size:24px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;">+</button>
-        <input type="text" id="message-input" class="wa-message-input" placeholder="Type a message" style="flex:1;padding:12px 16px;border-radius:24px;border:none;background:#1e293b;color:white;font-size:14px;outline:none;">
-        <button id="send-btn" type="button" class="wa-send-btn" style="width:44px;height:44px;border-radius:50%;border:none;background:#00a884;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s;">
+      <div class="other-input-row" style="display:flex;align-items:center;gap:8px;position:relative;">
+        <button id="plus-btn" type="button" class="other-plus-btn" style="width:44px;height:44px;border-radius:50%;border:none;background:#374151;color:white;font-size:24px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;">+</button>
+        <input type="text" id="message-input" class="other-message-input" placeholder="Type a message" style="flex:1;padding:12px 16px;border-radius:24px;border:none;background:#1e293b;color:white;font-size:14px;outline:none;">
+        <button id="send-btn" type="button" class="other-send-btn" style="width:44px;height:44px;border-radius:50%;border:none;background:#00a884;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s;">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
         </button>
       </div>
@@ -575,7 +460,8 @@ function setupInputArea() {
     document.addEventListener('click', function (e) {
       var menu = document.getElementById('options-menu');
       var plusBtn = document.getElementById('plus-btn');
-      if (menu && optionsMenuOpen && !menu.contains(e.target) && e.target !== plusBtn) {
+      var pollCreator = document.getElementById('poll-creator');
+      if (menu && optionsMenuOpen && !menu.contains(e.target) && e.target !== plusBtn && (!pollCreator || !pollCreator.contains(e.target))) {
         menu.style.display = 'none';
         optionsMenuOpen = false;
         plusBtn.textContent = '+';
@@ -677,7 +563,6 @@ function appendMessage(message) {
   var emptyState = container.querySelector('.empty-state');
   if (emptyState) emptyState.remove();
 
-  // Check for duplicate
   var msgId = message.id || message._id;
   var existingMsg = document.querySelector('[data-message-id="' + msgId + '"]');
   if (existingMsg) {
@@ -736,8 +621,6 @@ function appendMessage(message) {
   if (message.isAnnouncement) badgeHTML += '<span class="message-badge badge-announcement">📢 Announcement</span>';
   if (message.isReported) badgeHTML += '<span class="message-badge badge-reported">🚩 Reported</span>';
 
-  // Reaction button + other action buttons
-  var msgId = message.id || message._id;
   var reactionBtnHTML = '<button class="action-btn reaction-btn" onclick="showReactionPicker(event, \'' + msgId + '\')" title="React">😀</button>';
 
   var actionButtonsHTML = reactionBtnHTML;
@@ -753,37 +636,29 @@ function appendMessage(message) {
     actionButtonsHTML += '<button class="action-btn delete-btn" onclick="deleteMessage(\'' + msgId + '\')" title="Delete">🗑️</button>';
   }
 
-  // Render reactions
   var reactionsHTML = renderReactions(msgId, message.reactions);
 
-  messageDiv.innerHTML = '<div class="message-avatar-wrapper">' + avatarHTML + '</div><div class="message-content-wrapper"><div class="message-header"><span class="message-username ' + (isLecturer ? 'lecturer' : 'student') + '">' + escapeHtml(displayName) + '</span>' + lecturerBadge + identityBadge + '<span class="message-time">' + formatTime(message.timestamp || message.createdAt || new Date()) + '</span></div>' + replyHTML + '<div class="message-body"><span class="message-type-indicator">' + typeIcon + '</span><span class="message-text">' + escapeHtml(message.text) + '</span></div>' + reactionsHTML + '<div class="message-footer">' + badgeHTML + '<div class="message-actions">' + actionButtonsHTML + '</div></div></div>';
+  // Poll rendering - WhatsApp style
+  var pollHTML = '';
+  if (message.isPoll && message.poll) {
+    pollHTML = renderPollHTML(message);
+  }
+  var messageBodyHTML = message.isPoll ? '' : '<div class="message-body"><span class="message-type-indicator">' + typeIcon + '</span><span class="message-text">' + escapeHtml(message.text) + '</span></div>';
+
+  messageDiv.innerHTML = '<div class="message-avatar-wrapper">' + avatarHTML + '</div><div class="message-content-wrapper"><div class="message-header"><span class="message-username ' + (isLecturer ? 'lecturer' : 'student') + '">' + escapeHtml(displayName) + '</span>' + lecturerBadge + identityBadge + '<span class="message-time">' + formatTime(message.timestamp || message.createdAt || new Date()) + '</span></div>' + replyHTML + messageBodyHTML + pollHTML + reactionsHTML + '<div class="message-footer">' + badgeHTML + '<div class="message-actions">' + actionButtonsHTML + '</div></div></div>';
 
   container.appendChild(messageDiv);
   console.log('✅ Message appended to DOM:', msgId, '- Total messages now:', container.querySelectorAll('.chat-message').length);
 }
 
 // ========================================
-// WHATSAPP-STYLE EMOJI REACTION SYSTEM
+// EMOJI REACTION SYSTEM (Using emoji-picker-element)
 // ========================================
 
-// Quick reactions (top row like WhatsApp)
+// Quick reactions - the main 6 that appear first (like WhatsApp)
 const QUICK_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
-// Full emoji categories (like WhatsApp emoji picker)
-const EMOJI_CATEGORIES = {
-  'Smileys': ['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '🤥', '😌', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '🤠', '🥳', '😎', '🤓', '🧐', '😕', '😟', '🙁', '☹️', '😮', '😯', '😲', '😳', '🥺', '😦', '😧', '😨', '😰', '😥', '😢', '😭', '😱', '😖', '😣', '😞', '😓', '😩', '😫', '🥱', '😤', '😡', '😠', '🤬', '😈', '👿', '💀', '☠️', '💩', '🤡', '👹', '👺', '👻', '👽', '👾', '🤖'],
-  'Gestures': ['👋', '🤚', '🖐️', '✋', '🖖', '👌', '🤌', '🤏', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕', '👇', '☝️', '👍', '👎', '✊', '👊', '🤛', '🤜', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️', '💅', '🤳', '💪', '🦾', '🦿', '🦵', '🦶', '👂', '🦻', '👃', '🧠', '🫀', '🫁', '🦷', '🦴', '👀', '👁️', '👅', '👄'],
-  'Hearts': ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '♥️', '💌', '💋', '🫶'],
-  'Celebration': ['🎉', '🎊', '🎈', '🎁', '🎀', '🎂', '🍰', '🧁', '🥳', '🎄', '🎃', '🎆', '🎇', '✨', '🎏', '🎐', '🎑', '🎋', '🎍', '🏮', '🪔', '🎗️', '🎟️', '🎫'],
-  'Nature': ['🌸', '💮', '🏵️', '🌹', '🥀', '🌺', '🌻', '🌼', '🌷', '🌱', '🪴', '🌲', '🌳', '🌴', '🌵', '🌾', '🌿', '☘️', '🍀', '🍁', '🍂', '🍃', '🍄', '🌰', '🦀', '🦞', '🦐', '🦑', '🐙', '🐚', '🐌', '🦋', '🐛', '🐜', '🐝', '🐞', '🦗', '🪲', '🪳', '🦂', '🦟', '🪰', '🪱', '🦠'],
-  'Food': ['🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🫐', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥', '🥝', '🍅', '🍆', '🥑', '🥦', '🥬', '🥒', '🌶️', '🫑', '🌽', '🥕', '🫒', '🧄', '🧅', '🥔', '🍠', '🥐', '🥯', '🍞', '🥖', '🥨', '🧀', '🥚', '🍳', '🧈', '🥞', '🧇', '🥓', '🥩', '🍗', '🍖', '🌭', '🍔', '🍟', '🍕', '🫓', '🥪', '🥙', '🧆', '🌮', '🌯', '🫔', '🥗', '🥘', '🫕', '🍝', '🍜', '🍲', '🍛', '🍣', '🍱', '🥟', '🦪', '🍤', '🍙', '🍚', '🍘', '🍥', '🥠', '🥮', '🍢', '🍡', '🍧', '🍨', '🍦', '🥧', '🧁', '🍰', '🎂', '🍮', '🍭', '🍬', '🍫', '🍿', '🍩', '🍪', '🌰', '🥜', '🍯', '🥛', '🍼', '🫖', '☕', '🍵', '🧃', '🥤', '🧋', '🍶', '🍺', '🍻', '🥂', '🍷', '🥃', '🍸', '🍹', '🧉', '🍾', '🧊'],
-  'Activities': ['⚽', '🏀', '🏈', '⚾', '🥎', '🎾', '🏐', '🏉', '🥏', '🎱', '🪀', '🏓', '🏸', '🏒', '🏑', '🥍', '🏏', '🪃', '🥅', '⛳', '🪁', '🏹', '🎣', '🤿', '🥊', '🥋', '🎽', '🛹', '🛼', '🛷', '⛸️', '🥌', '🎿', '⛷️', '🏂', '🪂', '🏋️', '🤼', '🤸', '🤺', '⛹️', '🤾', '🏌️', '🏇', '🧘', '🏄', '🏊', '🤽', '🚣', '🧗', '🚴', '🚵', '🎖️', '🏆', '🥇', '🥈', '🥉', '🏅', '🎪', '🎭', '🎨', '🎬', '🎤', '🎧', '🎼', '🎹', '🥁', '🪘', '🎷', '🎺', '🪗', '🎸', '🪕', '🎻', '🎲', '♟️', '🎯', '🎳', '🎮', '🎰', '🧩'],
-  'Objects': ['⌚', '📱', '📲', '💻', '⌨️', '🖥️', '🖨️', '🖱️', '🖲️', '🕹️', '🗜️', '💽', '💾', '💿', '📀', '📼', '📷', '📸', '📹', '🎥', '📽️', '🎞️', '📞', '☎️', '📟', '📠', '📺', '📻', '🎙️', '🎚️', '🎛️', '🧭', '⏱️', '⏲️', '⏰', '🕰️', '⌛', '⏳', '📡', '🔋', '🔌', '💡', '🔦', '🕯️', '🪔', '🧯', '🛢️', '💸', '💵', '💴', '💶', '💷', '🪙', '💰', '💳', '💎', '⚖️', '🪜', '🧰', '🪛', '🔧', '🔨', '⚒️', '🛠️', '⛏️', '🪚', '🔩', '⚙️', '🪤', '🧱', '⛓️', '🧲', '🔫', '💣', '🧨', '🪓', '🔪', '🗡️', '⚔️', '🛡️', '🚬', '⚰️', '🪦', '⚱️', '🏺', '🔮', '📿', '🧿', '💈', '⚗️', '🔭', '🔬', '🕳️', '🩹', '🩺', '💊', '💉', '🩸', '🧬', '🦠', '🧫', '🧪', '🌡️', '🧹', '🪠', '🧺', '🧻', '🚽', '🚰', '🚿', '🛁', '🛀', '🧼', '🪥', '🪒', '🧽', '🪣', '🧴', '🛎️', '🔑', '🗝️', '🚪', '🪑', '🛋️', '🛏️', '🛌', '🧸', '🪆', '🖼️', '🪞', '🪟', '🛍️', '🛒', '🎁', '🎈', '🎏', '🎀', '🪄', '🪅', '🎊', '🎉', '🎎', '🏮', '🎐', '🧧', '✉️', '📩', '📨', '📧', '💌', '📥', '📤', '📦', '🏷️', '🪧', '📪', '📫', '📬', '📭', '📮', '📯', '📜', '📃', '📄', '📑', '🧾', '📊', '📈', '📉', '🗒️', '🗓️', '📆', '📅', '🗑️', '📇', '🗃️', '🗳️', '🗄️', '📋', '📁', '📂', '🗂️', '🗞️', '📰', '📓', '📔', '📒', '📕', '📗', '📘', '📙', '📚', '📖', '🔖', '🧷', '🔗', '📎', '🖇️', '📐', '📏', '🧮', '📌', '📍', '✂️', '🖊️', '🖋️', '✒️', '🖌️', '🖍️', '📝', '✏️', '🔍', '🔎', '🔏', '🔐', '🔒', '🔓'],
-  'Symbols': ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '☮️', '✝️', '☪️', '🕉️', '☸️', '✡️', '🔯', '🕎', '☯️', '☦️', '🛐', '⛎', '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓', '🆔', '⚛️', '🉑', '☢️', '☣️', '📴', '📳', '🈶', '🈚', '🈸', '🈺', '🈷️', '✴️', '🆚', '💮', '🉐', '㊙️', '㊗️', '🈴', '🈵', '🈹', '🈲', '🅰️', '🅱️', '🆎', '🆑', '🅾️', '🆘', '❌', '⭕', '🛑', '⛔', '📛', '🚫', '💯', '💢', '♨️', '🚷', '🚯', '🚳', '🚱', '🔞', '📵', '🚭', '❗', '❕', '❓', '❔', '‼️', '⁉️', '🔅', '🔆', '〽️', '⚠️', '🚸', '🔱', '⚜️', '🔰', '♻️', '✅', '🈯', '💹', '❇️', '✳️', '❎', '🌐', '💠', 'Ⓜ️', '🌀', '💤', '🏧', '🚾', '♿', '🅿️', '🛗', '🈳', '🈂️', '🛂', '🛃', '🛄', '🛅', '🚹', '🚺', '🚼', '⚧️', '🚻', '🚮', '🎦', '📶', '🈁', '🔣', 'ℹ️', '🔤', '🔡', '🔠', '🆖', '🆗', '🆙', '🆒', '🆕', '🆓', '0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟', '🔢', '#️⃣', '*️⃣', '⏏️', '▶️', '⏸️', '⏯️', '⏹️', '⏺️', '⏭️', '⏮️', '⏩', '⏪', '⏫', '⏬', '◀️', '🔼', '🔽', '➡️', '⬅️', '⬆️', '⬇️', '↗️', '↘️', '↙️', '↖️', '↕️', '↔️', '↪️', '↩️', '⤴️', '⤵️', '🔀', '🔁', '🔂', '🔄', '🔃', '🎵', '🎶', '➕', '➖', '➗', '✖️', '🟰', '♾️', '💲', '💱', '™️', '©️', '®️', '〰️', '➰', '➿', '🔚', '🔙', '🔛', '🔝', '🔜', '✔️', '☑️', '🔘', '🔴', '🟠', '🟡', '🟢', '🔵', '🟣', '⚫', '⚪', '🟤', '🔺', '🔻', '🔸', '🔹', '🔶', '🔷', '🔳', '🔲', '▪️', '▫️', '◾', '◽', '◼️', '◻️', '🟥', '🟧', '🟨', '🟩', '🟦', '🟪', '⬛', '⬜', '🟫', '🔈', '🔇', '🔉', '🔊', '🔔', '🔕', '📣', '📢', '💬', '💭', '🗯️', '♠️', '♣️', '♥️', '♦️', '🃏', '🎴', '🀄', '🕐', '🕑', '🕒', '🕓', '🕔', '🕕', '🕖', '🕗', '🕘', '🕙', '🕚', '🕛', '🕜', '🕝', '🕞', '🕟', '🕠', '🕡', '🕢', '🕣', '🕤', '🕥', '🕦', '🕧']
-};
-
 let currentReactionMessageId = null;
-let fullPickerOpen = false;
 
 function renderReactions(messageId, reactions) {
   var html = '<div class="message-reactions" data-message-id="' + messageId + '">';
@@ -829,9 +704,10 @@ function showReactionPicker(event, messageId) {
   picker.className = 'reaction-picker';
   picker.id = 'reaction-picker';
 
-  // Quick reactions row
   var quickRow = document.createElement('div');
   quickRow.className = 'quick-reactions';
+  quickRow.style.display = 'flex';
+  quickRow.style.gap = '2px';
   
   QUICK_REACTIONS.forEach(function(emoji) {
     var btn = document.createElement('button');
@@ -847,10 +723,11 @@ function showReactionPicker(event, messageId) {
 
   // Add "+" button for full picker
   var plusBtn = document.createElement('button');
-  plusBtn.className = 'reaction-picker-btn plus-btn';
-  plusBtn.innerHTML = '<span style="font-size:20px;">+</span>';
+  plusBtn.className = 'reaction-picker-btn';
+  plusBtn.innerHTML = '<span style="font-size:20px;color:#8696a0;">+</span>';
   plusBtn.onclick = function(e) {
     e.stopPropagation();
+    closeReactionPicker();
     showFullEmojiPicker(messageId);
   };
   quickRow.appendChild(plusBtn);
@@ -868,95 +745,31 @@ function showReactionPicker(event, messageId) {
   activeReactionPicker = picker;
 }
 
+// Full emoji picker using emoji-picker-element library
 function showFullEmojiPicker(messageId) {
-  closeReactionPicker();
-  fullPickerOpen = true;
-
   var overlay = document.createElement('div');
   overlay.className = 'emoji-picker-overlay';
   overlay.id = 'emoji-picker-overlay';
-  overlay.onclick = function() { closeFullEmojiPicker(); };
+  overlay.onclick = function(e) {
+    if (e.target === overlay) {
+      overlay.remove();
+    }
+  };
 
-  var picker = document.createElement('div');
-  picker.className = 'full-emoji-picker';
-  picker.id = 'full-emoji-picker';
-  picker.onclick = function(e) { e.stopPropagation(); };
+  var wrapper = document.createElement('div');
+  wrapper.className = 'emoji-picker-wrapper';
+  wrapper.onclick = function(e) { e.stopPropagation(); };
 
-  // Header
-  var header = document.createElement('div');
-  header.className = 'emoji-picker-header';
-  header.innerHTML = '<span>Choose a reaction</span><button class="emoji-picker-close" onclick="closeFullEmojiPicker()">×</button>';
-  picker.appendChild(header);
-
-  // Category tabs (no search bar)
-  var tabs = document.createElement('div');
-  tabs.className = 'emoji-category-tabs';
-  var categoryNames = Object.keys(EMOJI_CATEGORIES);
-  var tabIcons = ['😀', '👋', '❤️', '🎉', '🌸', '🍎', '⚽', '💡', '❤️'];
-  categoryNames.forEach(function(cat, idx) {
-    var tab = document.createElement('button');
-    tab.className = 'emoji-tab' + (idx === 0 ? ' active' : '');
-    tab.textContent = tabIcons[idx] || '📁';
-    tab.title = cat;
-    tab.onclick = function() {
-      document.querySelectorAll('.emoji-tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      scrollToCategory(cat);
-    };
-    tabs.appendChild(tab);
-  });
-  picker.appendChild(tabs);
-
-  // Emoji grid container
-  var gridContainer = document.createElement('div');
-  gridContainer.className = 'emoji-grid-container';
-  gridContainer.id = 'emoji-grid-container';
-
-  categoryNames.forEach(function(cat) {
-    var section = document.createElement('div');
-    section.className = 'emoji-category-section';
-    section.id = 'emoji-cat-' + cat.replace(/\s/g, '-');
-
-    var title = document.createElement('div');
-    title.className = 'emoji-category-title';
-    title.textContent = cat;
-    section.appendChild(title);
-
-    var grid = document.createElement('div');
-    grid.className = 'emoji-grid';
-
-    EMOJI_CATEGORIES[cat].forEach(function(emoji) {
-      var btn = document.createElement('button');
-      btn.className = 'emoji-btn';
-      btn.textContent = emoji;
-      btn.onclick = function() {
-        closeFullEmojiPicker();
-        toggleReaction(messageId, emoji);
-      };
-      grid.appendChild(btn);
-    });
-
-    section.appendChild(grid);
-    gridContainer.appendChild(section);
+  // Use the emoji-picker-element web component
+  var picker = document.createElement('emoji-picker');
+  picker.addEventListener('emoji-click', function(event) {
+    overlay.remove();
+    toggleReaction(messageId, event.detail.unicode);
   });
 
-  picker.appendChild(gridContainer);
-
-  overlay.appendChild(picker);
+  wrapper.appendChild(picker);
+  overlay.appendChild(wrapper);
   document.body.appendChild(overlay);
-}
-
-function closeFullEmojiPicker() {
-  var overlay = document.getElementById('emoji-picker-overlay');
-  if (overlay) overlay.remove();
-  fullPickerOpen = false;
-}
-
-function scrollToCategory(cat) {
-  var section = document.getElementById('emoji-cat-' + cat.replace(/\s/g, '-'));
-  if (section) {
-    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
 }
 
 function closeReactionPicker() {
@@ -992,7 +805,6 @@ async function toggleReaction(messageId, emoji) {
 window.showReactionPicker = showReactionPicker;
 window.toggleReaction = toggleReaction;
 window.showFullEmojiPicker = showFullEmojiPicker;
-window.closeFullEmojiPicker = closeFullEmojiPicker;
 
 // ========================================
 // AVATAR & UTILITY FUNCTIONS
@@ -1103,8 +915,22 @@ function cancelReply() {
 }
 
 function scrollToMessage(messageId) {
+  // Clear filter first if active
+  if (typeof clearPinnedFilter === 'function' && typeof isFilteringPinned !== 'undefined' && isFilteringPinned) {
+    clearPinnedFilter();
+  }
+  
   var el = document.querySelector('[data-message-id="' + messageId + '"]');
-  if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('message-highlighted'); setTimeout(function () { el.classList.remove('message-highlighted'); }, 2000); }
+  if (el) { 
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+    el.classList.add('message-highlighted'); 
+    el.style.transition = 'background 0.3s';
+    el.style.background = 'rgba(0, 168, 132, 0.3)';
+    setTimeout(function () { 
+      el.classList.remove('message-highlighted'); 
+      el.style.background = '';
+    }, 2000); 
+  }
 }
 
 function showLoadingSpinner() { var el = document.getElementById('loading'); if (el) el.style.display = 'flex'; }
@@ -1125,11 +951,10 @@ function showError(message) {
 }
 function escapeHtml(text) { var div = document.createElement('div'); div.textContent = text || ''; return div.innerHTML; }
 function formatTime(timestamp) { return new Date(timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }); }
-function getTypeIcon(type) { return { 'NONE': '📝', 'QUESTION': '❓', 'COMMENT': '💬', 'CONFUSION': '❗' }[type] || '📝'; }
+function getTypeIcon(type) { return { 'NONE': '📝', 'QUESTION': '❓', 'COMMENT': '💬', 'CONFUSION': '❗', 'POLL': '📊' }[type] || '📝'; }
 function scrollToBottom() { 
   var container = document.getElementById('messages-container'); 
   if (container) {
-    // Use requestAnimationFrame + setTimeout for reliable scrolling after DOM update
     requestAnimationFrame(function() {
       setTimeout(function() {
         container.scrollTop = container.scrollHeight + 1000;
@@ -1142,6 +967,247 @@ window.setReplyTo = setReplyTo;
 window.cancelReply = cancelReply;
 window.scrollToMessage = scrollToMessage;
 window.toggleOptionsMenu = toggleOptionsMenu;
+
+// ========================================
+// POLL SYSTEM - WhatsApp Style
+// ========================================
+
+function openPollCreator() {
+  var menu = document.getElementById('options-menu');
+  var plusBtn = document.getElementById('plus-btn');
+  if (menu) menu.style.display = 'none';
+  optionsMenuOpen = false;
+  if (plusBtn) { plusBtn.textContent = '+'; plusBtn.style.background = '#374151'; }
+  
+  var pollCreator = document.getElementById('poll-creator');
+  if (!pollCreator) return;
+  pollCreatorOpen = true;
+  pollCreator.style.display = 'block';
+  pollCreator.innerHTML = `
+    <div style="background:#1e293b;border-radius:12px;padding:16px;margin:0 0 12px 0;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:20px;">📊</span>
+          <span style="font-size:16px;font-weight:600;color:white;">Create Poll</span>
+        </div>
+        <button onclick="closePollCreator()" style="background:none;border:none;color:#94a3b8;font-size:24px;cursor:pointer;padding:0;line-height:1;">&times;</button>
+      </div>
+      <div style="margin-bottom:12px;">
+        <input type="text" id="poll-question" placeholder="Ask a question..." style="width:100%;padding:12px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:white;font-size:14px;outline:none;box-sizing:border-box;">
+      </div>
+      <div id="poll-options-container">
+        <div class="poll-option-row" style="display:flex;gap:8px;margin-bottom:8px;">
+          <input type="text" class="poll-option-input" placeholder="Option 1" style="flex:1;padding:10px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:white;font-size:14px;outline:none;">
+          <button onclick="removePollOption(this)" style="background:#374151;border:none;color:#9ca3af;width:36px;height:36px;border-radius:8px;cursor:pointer;font-size:18px;">×</button>
+        </div>
+        <div class="poll-option-row" style="display:flex;gap:8px;margin-bottom:8px;">
+          <input type="text" class="poll-option-input" placeholder="Option 2" style="flex:1;padding:10px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:white;font-size:14px;outline:none;">
+          <button onclick="removePollOption(this)" style="background:#374151;border:none;color:#9ca3af;width:36px;height:36px;border-radius:8px;cursor:pointer;font-size:18px;">×</button>
+        </div>
+      </div>
+      <button onclick="addPollOption()" style="width:100%;padding:10px;border-radius:8px;border:1px dashed #475569;background:transparent;color:#94a3b8;font-size:14px;cursor:pointer;margin-bottom:12px;">+ Add Option</button>
+      <div style="display:flex;gap:12px;margin-bottom:16px;">
+        <label style="display:flex;align-items:center;gap:6px;color:#94a3b8;font-size:13px;cursor:pointer;">
+          <input type="checkbox" id="poll-multiple" style="accent-color:#00a884;">
+          <span>Allow multiple answers</span>
+        </label>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="closePollCreator()" style="flex:1;padding:12px;border-radius:8px;border:none;background:#374151;color:white;font-size:14px;cursor:pointer;">Cancel</button>
+        <button onclick="submitPoll()" style="flex:1;padding:12px;border-radius:8px;border:none;background:#00a884;color:white;font-size:14px;font-weight:600;cursor:pointer;">Create Poll</button>
+      </div>
+    </div>
+  `;
+  setTimeout(function() { var q = document.getElementById('poll-question'); if (q) q.focus(); }, 100);
+}
+
+function closePollCreator() {
+  var pollCreator = document.getElementById('poll-creator');
+  if (pollCreator) { pollCreator.style.display = 'none'; pollCreator.innerHTML = ''; }
+  pollCreatorOpen = false;
+}
+
+function addPollOption() {
+  var container = document.getElementById('poll-options-container');
+  if (!container) return;
+  var optionCount = container.querySelectorAll('.poll-option-row').length;
+  if (optionCount >= 10) { alert('Maximum 10 options allowed'); return; }
+  var newRow = document.createElement('div');
+  newRow.className = 'poll-option-row';
+  newRow.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;';
+  newRow.innerHTML = '<input type="text" class="poll-option-input" placeholder="Option ' + (optionCount + 1) + '" style="flex:1;padding:10px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:white;font-size:14px;outline:none;"><button onclick="removePollOption(this)" style="background:#374151;border:none;color:#9ca3af;width:36px;height:36px;border-radius:8px;cursor:pointer;font-size:18px;">×</button>';
+  container.appendChild(newRow);
+  newRow.querySelector('input').focus();
+}
+
+function removePollOption(btn) {
+  btn.parentElement.remove();
+  updatePollOptionNumbers();
+}
+
+function updatePollOptionNumbers() {
+  var inputs = document.querySelectorAll('.poll-option-input');
+  inputs.forEach(function(input, index) { input.placeholder = 'Option ' + (index + 1); });
+}
+
+async function submitPoll() {
+  var question = document.getElementById('poll-question')?.value?.trim();
+  var optionInputs = document.querySelectorAll('.poll-option-input');
+  var allowMultiple = document.getElementById('poll-multiple')?.checked || false;
+  if (!question) { alert('Please enter a question'); return; }
+  var options = [];
+  optionInputs.forEach(function(input) { var val = input.value.trim(); if (val) options.push(val); });
+  if (options.length < 2) { alert('Please add at least 2 options'); return; }
+  try {
+    var response = await fetch('/api/messages/poll/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ sessionId: sessionId, question: question, options: options, allowMultiple: allowMultiple, isAnonymous: true }) });
+    var result = await response.json();
+    if (result.success) { closePollCreator(); } else { alert(result.message || 'Failed to create poll'); }
+  } catch (error) { console.error('Poll creation error:', error); alert('Failed to create poll'); }
+}
+
+async function votePoll(pollId, optionId) {
+  try {
+    var response = await fetch('/api/messages/poll/' + pollId + '/vote', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ optionIds: [optionId] }) });
+    var result = await response.json();
+    if (result.success) {
+      // Update UI immediately with returned data
+      updatePollUI(pollId, result.options, null);
+    } else { 
+      alert(result.message || 'Failed to vote'); 
+    }
+  } catch (error) { console.error('Vote error:', error); alert('Failed to vote'); }
+}
+
+async function closePollById(pollId) {
+  if (!confirm('Close this poll? Students will no longer be able to vote.')) return;
+  try {
+    var response = await fetch('/api/messages/poll/' + pollId + '/close', { method: 'POST', credentials: 'include' });
+    var result = await response.json();
+    if (result.success) {
+      loadMessages();
+    } else { 
+      alert(result.message || 'Failed to close poll'); 
+    }
+  } catch (error) { console.error('Close poll error:', error); alert('Failed to close poll'); }
+}
+
+async function viewPollVotes(pollId) {
+  try {
+    var response = await fetch('/api/messages/poll/' + pollId + '/results', { credentials: 'include' });
+    var result = await response.json();
+    if (result.success) {
+      var r = result.results;
+      var voterInfo = r.options.map(function(opt) {
+        return opt.text + ': ' + opt.voteCount + ' votes' + (opt.voters && opt.voters.length > 0 ? ' (' + opt.voters.join(', ') + ')' : '');
+      }).join('\n');
+      alert('Poll Results:\n\n' + voterInfo + '\n\nTotal: ' + r.totalVotes + ' votes');
+    }
+  } catch (error) { console.error('View votes error:', error); }
+}
+
+// Update poll UI without full page reload
+function updatePollUI(pollId, options, totalVotes) {
+  var pollContainer = document.querySelector('.poll-container[data-poll-id="' + pollId + '"]');
+  if (!pollContainer) return;
+  
+  // Calculate total votes if not provided
+  if (totalVotes === null || totalVotes === undefined) {
+    totalVotes = options.reduce(function(sum, opt) { return sum + (opt.voteCount || 0); }, 0);
+  }
+  
+  var hasVoted = options.some(function(opt) { return opt.hasVoted; });
+  var isLecturer = currentUser && currentUser.role === 'lecturer';
+  
+  // Get the question from existing poll
+  var questionEl = pollContainer.querySelector('div > div:first-child');
+  var question = questionEl ? questionEl.textContent : '';
+  
+  // Rebuild options HTML
+  var optionsHTML = options.map(function(opt) {
+    var voteCount = opt.voteCount || 0;
+    var percentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
+    var voted = opt.hasVoted;
+    
+    var circleHTML = voted ? 
+      '<div style="width:24px;height:24px;border-radius:50%;border:2px solid #00a884;background:#00a884;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>' :
+      '<div style="width:24px;height:24px;border-radius:50%;border:2px solid #4a5568;flex-shrink:0;"></div>';
+    
+    var progressHTML = hasVoted ? 
+      '<div style="height:4px;background:#2d3748;border-radius:2px;margin-top:8px;overflow:hidden;"><div style="height:100%;width:' + percentage + '%;background:' + (voted ? '#00a884' : '#4a5568') + ';border-radius:2px;transition:width 0.3s;"></div></div>' : '';
+    
+    var clickHandler = !hasVoted ? ' onclick="votePoll(\'' + pollId + '\', \'' + opt.id + '\')" style="cursor:pointer;"' : '';
+    
+    return '<div' + clickHandler + ' style="padding:12px 0;border-bottom:1px solid #2d3748;' + (!hasVoted ? 'cursor:pointer;' : '') + '"><div style="display:flex;align-items:center;justify-content:space-between;"><div style="display:flex;align-items:center;gap:12px;">' + circleHTML + '<span style="color:white;font-size:15px;">' + escapeHtml(opt.text) + '</span></div><span style="color:#94a3b8;font-size:14px;">' + voteCount + '</span></div>' + progressHTML + '</div>';
+  }).join('');
+  
+  // Update the poll options container
+  var optionsContainer = pollContainer.querySelector('.poll-options');
+  if (optionsContainer) {
+    optionsContainer.innerHTML = optionsHTML;
+  }
+}
+
+// WhatsApp Style Poll Rendering
+function renderPollHTML(message) {
+  var poll = message.poll;
+  if (!poll) return '';
+  var totalVotes = poll.totalVotes || poll.options.reduce(function(sum, opt) { return sum + (opt.voteCount || opt.votes?.length || 0); }, 0);
+  var hasVoted = poll.options.some(function(opt) { return opt.hasVoted; });
+  var isClosed = poll.isClosed;
+  var isLecturer = currentUser && currentUser.role === 'lecturer';
+  var msgId = message.id || message._id;
+  
+  // WhatsApp style header
+  var headerHTML = '<div style="margin-bottom:12px;"><div style="font-size:16px;font-weight:600;color:white;margin-bottom:4px;">' + escapeHtml(poll.question) + '</div><div style="display:flex;align-items:center;gap:6px;color:#00a884;font-size:13px;"><span>📊</span><span>' + (poll.allowMultiple ? 'Select one or more' : 'Select one option') + '</span></div></div>';
+  
+  // WhatsApp style options
+  var optionsHTML = poll.options.map(function(opt) {
+    var voteCount = opt.voteCount || opt.votes?.length || 0;
+    var percentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
+    var voted = opt.hasVoted;
+    
+    // Radio circle style (like WhatsApp)
+    var circleHTML = voted ? 
+      '<div style="width:24px;height:24px;border-radius:50%;border:2px solid #00a884;background:#00a884;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>' :
+      '<div style="width:24px;height:24px;border-radius:50%;border:2px solid #4a5568;flex-shrink:0;"></div>';
+    
+    // Progress bar (shown after voting or if closed)
+    var progressHTML = (hasVoted || isClosed) ? 
+      '<div style="height:4px;background:#2d3748;border-radius:2px;margin-top:8px;overflow:hidden;"><div style="height:100%;width:' + percentage + '%;background:' + (voted ? '#00a884' : '#4a5568') + ';border-radius:2px;transition:width 0.3s;"></div></div>' : '';
+    
+    var clickHandler = (!hasVoted && !isClosed) ? ' onclick="votePoll(\'' + msgId + '\', \'' + opt.id + '\')" style="cursor:pointer;"' : '';
+    
+    return '<div' + clickHandler + ' style="padding:12px 0;border-bottom:1px solid #2d3748;' + (!hasVoted && !isClosed ? 'cursor:pointer;' : '') + '"><div style="display:flex;align-items:center;justify-content:space-between;"><div style="display:flex;align-items:center;gap:12px;">' + circleHTML + '<span style="color:white;font-size:15px;">' + escapeHtml(opt.text) + '</span></div><span style="color:#94a3b8;font-size:14px;">' + voteCount + '</span></div>' + progressHTML + '</div>';
+  }).join('');
+  
+  // Footer with timestamp and view votes (lecturer only)
+  var footerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:8px;">';
+  footerHTML += '<span style="color:#8b9caa;font-size:12px;">' + formatTime(message.timestamp || message.createdAt || new Date()) + ' ✓✓</span>';
+  
+  if (isLecturer) {
+    if (!isClosed) {
+      footerHTML += '<div style="display:flex;gap:8px;"><button onclick="viewPollVotes(\'' + msgId + '\')" style="background:#2d3748;border:none;color:#00a884;padding:8px 16px;border-radius:20px;font-size:13px;cursor:pointer;">View votes</button><button onclick="closePollById(\'' + msgId + '\')" style="background:none;border:none;color:#ef4444;font-size:12px;cursor:pointer;">Close</button></div>';
+    } else {
+      footerHTML += '<button onclick="viewPollVotes(\'' + msgId + '\')" style="background:#2d3748;border:none;color:#00a884;padding:8px 16px;border-radius:20px;font-size:13px;cursor:pointer;">View votes</button>';
+    }
+  } else if (isClosed) {
+    footerHTML += '<span style="color:#f59e0b;font-size:12px;">Poll closed</span>';
+  }
+  footerHTML += '</div>';
+  
+  return '<div class="poll-container" data-poll-id="' + msgId + '" style="background:#1a2e35;border-radius:12px;padding:16px;margin-top:8px;max-width:320px;">' + headerHTML + '<div class="poll-options">' + optionsHTML + '</div>' + footerHTML + '</div>';
+}
+
+window.openPollCreator = openPollCreator;
+window.closePollCreator = closePollCreator;
+window.addPollOption = addPollOption;
+window.removePollOption = removePollOption;
+window.updatePollOptionNumbers = updatePollOptionNumbers;
+window.submitPoll = submitPoll;
+window.votePoll = votePoll;
+window.closePollById = closePollById;
+window.viewPollVotes = viewPollVotes;
+window.updatePollUI = updatePollUI;
 
 document.addEventListener('DOMContentLoaded', function () {
   console.log('📄 DOM ready, calling init()');

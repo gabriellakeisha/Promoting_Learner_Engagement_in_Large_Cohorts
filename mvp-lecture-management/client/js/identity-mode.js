@@ -1,52 +1,62 @@
 let currentIdentityMode = 'anonymous';
-let userAlias = null;
+let currentMessageType = 'NONE';
+let sessionAlias = null;
+
+const animalEmojis = ['🦊', '🐼', '🦁', '🐯', '🐨', '🐸', '🦋', '🐙', '🦄', '🐺', '🦉', '🐢', '🦈', '🐬', '🦩', '🐝'];
+const adjectives = ['Swift', 'Clever', 'Bright', 'Silent', 'Bold', 'Wise', 'Calm', 'Quick', 'Noble', 'Keen'];
+const animals = ['Fox', 'Panda', 'Lion', 'Tiger', 'Koala', 'Frog', 'Butterfly', 'Octopus', 'Unicorn', 'Wolf', 'Owl', 'Turtle', 'Shark', 'Dolphin', 'Flamingo', 'Bee'];
 
 function generateAlias() {
-  const adjectives = ['Swift', 'Clever', 'Curious', 'Bright', 'Quick', 'Eager', 'Bold', 'Calm', 'Wise', 'Keen', 'Happy', 'Brave', 'Witty', 'Noble', 'Merry'];
-  const animals = ['Falcon', 'Dolphin', 'Panda', 'Fox', 'Owl', 'Tiger', 'Eagle', 'Wolf', 'Bear', 'Hawk', 'Otter', 'Raven', 'Lion', 'Deer', 'Lynx'];
-  const number = Math.floor(Math.random() * 999) + 1;
   const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
   const animal = animals[Math.floor(Math.random() * animals.length)];
-  return `${adj}${animal}${number}`;
+  const emoji = animalEmojis[Math.floor(Math.random() * animalEmojis.length)];
+  return `${emoji} ${adj} ${animal}`;
 }
 
 function getSessionAlias() {
-  if (!userAlias) {
+  if (!sessionAlias) {
     const sessionId = new URLSearchParams(window.location.search).get('sessionId');
-    const storageKey = `alias_${sessionId}`;
-    userAlias = localStorage.getItem(storageKey);
-    if (!userAlias) {
-      userAlias = generateAlias();
-      localStorage.setItem(storageKey, userAlias);
+    const storedKey = `alias_${sessionId}`;
+    sessionAlias = localStorage.getItem(storedKey);
+    if (!sessionAlias) {
+      sessionAlias = generateAlias();
+      localStorage.setItem(storedKey, sessionAlias);
     }
   }
-  return userAlias;
+  return sessionAlias;
 }
 
 function regenerateAlias() {
   const sessionId = new URLSearchParams(window.location.search).get('sessionId');
-  const storageKey = `alias_${sessionId}`;
-  userAlias = generateAlias();
-  localStorage.setItem(storageKey, userAlias);
+  const storedKey = `alias_${sessionId}`;
+  sessionAlias = generateAlias();
+  localStorage.setItem(storedKey, sessionAlias);
   const aliasName = document.getElementById('alias-name');
-  if (aliasName) aliasName.textContent = userAlias;
-  return userAlias;
+  if (aliasName) aliasName.textContent = sessionAlias;
 }
 
 function getIdentityMode() {
   return currentIdentityMode;
 }
 
+function getAlias() {
+  return currentIdentityMode === 'pseudonymous' ? getSessionAlias() : null;
+}
+
+function getMessageType() {
+  const typeInput = document.getElementById('message-type');
+  return typeInput ? typeInput.value : 'NONE';
+}
+
 function setIdentityMode(mode) {
   currentIdentityMode = mode;
-  document.querySelectorAll('.wa-identity-option').forEach(opt => {
+  document.querySelectorAll('.other-identity-option').forEach(opt => {
     opt.classList.toggle('selected', opt.dataset.mode === mode);
   });
-  const currentLabel = document.getElementById('current-identity-label');
-  if (currentLabel) {
-    const labels = { 'anonymous': '👤 Anonymous', 'pseudonymous': '🦊 Alias', 'identified': '😊 Real Name' };
-    currentLabel.textContent = labels[mode] || labels['anonymous'];
-  }
+  const icons = { anonymous: '👤', pseudonymous: '🎭', identified: '😊' };
+  const labels = { anonymous: 'Anonymous', pseudonymous: 'Alias', identified: 'Real Name' };
+  const label = document.getElementById('current-identity-label');
+  if (label) label.textContent = `${icons[mode]} ${labels[mode]}`;
   const aliasPreview = document.getElementById('alias-preview');
   if (aliasPreview) {
     aliasPreview.style.display = mode === 'pseudonymous' ? 'flex' : 'none';
@@ -59,7 +69,7 @@ function setIdentityMode(mode) {
 
 function initIdentityModeSelector(containerSelector) {
   const container = document.querySelector(containerSelector);
-  if (!container || document.getElementById('wa-plus-btn')) return;
+  if (!container || document.getElementById('other-plus-btn')) return;
 
   const existingSelector = document.getElementById('identity-mode-container');
   if (existingSelector) existingSelector.remove();
@@ -68,6 +78,7 @@ function initIdentityModeSelector(containerSelector) {
   if (!oldInputWrapper) return;
 
   container.innerHTML = '';
+  container.style.position = 'relative';
 
   const replyIndicator = document.createElement('div');
   replyIndicator.id = 'reply-indicator';
@@ -76,13 +87,13 @@ function initIdentityModeSelector(containerSelector) {
   container.appendChild(replyIndicator);
 
   const waInputRow = document.createElement('div');
-  waInputRow.className = 'wa-input-row';
+  waInputRow.className = 'other-input-row';
   waInputRow.innerHTML = `
-    <button type="button" id="wa-plus-btn" class="wa-plus-btn">+</button>
-    <div class="wa-input-wrapper">
-      <input type="text" id="message-input" class="wa-message-input" placeholder="Type a message">
+    <button type="button" id="other-plus-btn" class="other-plus-btn">+</button>
+    <div class="other-input-wrapper">
+      <input type="text" id="message-input" class="other-message-input" placeholder="Type a message">
     </div>
-    <button type="button" id="send-btn" class="wa-send-btn">
+    <button type="button" id="send-btn" class="other-send-btn">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
         <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
       </svg>
@@ -91,152 +102,172 @@ function initIdentityModeSelector(containerSelector) {
   container.appendChild(waInputRow);
 
   const plusMenu = document.createElement('div');
-  plusMenu.id = 'wa-plus-menu';
-  plusMenu.className = 'wa-plus-menu';
+  plusMenu.id = 'other-plus-menu';
+  plusMenu.className = 'other-plus-menu-popup';
   plusMenu.style.display = 'none';
   plusMenu.innerHTML = `
-    <div class="wa-plus-menu-overlay"></div>
-    <div class="wa-plus-menu-content">
-      <div class="wa-plus-menu-header">
+    <div class="other-popup-content">
+      <div class="other-popup-header">
         <span>Options</span>
-        <button type="button" class="wa-plus-menu-close">&times;</button>
+        <button type="button" class="other-popup-close">&times;</button>
       </div>
-      <div class="wa-plus-section">
-        <div class="wa-plus-section-title">🔒 Post as: <span id="current-identity-label">👤 Anonymous</span></div>
-        <div class="wa-identity-options">
-          <button type="button" class="wa-identity-option selected" data-mode="anonymous">
-            <span class="wa-opt-icon">👤</span>
-            <span class="wa-opt-name">Anonymous</span>
+      <div class="other-popup-section">
+        <div class="other-popup-label">🔒 Post as: <span id="current-identity-label">👤 Anonymous</span></div>
+        <div class="other-identity-grid">
+          <button type="button" class="other-identity-option selected" data-mode="anonymous">
+            <span class="other-opt-icon">👤</span>
+            <span class="other-opt-name">Anonymous</span>
           </button>
-          <button type="button" class="wa-identity-option" data-mode="pseudonymous">
-            <span class="wa-opt-icon">🦊</span>
-            <span class="wa-opt-name">Alias</span>
+          <button type="button" class="other-identity-option" data-mode="pseudonymous">
+            <span class="other-opt-icon">🎭</span>
+            <span class="other-opt-name">Alias</span>
           </button>
-          <button type="button" class="wa-identity-option" data-mode="identified">
-            <span class="wa-opt-icon">😊</span>
-            <span class="wa-opt-name">Real Name</span>
+          <button type="button" class="other-identity-option" data-mode="identified">
+            <span class="other-opt-icon">😊</span>
+            <span class="other-opt-name">Real Name</span>
           </button>
         </div>
-        <div id="alias-preview" class="wa-alias-preview" style="display:none;">
+        <div id="alias-preview" class="other-alias-preview" style="display:none;">
           <span>Your alias: <strong id="alias-name"></strong></span>
-          <button type="button" onclick="regenerateAlias()" class="wa-alias-refresh">🔄</button>
+          <button type="button" onclick="regenerateAlias()" class="other-alias-refresh">🔄</button>
         </div>
       </div>
-      <div class="wa-plus-section">
-        <div class="wa-msgtype-options">
-          <button type="button" class="wa-msgtype-option selected" data-type="NONE">📝 None</button>
-          <button type="button" class="wa-msgtype-option" data-type="QUESTION">❓ Question</button>
-          <button type="button" class="wa-msgtype-option" data-type="COMMENT">💬 Comment</button>
-          <button type="button" class="wa-msgtype-option" data-type="CONFUSION">❗ Confusion</button>
+      <div class="other-popup-section">
+        <div class="other-msgtype-grid">
+          <button type="button" class="other-msgtype-option selected" data-type="NONE">📝 None</button>
+          <button type="button" class="other-msgtype-option" data-type="QUESTION">❓ Question</button>
+          <button type="button" class="other-msgtype-option" data-type="COMMENT">💬 Comment</button>
+          <button type="button" class="other-msgtype-option" data-type="CONFUSION">❗ Confusion</button>
         </div>
       </div>
     </div>
   `;
   container.appendChild(plusMenu);
 
-  // Default message type is now NONE
   const hiddenType = document.createElement('input');
   hiddenType.type = 'hidden';
   hiddenType.id = 'message-type';
   hiddenType.value = 'NONE';
   container.appendChild(hiddenType);
 
-  const plusBtn = document.getElementById('wa-plus-btn');
-  const overlay = plusMenu.querySelector('.wa-plus-menu-overlay');
-  const closeBtn = plusMenu.querySelector('.wa-plus-menu-close');
+  const plusBtn = document.getElementById('other-plus-btn');
+  const closeBtn = plusMenu.querySelector('.other-popup-close');
 
-  plusBtn.addEventListener('click', () => {
-    plusMenu.style.display = 'block';
-  });
-
-  overlay.addEventListener('click', () => {
-    plusMenu.style.display = 'none';
+  plusBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = plusMenu.style.display === 'block';
+    plusMenu.style.display = isOpen ? 'none' : 'block';
+    plusBtn.textContent = isOpen ? '+' : '×';
+    plusBtn.classList.toggle('active', !isOpen);
   });
 
   closeBtn.addEventListener('click', () => {
     plusMenu.style.display = 'none';
+    plusBtn.textContent = '+';
+    plusBtn.classList.remove('active');
   });
 
-  document.querySelectorAll('.wa-identity-option').forEach(opt => {
+  document.addEventListener('click', (e) => {
+    if (!plusMenu.contains(e.target) && e.target !== plusBtn) {
+      plusMenu.style.display = 'none';
+      plusBtn.textContent = '+';
+      plusBtn.classList.remove('active');
+    }
+  });
+
+  document.querySelectorAll('.other-identity-option').forEach(opt => {
     opt.addEventListener('click', () => {
       setIdentityMode(opt.dataset.mode);
     });
   });
 
-  document.querySelectorAll('.wa-msgtype-option').forEach(opt => {
+  document.querySelectorAll('.other-msgtype-option').forEach(opt => {
     opt.addEventListener('click', () => {
-      document.querySelectorAll('.wa-msgtype-option').forEach(o => o.classList.remove('selected'));
+      document.querySelectorAll('.other-msgtype-option').forEach(o => o.classList.remove('selected'));
       opt.classList.add('selected');
       document.getElementById('message-type').value = opt.dataset.type;
     });
   });
 
-  addWaStyles();
+  injectWaStyles();
 }
 
-function addWaStyles() {
-  if (document.getElementById('wa-input-styles')) return;
-
+function injectWaStyles() {
+  if (document.getElementById('other-popup-styles')) return;
   const style = document.createElement('style');
-  style.id = 'wa-input-styles';
+  style.id = 'other-popup-styles';
   style.textContent = `
     .chat-input-container {
-      padding: 8px 12px !important;
-      background: var(--card-bg, #1f2c34) !important;
-      border-top: 1px solid var(--border-color, #2a3942) !important;
+      position: relative;
+      padding: 0 !important;
+      background: transparent !important;
+      border-top: none !important;
     }
-    .wa-input-row {
+
+    .other-input-row {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
+      padding: 10px 16px;
+      background: #0b141a;
+      border-radius: 0 0 16px 16px;
     }
-    .wa-plus-btn {
-      width: 40px;
-      height: 40px;
+
+    .other-plus-btn {
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       border: none;
-      background: transparent;
-      color: var(--text-secondary, #8696a0);
+      background: #1f2c34;
+      color: #8696a0;
       font-size: 28px;
       font-weight: 300;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
+      transition: all 0.2s ease;
       flex-shrink: 0;
-      transition: all 0.2s;
     }
-    .wa-plus-btn:hover {
-      background: rgba(255,255,255,0.1);
-      color: var(--text-primary, #e9edef);
+
+    .other-plus-btn:hover {
+      background: #2a3942;
+      color: #e9edef;
     }
-    .wa-input-wrapper {
+
+    .other-plus-btn.active {
+      background: #00a884;
+      color: white;
+      transform: rotate(45deg);
+    }
+
+    .other-input-wrapper {
       flex: 1;
       min-width: 0;
     }
-    .wa-message-input {
+
+    .other-message-input {
       width: 100%;
-      background: var(--bg-color, #2a3942);
-      border: none;
-      border-radius: 21px;
-      padding: 9px 16px;
+      padding: 12px 16px;
+      border-radius: 24px;
+      border: 1px solid #2a3942;
+      background: #1e2a32;
+      color: #e9edef;
       font-size: 15px;
-      color: #ffffff;
       outline: none;
     }
-    .wa-message-input::placeholder {
-      color: var(--text-secondary, #8696a0);
+
+    .other-message-input:focus {
+      border-color: #3b4a54;
     }
-    body:not(.dark-mode) .wa-message-input {
-      background: #f0f2f5;
-      color: #1f2937;
+
+    .other-message-input::placeholder {
+      color: #8696a0;
     }
-    body:not(.dark-mode) .wa-message-input::placeholder {
-      color: #65676b;
-    }
-    .wa-send-btn {
-      width: 40px;
-      height: 40px;
+
+    .other-send-btn {
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       border: none;
       background: #00a884;
@@ -246,207 +277,324 @@ function addWaStyles() {
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      transition: all 0.2s;
+      transition: all 0.2s ease;
     }
-    .wa-send-btn:hover {
-      background: #06cf9c;
+
+    .other-send-btn:hover {
+      background: #00c49a;
+      transform: scale(1.05);
     }
-    .wa-plus-menu {
-      position: fixed;
-      inset: 0;
-      z-index: 1000;
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-    }
-    .wa-plus-menu-overlay {
+
+    .other-plus-menu-popup {
       position: absolute;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
+      bottom: 70px;
+      left: 16px;
+      width: 280px;
+      max-width: calc(100vw - 32px);
+      background: #1f2c34;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      z-index: 1000;
+      overflow: hidden;
+      animation: popupSlideUp 0.2s ease;
     }
-    .wa-plus-menu-content {
-      position: relative;
-      width: 100%;
-      max-width: 500px;
-      max-height: 80vh;
-      overflow-y: auto;
-      background: #1a2730;
-      border-radius: 20px 20px 0 0;
-      padding: 16px;
-      animation: slideUp 0.3s ease;
+
+    @keyframes popupSlideUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
-    @keyframes slideUp {
-      from { transform: translateY(100%); }
-      to { transform: translateY(0); }
+
+    .other-popup-content {
+      padding: 0;
     }
-    .wa-plus-menu-header {
+
+    .other-popup-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-bottom: 12px;
-      border-bottom: 1px solid #2a3942;
-      margin-bottom: 16px;
-      font-size: 18px;
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       font-weight: 600;
+      font-size: 15px;
       color: #e9edef;
     }
-    .wa-plus-menu-close {
+
+    .other-popup-close {
       background: none;
       border: none;
-      font-size: 28px;
+      font-size: 24px;
       color: #8696a0;
       cursor: pointer;
-      padding: 0 8px;
+      padding: 0;
+      line-height: 1;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: all 0.2s;
     }
-    .wa-plus-section {
-      margin-bottom: 20px;
+
+    .other-popup-close:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
     }
-    .wa-plus-section-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: #aebac1;
-      margin-bottom: 12px;
+
+    .other-popup-section {
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }
-    
-    /* IDENTITY OPTIONS - BRIGHTER COLORS */
-    .wa-identity-options {
+
+    .other-popup-section:last-child {
+      border-bottom: none;
+    }
+
+    .other-popup-label {
+      font-size: 12px;
+      color: #8696a0;
+      margin-bottom: 10px;
+      font-weight: 500;
+    }
+
+    .other-identity-grid {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
     }
-    .wa-identity-option {
+
+    .other-identity-option {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 14px 16px;
+      padding: 12px 14px;
       background: #233138;
       border: 2px solid transparent;
-      border-radius: 12px;
+      border-radius: 10px;
       cursor: pointer;
-      transition: all 0.2s;
-      color: #e9edef;
+      transition: all 0.2s ease;
+      width: 100%;
+      text-align: left;
     }
-    .wa-identity-option:hover {
+
+    .other-identity-option:hover {
       background: #2a3f4a;
       border-color: rgba(0, 168, 132, 0.3);
     }
-    .wa-identity-option.selected {
+
+    .other-identity-option.selected {
       background: rgba(0, 168, 132, 0.2);
       border-color: #00a884;
     }
-    .wa-opt-icon {
-      font-size: 24px;
+
+    .other-opt-icon {
+      font-size: 20px;
+      flex-shrink: 0;
     }
-    .wa-opt-name {
-      font-size: 16px;
-      font-weight: 600;
-      color: #e9edef;
-    }
-    .wa-identity-option.selected .wa-opt-name {
-      color: #00e5a0;
-    }
-    
-    /* MESSAGE TYPE OPTIONS - BRIGHTER COLORS */
-    .wa-msgtype-options {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .wa-msgtype-option {
-      padding: 10px 16px;
-      background: #233138;
-      border: 2px solid #3a4d56;
-      border-radius: 20px;
-      cursor: pointer;
-      transition: all 0.2s;
+
+    .other-opt-name {
       font-size: 14px;
       font-weight: 500;
-      color: #d1d5db;
+      color: #e9edef;
     }
-    .wa-msgtype-option:hover {
+
+    .other-identity-option.selected .other-opt-name {
+      color: #00e5a0;
+    }
+
+    .other-msgtype-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .other-msgtype-option {
+      padding: 10px 12px;
+      background: #233138;
+      border: 2px solid transparent;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 13px;
+      font-weight: 500;
+      color: #d1d5db;
+      text-align: center;
+    }
+
+    .other-msgtype-option:hover {
       background: #2a3f4a;
-      border-color: #4db6ac;
+      border-color: rgba(0, 168, 132, 0.3);
       color: #ffffff;
     }
-    .wa-msgtype-option.selected {
+
+    .other-msgtype-option.selected {
       background: rgba(0, 168, 132, 0.25);
       border-color: #00a884;
       color: #00e5a0;
     }
-    
-    /* Alias Preview */
-    .wa-alias-preview {
+
+    .other-alias-preview {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-top: 12px;
-      padding: 12px 16px;
+      margin-top: 10px;
+      padding: 10px 12px;
       background: rgba(102, 126, 234, 0.15);
-      border-radius: 10px;
+      border-radius: 8px;
       color: #e9edef;
-      font-size: 14px;
+      font-size: 13px;
     }
-    .wa-alias-preview strong {
+
+    .other-alias-preview strong {
       color: #a78bfa;
       font-weight: 700;
     }
-    .wa-alias-refresh {
-      background: rgba(255,255,255,0.1);
+
+    .other-alias-refresh {
+      background: rgba(255, 255, 255, 0.1);
       border: none;
       padding: 6px 10px;
-      border-radius: 8px;
+      border-radius: 6px;
       cursor: pointer;
-      font-size: 16px;
+      font-size: 14px;
       transition: background 0.2s;
     }
-    .wa-alias-refresh:hover {
-      background: rgba(255,255,255,0.2);
+
+    .other-alias-refresh:hover {
+      background: rgba(255, 255, 255, 0.2);
     }
-    
-    /* Reply indicator */
+
     .reply-indicator-container {
-      background: rgba(0,168,132,0.15);
+      background: rgba(0, 168, 132, 0.15);
       border-left: 3px solid #00a884;
       padding: 10px 14px;
-      margin-bottom: 8px;
+      margin: 0 16px 8px 16px;
       border-radius: 8px;
     }
-    
-    /* Light mode adjustments */
-    body:not(.dark-mode) .wa-plus-menu-content {
-      background: #ffffff;
+
+    body:not(.dark-mode) .other-input-row {
+      background: #f0f2f5;
+      border-radius: 0 0 16px 16px;
     }
-    body:not(.dark-mode) .wa-plus-menu-header {
+
+    body:not(.dark-mode) .other-plus-btn {
+      background: #e5e7eb;
+      color: #6b7280;
+    }
+
+    body:not(.dark-mode) .other-plus-btn:hover {
+      background: #d1d5db;
+      color: #374151;
+    }
+
+    body:not(.dark-mode) .other-message-input {
+      background: #ffffff;
+      color: #1f2937;
+      border: 1px solid #e5e7eb;
+    }
+
+    body:not(.dark-mode) .other-plus-menu-popup {
+      background: #ffffff;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    }
+
+    body:not(.dark-mode) .other-popup-header {
       color: #1f2937;
       border-bottom-color: #e5e7eb;
     }
-    body:not(.dark-mode) .wa-plus-section-title {
+
+    body:not(.dark-mode) .other-popup-close {
       color: #6b7280;
     }
-    body:not(.dark-mode) .wa-identity-option {
-      background: #f3f4f6;
-      color: #1f2937;
+
+    body:not(.dark-mode) .other-popup-label {
+      color: #6b7280;
     }
-    body:not(.dark-mode) .wa-identity-option:hover {
+
+    body:not(.dark-mode) .other-identity-option {
+      background: #f3f4f6;
+    }
+
+    body:not(.dark-mode) .other-identity-option:hover {
       background: #e5e7eb;
     }
-    body:not(.dark-mode) .wa-identity-option.selected {
+
+    body:not(.dark-mode) .other-identity-option.selected {
       background: rgba(0, 168, 132, 0.15);
     }
-    body:not(.dark-mode) .wa-opt-name {
+
+    body:not(.dark-mode) .other-opt-name {
       color: #1f2937;
     }
-    body:not(.dark-mode) .wa-msgtype-option {
+
+    body:not(.dark-mode) .other-identity-option.selected .other-opt-name {
+      color: #059669;
+    }
+
+    body:not(.dark-mode) .other-msgtype-option {
       background: #f3f4f6;
-      border-color: #d1d5db;
       color: #374151;
     }
-    body:not(.dark-mode) .wa-msgtype-option:hover {
+
+    body:not(.dark-mode) .other-msgtype-option:hover {
       background: #e5e7eb;
     }
-    body:not(.dark-mode) .wa-msgtype-option.selected {
+
+    body:not(.dark-mode) .other-msgtype-option.selected {
       background: rgba(0, 168, 132, 0.15);
       color: #059669;
+    }
+
+    @media (max-width: 480px) {
+      .other-plus-menu-popup {
+        left: 10px;
+        right: 10px;
+        width: auto;
+        max-width: none;
+      }
+
+      .other-input-row {
+        padding: 10px 12px;
+        gap: 8px;
+      }
+
+      .other-plus-btn,
+      .other-send-btn {
+        width: 40px;
+        height: 40px;
+      }
+
+      .other-plus-btn {
+        font-size: 24px;
+      }
+
+      .other-message-input {
+        padding: 10px 14px;
+        font-size: 14px;
+      }
+
+      .other-identity-option {
+        padding: 10px 12px;
+      }
+
+      .other-opt-icon {
+        font-size: 18px;
+      }
+
+      .other-opt-name {
+        font-size: 13px;
+      }
+
+      .other-msgtype-option {
+        padding: 8px 10px;
+        font-size: 12px;
+      }
     }
   `;
   document.head.appendChild(style);
@@ -496,35 +644,19 @@ function generateAvatarHTML(avatarUrl, name, isLecturer) {
 
 function getInitials(name) {
   if (!name) return '??';
-  const parts = name.trim().split(' ').filter(p => p.length > 0);
-  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  const parts = name.trim().split(' ');
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
   return name.substring(0, 2).toUpperCase();
 }
 
 function getColorFromName(name) {
-  const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'];
+  if (!name) return '#6b7280';
+  const colors = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899'];
   let hash = 0;
-  for (let i = 0; i < (name || 'User').length; i++) {
-    hash = (name || 'User').charCodeAt(i) + ((hash << 5) - hash);
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
   }
   return colors[Math.abs(hash) % colors.length];
 }
-
-// Get message type icon - includes NONE
-function getMessageTypeIcon(type) {
-  const icons = {
-    'NONE': '📝',
-    'QUESTION': '❓',
-    'COMMENT': '💬',
-    'CONFUSION': '❗'
-  };
-  return icons[type] || '📝';
-}
-
-window.initIdentityModeSelector = initIdentityModeSelector;
-window.getIdentityMode = getIdentityMode;
-window.setIdentityMode = setIdentityMode;
-window.getSessionAlias = getSessionAlias;
-window.regenerateAlias = regenerateAlias;
-window.getMessageDisplayInfo = getMessageDisplayInfo;
-window.getMessageTypeIcon = getMessageTypeIcon;

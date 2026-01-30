@@ -13,73 +13,94 @@ const messageSchema = new mongoose.Schema({
   },
   text: {
     type: String,
-    required: true,
+    required: function() { return !this.isPoll; },
     maxLength: 1000,
   },
   type: {
     type: String,
-    enum: ['NONE', 'QUESTION', 'COMMENT', 'CONFUSION'],  // ADDED 'NONE'
-    default: 'NONE',  // Changed default to NONE
+    enum: ['NONE', 'QUESTION', 'COMMENT', 'CONFUSION', 'POLL'],
+    default: 'NONE',
   },
-  
   identityMode: {
     type: String,
     enum: ['anonymous', 'pseudonymous', 'identified'],
     default: 'anonymous',
   },
-  
   alias: {
     type: String,
     default: null,
     maxLength: 50,
   },
-  
   replyTo: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Message',
     default: null,
   },
-  
   timestamp: {
     type: Date,
     default: Date.now,
   },
-  
   isDeleted: {
     type: Boolean,
     default: false,
   },
-  
   isEdited: {
     type: Boolean,
     default: false,
   },
-  
   isPinned: {
     type: Boolean,
     default: false,
   },
-  
   isAnnouncement: {
     type: Boolean,
     default: false,
   },
-  
   isReported: {
     type: Boolean,
     default: false,
   },
-  
   reactions: {
     type: Map,
-    of: [String],  // Array of user IDs who reacted
+    of: [String],
     default: new Map(),
   },
+  isPoll: {
+    type: Boolean,
+    default: false,
+  },
+  poll: {
+    question: {
+      type: String,
+      maxLength: 500,
+    },
+    options: [{
+      id: String,
+      text: String,
+      votes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+    }],
+    allowMultiple: {
+      type: Boolean,
+      default: false,
+    },
+    isAnonymous: {
+      type: Boolean,
+      default: true,
+    },
+    isClosed: {
+      type: Boolean,
+      default: false,
+    },
+    endsAt: {
+      type: Date,
+      default: null,
+    }
+  }
 });
 
-// Indexes for performance
 messageSchema.index({ sessionId: 1, timestamp: -1 });
 messageSchema.index({ userId: 1 });
 messageSchema.index({ sessionId: 1, identityMode: 1 });
+messageSchema.index({ sessionId: 1, isPoll: 1 });
 
 module.exports = mongoose.model('Message', messageSchema);
