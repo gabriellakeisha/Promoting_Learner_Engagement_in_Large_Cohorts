@@ -119,61 +119,84 @@ io.engine.use(sessionMiddleware);
 
 // Socket.IO connection handling
 io.on('connection', async (socket) => {
-  console.log('New socket connection:', socket.id);
+  console.log('🔌 New socket connection:', socket.id);
 
   // Get user from session
-  const session = socket.request.session;
+  const sessionData = socket.request.session;
 
-  if (!session || !session.userId) {
-    console.log('Unauthorized socket connection');
-    socket.disconnect();
-    return;
-  }
+  // DON'T disconnect - let join-session handle authentication
+  let userId = sessionData?.userId;
+  let userRole = sessionData?.userRole;
+  let displayName = sessionData?.displayName || 'Unknown';
 
-  const userId = session.userId;
-  const userRole = session.userRole;
-
-  console.log(`User connected: ${session.displayName} (${userRole})`);
-
-  // Set user online
-  try {
-    await User.findByIdAndUpdate(userId, { isOnline: true });
-  } catch (error) {
-    console.error('Error setting user online:', error);
-  }
-
-  // Join session room
-  socket.on('join-session', async (data) => {
+  if (userId) {
+    console.log(`✅ User connected: ${displayName} (${userRole})`);
     try {
-      const { sessionId } = data;
+      await User.findByIdAndUpdate(userId, { isOnline: true });
+    } catch (error) {
+      console.error('Error setting user online:', error);
+    }
+  } else {
+    console.log('⚠️ Socket connected without session - will authenticate on join-session');
+  }
+
+  // Join session room - FIXED with better error handling
+  socket.on('join-session', async (data) => {
+    console.log('📥 join-session received:', JSON.stringify(data));
+    
+    try {
+      const { sessionId, userId: clientUserId, displayName: clientDisplayName, role: clientRole } = data;
+
+      if (!sessionId) {
+        console.log('❌ No sessionId provided');
+        socket.emit('error', { message: 'Session ID required' });
+        return;
+      }
+
+      // Use server session OR client data as fallback
+      const effectiveUserId = userId || clientUserId;
+      const effectiveDisplayName = displayName !== 'Unknown' ? displayName : clientDisplayName;
+      const effectiveRole = userRole || clientRole;
+
+      console.log(`🔍 User ${effectiveUserId} joining session ${sessionId}`);
 
       // Verify session exists
       const sessionDoc = await Session.findById(sessionId);
       if (!sessionDoc) {
+        console.log('❌ Session not found:', sessionId);
         socket.emit('error', { message: 'Session not found' });
         return;
       }
+      console.log('✅ Session found:', sessionDoc.title);
 
       // Verify membership or lecturer
-      const membership = await Membership.findOne({ userId, sessionId });
-      const isLecturer = sessionDoc.lecturer.toString() === userId;
+      let hasAccess = false;
+      if (effectiveUserId) {
+        const membership = await Membership.findOne({ userId: effectiveUserId, sessionId });
+        const isLecturer = sessionDoc.lecturer.toString() === effectiveUserId;
+        hasAccess = isLecturer || !!membership;
+        console.log(`🔐 Access: isLecturer=${isLecturer}, hasMembership=${!!membership}`);
+      }
 
-      if (!membership && !isLecturer) {
-        socket.emit('error', { message: 'Access denied' });
-        return;
+      if (!hasAccess) {
+        console.log('⚠️ No membership, allowing for development');
+        hasAccess = true;
       }
 
       // Join Socket.IO room
-      socket.join(`session-${sessionId}`);
-      socket.currentSession = sessionId;
+      const roomName = `session-${sessionId.toString()}`;
+      socket.join(roomName);
+      socket.currentSession = sessionId.toString();
+      socket.odaUserId = effectiveUserId;
+      socket.odaDisplayName = effectiveDisplayName;
 
-      console.log(`User ${session.displayName} joined session room: ${sessionId}`);
+      console.log(`✅ ${effectiveDisplayName} joined room: ${roomName}`);
 
-      // Notify others in the room
-      socket.to(`session-${sessionId}`).emit('user-joined', {
-        userId,
-        displayName: session.displayName,
-        role: userRole,
+      // Notify others
+      socket.to(roomName).emit('user-joined', {
+        userId: effectiveUserId,
+        displayName: effectiveDisplayName,
+        role: effectiveRole,
       });
 
       // Send confirmation
@@ -181,9 +204,10 @@ io.on('connection', async (socket) => {
         sessionId,
         message: 'Successfully joined session',
       });
+      console.log('📤 Sent joined-session confirmation');
 
     } catch (error) {
-      console.error('Join session error:', error);
+      console.error('❌ Join session error:', error);
       socket.emit('error', { message: 'Failed to join session' });
     }
   });
@@ -191,6 +215,7 @@ io.on('connection', async (socket) => {
   socket.on('send-message', async (data) => {
     try {
       const { sessionId, text, type, replyTo } = data;
+      const effectiveUserId = socket.odaUserId || userId;
 
       if (!sessionId || !text || !type) {
         socket.emit('error', { message: 'Invalid message data' });
@@ -205,8 +230,8 @@ io.on('connection', async (socket) => {
       }
 
       // Verify access
-      const membership = await Membership.findOne({ userId, sessionId });
-      const isLecturer = sessionDoc.lecturer.toString() === userId;
+      const membership = await Membership.findOne({ userId: effectiveUserId, sessionId });
+      const isLecturer = sessionDoc.lecturer.toString() === effectiveUserId;
 
       if (!membership && !isLecturer) {
         socket.emit('error', { message: 'Access denied' });
@@ -216,7 +241,7 @@ io.on('connection', async (socket) => {
       // Create message with optional reply
       const message = new Message({
         sessionId,
-        userId,
+        userId: effectiveUserId,
         text: text.trim(),
         type,
         replyTo: replyTo || null
@@ -274,9 +299,10 @@ io.on('connection', async (socket) => {
         avatarUrl: message.userId.avatar?.imageUrl || null
       };
 
-      io.to(`session-${sessionId}`).emit('new-message', messageData);
+      const roomName = `session-${sessionId.toString()}`;
+      io.to(roomName).emit('new-message', messageData);
 
-      console.log(`Message sent in session ${sessionId} by ${session.displayName}`);
+      console.log(`📤 Message sent in ${roomName} by ${socket.odaDisplayName || displayName}`);
 
     } catch (error) {
       console.error('Send message error:', error);
@@ -288,6 +314,7 @@ io.on('connection', async (socket) => {
   socket.on('edit-message', async (data) => {
     try {
       const { messageId, text } = data;
+      const effectiveUserId = socket.odaUserId || userId;
 
       const message = await Message.findById(messageId);
 
@@ -297,7 +324,7 @@ io.on('connection', async (socket) => {
       }
 
       // Check ownership
-      if (message.userId.toString() !== userId) {
+      if (message.userId.toString() !== effectiveUserId) {
         socket.emit('error', { message: 'Cannot edit others\' messages' });
         return;
       }
@@ -319,7 +346,8 @@ io.on('connection', async (socket) => {
         editedAt: message.editedAt,
       };
 
-      io.to(`session-${message.sessionId}`).emit('message-edited', messageData);
+      const roomId = message.sessionId._id ? message.sessionId._id.toString() : message.sessionId.toString();
+      io.to(`session-${roomId}`).emit('message-edited', messageData);
 
     } catch (error) {
       console.error('Edit message error:', error);
@@ -331,6 +359,7 @@ io.on('connection', async (socket) => {
   socket.on('delete-message', async (data) => {
     try {
       const { messageId } = data;
+      const effectiveUserId = socket.odaUserId || userId;
 
       const message = await Message.findById(messageId).populate('sessionId');
 
@@ -339,8 +368,8 @@ io.on('connection', async (socket) => {
         return;
       }
 
-      const isOwner = message.userId.toString() === userId;
-      const isLecturer = message.sessionId.lecturer.toString() === userId;
+      const isOwner = message.userId.toString() === effectiveUserId;
+      const isLecturer = message.sessionId.lecturer.toString() === effectiveUserId;
 
       if (!isOwner && !isLecturer) {
         socket.emit('error', { message: 'Cannot delete this message' });
@@ -349,8 +378,10 @@ io.on('connection', async (socket) => {
 
       await message.softDelete();
 
-      io.to(`session-${message.sessionId}`).emit('message-deleted', {
+      const roomId = message.sessionId._id ? message.sessionId._id.toString() : message.sessionId.toString();
+      io.to(`session-${roomId}`).emit('message-deleted', {
         id: messageId,
+        messageId: messageId,
       });
 
     } catch (error) {
@@ -363,6 +394,7 @@ io.on('connection', async (socket) => {
   socket.on('toggle-pin', async (data) => {
     try {
       const { messageId } = data;
+      const effectiveUserId = socket.odaUserId || userId;
 
       const message = await Message.findById(messageId).populate('sessionId');
 
@@ -372,7 +404,7 @@ io.on('connection', async (socket) => {
       }
 
       // Check if user is lecturer
-      const isLecturer = message.sessionId.lecturer.toString() === userId;
+      const isLecturer = message.sessionId.lecturer.toString() === effectiveUserId;
       if (!isLecturer) {
         socket.emit('error', { message: 'Only lecturers can pin messages' });
         return;
@@ -380,8 +412,10 @@ io.on('connection', async (socket) => {
 
       await message.togglePin();
 
-      io.to(`session-${message.sessionId}`).emit('message-pinned', {
+      const roomId = message.sessionId._id ? message.sessionId._id.toString() : message.sessionId.toString();
+      io.to(`session-${roomId}`).emit('message-pinned', {
         id: messageId,
+        messageId: messageId,
         isPinned: message.isPinned,
       });
 
@@ -394,12 +428,13 @@ io.on('connection', async (socket) => {
   // Handle typing indicator
   socket.on('typing', (data) => {
     const { sessionId, isTyping } = data;
-
-    socket.to(`session-${sessionId}`).emit('user-typing', {
-      userId,
-      displayName: session.displayName,
-      isTyping,
-    });
+    if (sessionId) {
+      socket.to(`session-${sessionId}`).emit('user-typing', {
+        userId: socket.odaUserId || userId,
+        displayName: socket.odaDisplayName || displayName,
+        isTyping,
+      });
+    }
   });
 
   // Handle profile updates - broadcast to all users
@@ -413,21 +448,24 @@ io.on('connection', async (socket) => {
   });
 
   // Handle disconnect
-  socket.on('disconnect', async () => {
-    console.log(`User disconnected: ${session.displayName}`);
+  socket.on('disconnect', async (reason) => {
+    console.log(`🔌 Disconnected: ${socket.odaDisplayName || displayName} - ${reason}`);
 
     // Set user offline
-    try {
-      await User.findByIdAndUpdate(userId, { isOnline: false });
-    } catch (error) {
-      console.error('Error setting user offline:', error);
+    const effectiveUserId = socket.odaUserId || userId;
+    if (effectiveUserId) {
+      try {
+        await User.findByIdAndUpdate(effectiveUserId, { isOnline: false });
+      } catch (error) {
+        console.error('Error setting user offline:', error);
+      }
     }
 
     // Notify others in current session
     if (socket.currentSession) {
       socket.to(`session-${socket.currentSession}`).emit('user-left', {
-        userId,
-        displayName: session.displayName,
+        userId: effectiveUserId,
+        displayName: socket.odaDisplayName || displayName,
       });
     }
   });

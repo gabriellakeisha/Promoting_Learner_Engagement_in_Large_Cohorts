@@ -72,8 +72,8 @@ const messageSchema = new mongoose.Schema({
   
   reactions: {
     type: Map,
-    of: Number,
-    default: {},
+    of: [String],  // Array of user IDs who reacted
+    default: new Map(),
   },
 });
 

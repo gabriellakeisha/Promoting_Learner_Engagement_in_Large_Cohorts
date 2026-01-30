@@ -6,7 +6,7 @@ let reflectionModal = null;
 let currentReflectionSessionId = null;
 
 function initStudentReflection() {
-  // IMPORTANT: Only initialize for students, not lecturers
+  //Only initialize for students, not lecturers
   if (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'lecturer') {
     console.log('📊 Self-reflection disabled for lecturers');
     return;
@@ -39,7 +39,7 @@ function createReflectionModal() {
 }
 
 function addReflectionButton() {
-  // IMPORTANT: Only add button for students
+  // Only add button for students
   if (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'lecturer') {
     return; // Don't add button for lecturers
   }

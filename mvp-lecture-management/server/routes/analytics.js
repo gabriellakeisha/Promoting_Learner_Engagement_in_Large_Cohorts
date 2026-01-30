@@ -148,7 +148,7 @@ router.get('/lecturer/:sessionId', isAuthenticated, isLecturer, async (req, res)
     );
 
     // ========================================
-    // 7. IDENTITY MODE BREAKDOWN (NEW!)
+    // 7. IDENTITY MODE BREAKDOWN 
     // ========================================
     const identityModeBreakdown = await Message.aggregate([
       { $match: { sessionId: session._id, isDeleted: false } },
@@ -253,7 +253,7 @@ router.get('/lecturer/:sessionId', isAuthenticated, isLecturer, async (req, res)
         confusionRate: parseFloat(confusionRate),
         questionRate: parseFloat(questionRate),
         
-        // Identity mode stats (NEW!)
+        // Identity mode stats 
         identityModes,
         
         // Timeline for charts
@@ -263,7 +263,7 @@ router.get('/lecturer/:sessionId', isAuthenticated, isLecturer, async (req, res)
         // Top contributors
         topContributors: topContributorsWithNames,
         
-        // Keywords (NEW!)
+        // Keywords 
         keywords,
       },
     });

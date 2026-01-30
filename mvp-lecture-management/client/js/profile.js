@@ -72,7 +72,7 @@ function updateNavbarAvatar() {
     const avatarEl = document.getElementById('navbar-avatar');
     if (!avatarEl) return;
 
-    // IMPORTANT: Force correct size
+    // Force correct size
     avatarEl.style.width = '40px';
     avatarEl.style.height = '40px';
     avatarEl.style.minWidth = '40px';

@@ -190,8 +190,10 @@ router.post('/send', isAuthenticated, async (req, res) => {
           avatarUrl: populatedMessage.userId.avatar?.imageUrl || null
         };
 
-        io.to(`session-${sessionId}`).emit('new-message', messageData);
-        console.log('✅ Message broadcasted via Socket.IO');
+        const roomName = `session-${sessionId.toString()}`;
+        console.log('📡 Broadcasting to room:', roomName);
+        io.to(roomName).emit('new-message', messageData);
+        console.log('✅ Message broadcasted via Socket.IO to room:', roomName);
       } else {
         console.error('❌ Socket.IO instance not found!');
       }
@@ -336,7 +338,10 @@ router.delete('/:messageId', isAuthenticated, async (req, res) => {
 
     const io = req.app.get('io');
     if (io) {
-      io.to(`session-${message.sessionId._id}`).emit('message-deleted', {
+      // When sessionId is populated, it's an object - use _id
+      const roomId = message.sessionId._id ? message.sessionId._id.toString() : message.sessionId.toString();
+      console.log('📡 Broadcasting delete to room: session-' + roomId);
+      io.to(`session-${roomId}`).emit('message-deleted', {
         messageId: messageId,
         deletedBy: userId
       });
@@ -396,7 +401,8 @@ router.put('/:messageId', isAuthenticated, async (req, res) => {
 
     const io = req.app.get('io');
     if (io) {
-      io.to(`session-${message.sessionId._id}`).emit('message-edited', {
+      const roomId = message.sessionId._id ? message.sessionId._id.toString() : message.sessionId.toString();
+      io.to(`session-${roomId}`).emit('message-edited', {
         messageId: messageId,
         text: message.text,
         isEdited: true
@@ -439,7 +445,8 @@ router.post('/:messageId/report', isAuthenticated, async (req, res) => {
 
     const io = req.app.get('io');
     if (io) {
-      io.to(`session-${message.sessionId}`).emit('message-reported', {
+      const roomId = message.sessionId._id ? message.sessionId._id.toString() : message.sessionId.toString();
+      io.to(`session-${roomId}`).emit('message-reported', {
         messageId: messageId,
         isReported: true
       });
@@ -487,7 +494,8 @@ router.post('/:messageId/pin', isAuthenticated, async (req, res) => {
 
     const io = req.app.get('io');
     if (io) {
-      io.to(`session-${message.sessionId._id}`).emit('message-pinned', {
+      const roomId = message.sessionId._id ? message.sessionId._id.toString() : message.sessionId.toString();
+      io.to(`session-${roomId}`).emit('message-pinned', {
         messageId: messageId,
         isPinned: message.isPinned
       });
@@ -504,6 +512,96 @@ router.post('/:messageId/pin', isAuthenticated, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to pin message'
+    });
+  }
+});
+
+// ADD REACTION TO MESSAGE (Max 1 reaction per user per message)
+router.post('/:messageId/react', isAuthenticated, async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { emoji } = req.body;
+    const userId = req.session.userId;
+
+    // Validate emoji
+    if (!emoji || typeof emoji !== 'string' || emoji.length > 10) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid emoji'
+      });
+    }
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({
+        success: false,
+        message: 'Message not found'
+      });
+    }
+
+    // Initialize reactions if needed
+    if (!message.reactions) {
+      message.reactions = new Map();
+    }
+
+    // First, remove user from ALL existing reactions (max 1 reaction per user)
+    let userPreviousEmoji = null;
+    message.reactions.forEach((users, em) => {
+      if (Array.isArray(users)) {
+        const idx = users.indexOf(userId);
+        if (idx > -1) {
+          userPreviousEmoji = em;
+          users.splice(idx, 1);
+          if (users.length === 0) {
+            message.reactions.delete(em);
+          } else {
+            message.reactions.set(em, users);
+          }
+        }
+      }
+    });
+
+    // If clicking same emoji = toggle off (don't add back)
+    // If clicking different emoji = add user to new emoji
+    let action = 'removed';
+    if (userPreviousEmoji !== emoji) {
+      let usersForEmoji = message.reactions.get(emoji) || [];
+      if (!Array.isArray(usersForEmoji)) usersForEmoji = [];
+      usersForEmoji.push(userId);
+      message.reactions.set(emoji, usersForEmoji);
+      action = userPreviousEmoji ? 'changed' : 'added';
+    }
+
+    await message.save();
+
+    // Convert Map to plain object
+    const reactionsObj = {};
+    message.reactions.forEach((users, em) => {
+      reactionsObj[em] = users;
+    });
+
+    // Broadcast via Socket.IO
+    const io = req.app.get('io');
+    if (io) {
+      const roomId = message.sessionId._id ? message.sessionId._id.toString() : message.sessionId.toString();
+      io.to(`session-${roomId}`).emit('message-reaction', {
+        messageId: messageId,
+        emoji: emoji,
+        reactions: reactionsObj
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `Reaction ${action}`,
+      reactions: reactionsObj
+    });
+
+  } catch (error) {
+    console.error('Add reaction error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to add reaction'
     });
   }
 });

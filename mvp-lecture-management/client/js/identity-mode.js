@@ -123,7 +123,6 @@ function initIdentityModeSelector(containerSelector) {
         </div>
       </div>
       <div class="wa-plus-section">
-        <div class="wa-plus-section-title">Message Type</div>
         <div class="wa-msgtype-options">
           <button type="button" class="wa-msgtype-option selected" data-type="NONE">📝 None</button>
           <button type="button" class="wa-msgtype-option" data-type="QUESTION">❓ Question</button>
