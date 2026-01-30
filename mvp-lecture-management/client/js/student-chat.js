@@ -118,6 +118,23 @@ console.log('🚀 student-chat.js loaded');
       from { transform: scale(0.9); opacity: 0; }
       to { transform: scale(1); opacity: 1; }
     }
+    
+    .date-separator {
+      display: flex;
+      justify-content: center;
+      padding: 12px 0;
+      position: relative;
+    }
+    .date-separator span {
+      background: #182229;
+      color: #8696a0;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 8px;
+      text-transform: capitalize;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
   `;
   document.head.appendChild(style);
 })();
@@ -304,16 +321,15 @@ function initializeSocket() {
   // Poll real-time handlers
   socket.on('poll-update', function (data) {
     console.log('Poll update:', data);
-    updatePollUI(data.pollId, data.options, data.totalVotes);
+    var pollContainer = document.querySelector('.poll-container[data-poll-id="' + data.pollId + '"]');
+    if (pollContainer) {
+      loadMessages(); // Refresh to show updated votes
+    }
   });
   
   socket.on('poll-closed', function (data) {
     console.log('Poll closed:', data);
-    var pollContainer = document.querySelector('.poll-container[data-poll-id="' + data.pollId + '"]');
-    if (pollContainer) {
-      // Mark as closed and refresh that poll
-      loadMessages();
-    }
+    loadMessages();
   });
   
   socket.on('disconnect', function (reason) { 
@@ -362,6 +378,10 @@ async function loadMessages() {
       var empty = container.querySelector('.empty-state');
       if (loading) loading.style.display = 'none';
       if (empty) empty.remove();
+      
+      var existingMessages = container.querySelectorAll('.chat-message, .date-separator');
+      existingMessages.forEach(function(el) { el.remove(); });
+      lastDateKey = null;
 
       console.log('📥 Appending', result.messages.length, 'messages');
       result.messages.forEach(function (msg, index) {
@@ -568,6 +588,15 @@ function appendMessage(message) {
   if (existingMsg) {
     console.log('⚠️ Duplicate message, skipping:', msgId);
     return;
+  }
+  
+  var msgDateKey = getDateKey(message.timestamp || message.createdAt || new Date());
+  if (msgDateKey !== lastDateKey) {
+    var dateSeparator = document.createElement('div');
+    dateSeparator.className = 'date-separator';
+    dateSeparator.innerHTML = '<span>' + formatDateSeparator(message.timestamp || message.createdAt || new Date()) + '</span>';
+    container.appendChild(dateSeparator);
+    lastDateKey = msgDateKey;
   }
   
   console.log('✅ Creating new message element for:', msgId);
@@ -951,6 +980,25 @@ function showError(message) {
 }
 function escapeHtml(text) { var div = document.createElement('div'); div.textContent = text || ''; return div.innerHTML; }
 function formatTime(timestamp) { return new Date(timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }); }
+function formatDateSeparator(timestamp) {
+  var date = new Date(timestamp);
+  var today = new Date();
+  var yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  var isToday = date.toDateString() === today.toDateString();
+  var isYesterday = date.toDateString() === yesterday.toDateString();
+  if (isToday) return 'Today';
+  if (isYesterday) return 'Yesterday';
+  var daysDiff = Math.floor((today - date) / (1000 * 60 * 60 * 24));
+  if (daysDiff < 7) {
+    return date.toLocaleDateString('en-US', { weekday: 'long' });
+  }
+  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+function getDateKey(timestamp) {
+  return new Date(timestamp).toDateString();
+}
+var lastDateKey = null;
 function getTypeIcon(type) { return { 'NONE': '📝', 'QUESTION': '❓', 'COMMENT': '💬', 'CONFUSION': '❗', 'POLL': '📊' }[type] || '📝'; }
 function scrollToBottom() { 
   var container = document.getElementById('messages-container'); 
@@ -1070,8 +1118,7 @@ async function votePoll(pollId, optionId) {
     var response = await fetch('/api/messages/poll/' + pollId + '/vote', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ optionIds: [optionId] }) });
     var result = await response.json();
     if (result.success) {
-      // Update UI immediately with returned data
-      updatePollUI(pollId, result.options, null);
+      loadMessages(); // Refresh to show vote
     } else { 
       alert(result.message || 'Failed to vote'); 
     }
@@ -1103,48 +1150,6 @@ async function viewPollVotes(pollId) {
       alert('Poll Results:\n\n' + voterInfo + '\n\nTotal: ' + r.totalVotes + ' votes');
     }
   } catch (error) { console.error('View votes error:', error); }
-}
-
-// Update poll UI without full page reload
-function updatePollUI(pollId, options, totalVotes) {
-  var pollContainer = document.querySelector('.poll-container[data-poll-id="' + pollId + '"]');
-  if (!pollContainer) return;
-  
-  // Calculate total votes if not provided
-  if (totalVotes === null || totalVotes === undefined) {
-    totalVotes = options.reduce(function(sum, opt) { return sum + (opt.voteCount || 0); }, 0);
-  }
-  
-  var hasVoted = options.some(function(opt) { return opt.hasVoted; });
-  var isLecturer = currentUser && currentUser.role === 'lecturer';
-  
-  // Get the question from existing poll
-  var questionEl = pollContainer.querySelector('div > div:first-child');
-  var question = questionEl ? questionEl.textContent : '';
-  
-  // Rebuild options HTML
-  var optionsHTML = options.map(function(opt) {
-    var voteCount = opt.voteCount || 0;
-    var percentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
-    var voted = opt.hasVoted;
-    
-    var circleHTML = voted ? 
-      '<div style="width:24px;height:24px;border-radius:50%;border:2px solid #00a884;background:#00a884;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>' :
-      '<div style="width:24px;height:24px;border-radius:50%;border:2px solid #4a5568;flex-shrink:0;"></div>';
-    
-    var progressHTML = hasVoted ? 
-      '<div style="height:4px;background:#2d3748;border-radius:2px;margin-top:8px;overflow:hidden;"><div style="height:100%;width:' + percentage + '%;background:' + (voted ? '#00a884' : '#4a5568') + ';border-radius:2px;transition:width 0.3s;"></div></div>' : '';
-    
-    var clickHandler = !hasVoted ? ' onclick="votePoll(\'' + pollId + '\', \'' + opt.id + '\')" style="cursor:pointer;"' : '';
-    
-    return '<div' + clickHandler + ' style="padding:12px 0;border-bottom:1px solid #2d3748;' + (!hasVoted ? 'cursor:pointer;' : '') + '"><div style="display:flex;align-items:center;justify-content:space-between;"><div style="display:flex;align-items:center;gap:12px;">' + circleHTML + '<span style="color:white;font-size:15px;">' + escapeHtml(opt.text) + '</span></div><span style="color:#94a3b8;font-size:14px;">' + voteCount + '</span></div>' + progressHTML + '</div>';
-  }).join('');
-  
-  // Update the poll options container
-  var optionsContainer = pollContainer.querySelector('.poll-options');
-  if (optionsContainer) {
-    optionsContainer.innerHTML = optionsHTML;
-  }
 }
 
 // WhatsApp Style Poll Rendering
@@ -1207,7 +1212,6 @@ window.submitPoll = submitPoll;
 window.votePoll = votePoll;
 window.closePollById = closePollById;
 window.viewPollVotes = viewPollVotes;
-window.updatePollUI = updatePollUI;
 
 document.addEventListener('DOMContentLoaded', function () {
   console.log('📄 DOM ready, calling init()');
