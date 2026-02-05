@@ -50,7 +50,7 @@ A real-time backchannel communication platform for large university lectures. St
 ### Real-time Chat
 - Socket.IO with room-based architecture
 - Message types: QUESTION, COMMENT, CONFUSION
-- Edit own messages (within 5 minutes)
+- Edit own messages 
 - Delete messages (own or lecturer can delete any)
 - Pin important messages (lecturer only)
 - Typing indicators
