@@ -223,10 +223,11 @@ async function loadSession() {
 }
 
 function initializeSocket() {
-  socket = io({ transports: ['websocket', 'polling'], reconnection: true, reconnectionDelay: 1000, reconnectionAttempts: 5, forceNew: false });
+  socket = io({ transports: ['websocket', 'polling'], reconnection: true, reconnectionDelay: 1000, reconnectionAttempts: Infinity, forceNew: false, timeout: 20000 });
   
   socket.on('connect', function () {
     console.log('🔌 Socket connected, id:', socket.id);
+    socketJoined = false;
     if (!sessionId || !currentUser) {
       console.log('⚠️ Missing sessionId or currentUser, cannot join room');
       return;
@@ -239,6 +240,20 @@ function initializeSocket() {
   socket.on('joined-session', function (data) {
     socketJoined = true;
     console.log('✅ Joined session room:', data);
+    processPendingMessages();
+  });
+
+  socket.on('disconnect', function (reason) {
+    console.log('🔌 Socket disconnected:', reason);
+    socketJoined = false;
+  });
+
+  socket.on('reconnect', function (attemptNumber) {
+    console.log('🔄 Socket reconnected after', attemptNumber, 'attempts');
+  });
+
+  socket.on('connect_error', function (error) {
+    console.log('❌ Socket connection error:', error.message);
   });
   
   socket.on('new-message', function (message) {
@@ -349,6 +364,18 @@ function initializeSocket() {
   
   socket.on('connect_error', function (error) {
     console.error('❌ Socket connect error:', error.message);
+  });
+
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible' && socket) {
+      if (!socket.connected) {
+        console.log('🔄 Page visible, socket disconnected, reconnecting...');
+        socket.connect();
+      } else if (!socketJoined) {
+        console.log('🔄 Page visible, re-joining room...');
+        socket.emit('join-session', { sessionId: sessionId.toString(), userId: currentUser._id, displayName: currentUser.displayName, role: currentUser.role });
+      }
+    }
   });
 }
 
@@ -530,13 +557,23 @@ function toggleOptionsMenu() {
   plusBtn.style.background = optionsMenuOpen ? '#ef4444' : '#374151';
 }
 
+var pendingMessages = [];
+
+function processPendingMessages() {
+  if (pendingMessages.length > 0 && socketJoined) {
+    console.log('📤 Processing', pendingMessages.length, 'pending messages');
+    pendingMessages.forEach(function(fn) { fn(); });
+    pendingMessages = [];
+  }
+}
+
 async function sendMessage() {
   var input = document.getElementById('message-input');
   if (!input) return;
   var text = input.value.trim();
   if (!text) return;
 
-  if (!socketJoined) {
+  if (!socketJoined && socket && socket.connected) {
     socket.emit('join-session', { sessionId: sessionId, userId: currentUser._id, displayName: currentUser.displayName, role: currentUser.role });
   }
 
