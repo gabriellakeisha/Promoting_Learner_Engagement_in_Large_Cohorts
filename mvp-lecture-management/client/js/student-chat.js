@@ -284,6 +284,9 @@ function initializeSocket() {
         isPinned: true
       });
     }
+    if (typeof updateTypeBadges === 'function') {
+      updateTypeBadges();
+    }
   });
   
   socket.on('message-deleted', function (data) {
@@ -423,6 +426,9 @@ async function loadMessages() {
       });
       if (typeof initializeAnnouncementAndPinFeature === 'function') {
         initializeAnnouncementAndPinFeature(formattedForFeature);
+      }
+      if (typeof updateTypeBadges === 'function') {
+        updateTypeBadges();
       }
       
     } else {
@@ -615,6 +621,7 @@ function appendMessage(message) {
 
   messageDiv.className = messageClasses;
   messageDiv.dataset.messageId = message.id || message._id;
+  messageDiv.dataset.messageType = message.type || 'NONE';
 
   var displayName, avatarHTML, identityBadge = '';
   if (isLecturer) {
