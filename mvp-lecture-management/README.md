@@ -112,9 +112,7 @@ npm install
 # The .env file is pre-configured for local MongoDB:
 # MONGODB_URI=mongodb://localhost:27017/lecture_engagement_mvp
 
-# 4. Start MongoDB (if running locally)
-mongod
-
+# 4. Start MongoDB can be locally or via app -- MongoDB
 # 5. Start the server
 npm start
 

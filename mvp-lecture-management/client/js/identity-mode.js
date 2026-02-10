@@ -33,6 +33,7 @@ function regenerateAlias() {
   localStorage.setItem(storedKey, sessionAlias);
   const aliasName = document.getElementById('alias-name');
   if (aliasName) aliasName.textContent = sessionAlias;
+  updateNavbarIdentityLabel();
 }
 
 function getIdentityMode() {
@@ -50,7 +51,7 @@ function getMessageType() {
 
 function setIdentityMode(mode) {
   currentIdentityMode = mode;
-  document.querySelectorAll('.other-identity-option').forEach(opt => {
+  document.querySelectorAll('.navbar-identity-option').forEach(opt => {
     opt.classList.toggle('selected', opt.dataset.mode === mode);
   });
   const icons = { anonymous: '👤', pseudonymous: '🎭', identified: '😊' };
@@ -65,11 +66,21 @@ function setIdentityMode(mode) {
       if (aliasName) aliasName.textContent = getSessionAlias();
     }
   }
+  updateNavbarIdentityLabel();
+}
+
+function updateNavbarIdentityLabel() {
+  const icons = { anonymous: '👤', pseudonymous: '🎭', identified: '😊' };
+  const labels = { anonymous: 'Anonymous', pseudonymous: 'Alias', identified: 'Real Name' };
+  const navLabel = document.getElementById('navbar-identity-status');
+  if (navLabel) {
+    navLabel.textContent = icons[currentIdentityMode] + ' ' + labels[currentIdentityMode];
+  }
 }
 
 function initIdentityModeSelector(containerSelector) {
   const container = document.querySelector(containerSelector);
-  if (!container || document.getElementById('other-plus-btn')) return;
+  if (!container) return;
 
   const existingSelector = document.getElementById('identity-mode-container');
   if (existingSelector) existingSelector.remove();
@@ -101,49 +112,6 @@ function initIdentityModeSelector(containerSelector) {
   `;
   container.appendChild(waInputRow);
 
-  const plusMenu = document.createElement('div');
-  plusMenu.id = 'other-plus-menu';
-  plusMenu.className = 'other-plus-menu-popup';
-  plusMenu.style.display = 'none';
-  plusMenu.innerHTML = `
-    <div class="other-popup-content">
-      <div class="other-popup-header">
-        <span>Options</span>
-        <button type="button" class="other-popup-close">&times;</button>
-      </div>
-      <div class="other-popup-section">
-        <div class="other-popup-label">🔒 Post as: <span id="current-identity-label">👤 Anonymous</span></div>
-        <div class="other-identity-grid">
-          <button type="button" class="other-identity-option selected" data-mode="anonymous">
-            <span class="other-opt-icon">👤</span>
-            <span class="other-opt-name">Anonymous</span>
-          </button>
-          <button type="button" class="other-identity-option" data-mode="pseudonymous">
-            <span class="other-opt-icon">🎭</span>
-            <span class="other-opt-name">Alias</span>
-          </button>
-          <button type="button" class="other-identity-option" data-mode="identified">
-            <span class="other-opt-icon">😊</span>
-            <span class="other-opt-name">Real Name</span>
-          </button>
-        </div>
-        <div id="alias-preview" class="other-alias-preview" style="display:none;">
-          <span>Your alias: <strong id="alias-name"></strong></span>
-          <button type="button" onclick="regenerateAlias()" class="other-alias-refresh">🔄</button>
-        </div>
-      </div>
-      <div class="other-popup-section">
-        <div class="other-msgtype-grid">
-          <button type="button" class="other-msgtype-option selected" data-type="NONE">📝 None</button>
-          <button type="button" class="other-msgtype-option" data-type="QUESTION">❓ Question</button>
-          <button type="button" class="other-msgtype-option" data-type="COMMENT">💬 Comment</button>
-          <button type="button" class="other-msgtype-option" data-type="CONFUSION">❗ Confusion</button>
-        </div>
-      </div>
-    </div>
-  `;
-  container.appendChild(plusMenu);
-
   const hiddenType = document.createElement('input');
   hiddenType.type = 'hidden';
   hiddenType.id = 'message-type';
@@ -151,45 +119,112 @@ function initIdentityModeSelector(containerSelector) {
   container.appendChild(hiddenType);
 
   const plusBtn = document.getElementById('other-plus-btn');
-  const closeBtn = plusMenu.querySelector('.other-popup-close');
+
+  var studentFileInput = document.createElement('input');
+  studentFileInput.type = 'file';
+  studentFileInput.id = 'chat-file-input';
+  studentFileInput.accept = 'image/*,.pdf,.doc,.docx,.txt';
+  studentFileInput.style.display = 'none';
+  studentFileInput.addEventListener('change', function(ev) {
+    if (typeof handleFileSelected === 'function') handleFileSelected(ev);
+  });
+  container.appendChild(studentFileInput);
 
   plusBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    const isOpen = plusMenu.style.display === 'block';
-    plusMenu.style.display = isOpen ? 'none' : 'block';
-    plusBtn.textContent = isOpen ? '+' : '×';
-    plusBtn.classList.toggle('active', !isOpen);
+    studentFileInput.click();
   });
 
-  closeBtn.addEventListener('click', () => {
-    plusMenu.style.display = 'none';
-    plusBtn.textContent = '+';
-    plusBtn.classList.remove('active');
+  initNavbarIdentityDropdown();
+  injectWaStyles();
+}
+
+function initNavbarIdentityDropdown() {
+  const navbarUser = document.querySelector('.navbar-user');
+  if (!navbarUser || document.getElementById('navbar-identity-dropdown')) return;
+
+  navbarUser.style.position = 'relative';
+  navbarUser.style.cursor = 'pointer';
+
+  const userInfo = navbarUser.querySelector('.user-info');
+  if (userInfo) {
+    const statusEl = document.createElement('div');
+    statusEl.id = 'navbar-identity-status';
+    statusEl.style.cssText = 'font-size:11px;color:#00a884;font-weight:500;margin-top:2px;';
+    statusEl.textContent = '👤 Anonymous';
+    userInfo.appendChild(statusEl);
+  }
+
+  const dropdown = document.createElement('div');
+  dropdown.id = 'navbar-identity-dropdown';
+  dropdown.className = 'navbar-identity-dropdown';
+  dropdown.style.display = 'none';
+  dropdown.innerHTML = `
+    <div class="navbar-dropdown-content">
+      <div class="navbar-dropdown-section">
+        <div class="navbar-dropdown-label">🔒 Post as: <span id="current-identity-label">👤 Anonymous</span></div>
+        <div class="navbar-identity-grid">
+          <button type="button" class="navbar-identity-option selected" data-mode="anonymous">
+            <span class="navbar-opt-icon">👤</span>
+            <span class="navbar-opt-name">Anonymous</span>
+          </button>
+          <button type="button" class="navbar-identity-option" data-mode="pseudonymous">
+            <span class="navbar-opt-icon">🎭</span>
+            <span class="navbar-opt-name">Alias</span>
+          </button>
+          <button type="button" class="navbar-identity-option" data-mode="identified">
+            <span class="navbar-opt-icon">😊</span>
+            <span class="navbar-opt-name">Real Name</span>
+          </button>
+        </div>
+        <div id="alias-preview" class="navbar-alias-preview" style="display:none;">
+          <span>Your alias: <strong id="alias-name"></strong></span>
+          <button type="button" onclick="regenerateAlias()" class="navbar-alias-refresh">🔄</button>
+        </div>
+      </div>
+      <div class="navbar-dropdown-divider"></div>
+      <div class="navbar-dropdown-section">
+        <div class="navbar-dropdown-label">💬 Message Type</div>
+        <div class="navbar-msgtype-grid">
+          <button type="button" class="navbar-msgtype-option selected" data-type="NONE">📝 None</button>
+          <button type="button" class="navbar-msgtype-option" data-type="QUESTION">❓ Question</button>
+          <button type="button" class="navbar-msgtype-option" data-type="COMMENT">💬 Comment</button>
+          <button type="button" class="navbar-msgtype-option" data-type="CONFUSION">❗ Confusion</button>
+        </div>
+      </div>
+    </div>
+  `;
+  navbarUser.appendChild(dropdown);
+
+  navbarUser.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = dropdown.style.display === 'block';
+    dropdown.style.display = isOpen ? 'none' : 'block';
   });
 
   document.addEventListener('click', (e) => {
-    if (!plusMenu.contains(e.target) && e.target !== plusBtn) {
-      plusMenu.style.display = 'none';
-      plusBtn.textContent = '+';
-      plusBtn.classList.remove('active');
+    if (!navbarUser.contains(e.target)) {
+      dropdown.style.display = 'none';
     }
   });
 
-  document.querySelectorAll('.other-identity-option').forEach(opt => {
+  dropdown.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+
+  document.querySelectorAll('.navbar-identity-option').forEach(opt => {
     opt.addEventListener('click', () => {
       setIdentityMode(opt.dataset.mode);
     });
   });
 
-  document.querySelectorAll('.other-msgtype-option').forEach(opt => {
+  document.querySelectorAll('.navbar-msgtype-option').forEach(opt => {
     opt.addEventListener('click', () => {
-      document.querySelectorAll('.other-msgtype-option').forEach(o => o.classList.remove('selected'));
+      document.querySelectorAll('.navbar-msgtype-option').forEach(o => o.classList.remove('selected'));
       opt.classList.add('selected');
       document.getElementById('message-type').value = opt.dataset.type;
     });
   });
-
-  injectWaStyles();
 }
 
 function injectWaStyles() {
@@ -285,191 +320,6 @@ function injectWaStyles() {
       transform: scale(1.05);
     }
 
-    .other-plus-menu-popup {
-      position: absolute;
-      bottom: 70px;
-      left: 16px;
-      width: 280px;
-      max-width: calc(100vw - 32px);
-      background: #1f2c34;
-      border-radius: 16px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-      z-index: 1000;
-      overflow: hidden;
-      animation: popupSlideUp 0.2s ease;
-    }
-
-    @keyframes popupSlideUp {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .other-popup-content {
-      padding: 0;
-    }
-
-    .other-popup-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 14px 16px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      font-weight: 600;
-      font-size: 15px;
-      color: #e9edef;
-    }
-
-    .other-popup-close {
-      background: none;
-      border: none;
-      font-size: 24px;
-      color: #8696a0;
-      cursor: pointer;
-      padding: 0;
-      line-height: 1;
-      width: 28px;
-      height: 28px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      transition: all 0.2s;
-    }
-
-    .other-popup-close:hover {
-      background: rgba(255, 255, 255, 0.1);
-      color: #ffffff;
-    }
-
-    .other-popup-section {
-      padding: 14px 16px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .other-popup-section:last-child {
-      border-bottom: none;
-    }
-
-    .other-popup-label {
-      font-size: 12px;
-      color: #8696a0;
-      margin-bottom: 10px;
-      font-weight: 500;
-    }
-
-    .other-identity-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .other-identity-option {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 14px;
-      background: #233138;
-      border: 2px solid transparent;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      width: 100%;
-      text-align: left;
-    }
-
-    .other-identity-option:hover {
-      background: #2a3f4a;
-      border-color: rgba(0, 168, 132, 0.3);
-    }
-
-    .other-identity-option.selected {
-      background: rgba(0, 168, 132, 0.2);
-      border-color: #00a884;
-    }
-
-    .other-opt-icon {
-      font-size: 20px;
-      flex-shrink: 0;
-    }
-
-    .other-opt-name {
-      font-size: 14px;
-      font-weight: 500;
-      color: #e9edef;
-    }
-
-    .other-identity-option.selected .other-opt-name {
-      color: #00e5a0;
-    }
-
-    .other-msgtype-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-
-    .other-msgtype-option {
-      padding: 10px 12px;
-      background: #233138;
-      border: 2px solid transparent;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      font-size: 13px;
-      font-weight: 500;
-      color: #d1d5db;
-      text-align: center;
-    }
-
-    .other-msgtype-option:hover {
-      background: #2a3f4a;
-      border-color: rgba(0, 168, 132, 0.3);
-      color: #ffffff;
-    }
-
-    .other-msgtype-option.selected {
-      background: rgba(0, 168, 132, 0.25);
-      border-color: #00a884;
-      color: #00e5a0;
-    }
-
-    .other-alias-preview {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: 10px;
-      padding: 10px 12px;
-      background: rgba(102, 126, 234, 0.15);
-      border-radius: 8px;
-      color: #e9edef;
-      font-size: 13px;
-    }
-
-    .other-alias-preview strong {
-      color: #a78bfa;
-      font-weight: 700;
-    }
-
-    .other-alias-refresh {
-      background: rgba(255, 255, 255, 0.1);
-      border: none;
-      padding: 6px 10px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: background 0.2s;
-    }
-
-    .other-alias-refresh:hover {
-      background: rgba(255, 255, 255, 0.2);
-    }
-
     .reply-indicator-container {
       background: rgba(0, 168, 132, 0.15);
       border-left: 3px solid #00a884;
@@ -499,64 +349,211 @@ function injectWaStyles() {
       border: 1px solid #e5e7eb;
     }
 
-    body:not(.dark-mode) .other-plus-menu-popup {
+    .navbar-identity-dropdown {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      width: 280px;
+      max-width: calc(100vw - 32px);
+      background: #1f2c34;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      z-index: 1000;
+      overflow: hidden;
+      animation: navDropSlideDown 0.2s ease;
+      margin-top: 8px;
+    }
+
+    @keyframes navDropSlideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .navbar-dropdown-content {
+      padding: 0;
+    }
+
+    .navbar-dropdown-section {
+      padding: 14px 16px;
+    }
+
+    .navbar-dropdown-divider {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.08);
+      margin: 0;
+    }
+
+    .navbar-dropdown-label {
+      font-size: 12px;
+      color: #8696a0;
+      margin-bottom: 10px;
+      font-weight: 500;
+    }
+
+    .navbar-identity-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .navbar-identity-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      background: #233138;
+      border: 2px solid transparent;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      width: 100%;
+      text-align: left;
+    }
+
+    .navbar-identity-option:hover {
+      background: #2a3f4a;
+      border-color: rgba(0, 168, 132, 0.3);
+    }
+
+    .navbar-identity-option.selected {
+      background: rgba(0, 168, 132, 0.2);
+      border-color: #00a884;
+    }
+
+    .navbar-opt-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .navbar-opt-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: #e9edef;
+    }
+
+    .navbar-identity-option.selected .navbar-opt-name {
+      color: #00e5a0;
+    }
+
+    .navbar-msgtype-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .navbar-msgtype-option {
+      padding: 10px 12px;
+      background: #233138;
+      border: 2px solid transparent;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 13px;
+      font-weight: 500;
+      color: #d1d5db;
+      text-align: center;
+    }
+
+    .navbar-msgtype-option:hover {
+      background: #2a3f4a;
+      border-color: rgba(0, 168, 132, 0.3);
+      color: #ffffff;
+    }
+
+    .navbar-msgtype-option.selected {
+      background: rgba(0, 168, 132, 0.25);
+      border-color: #00a884;
+      color: #00e5a0;
+    }
+
+    .navbar-alias-preview {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: rgba(102, 126, 234, 0.15);
+      border-radius: 8px;
+      color: #e9edef;
+      font-size: 13px;
+    }
+
+    .navbar-alias-preview strong {
+      color: #a78bfa;
+      font-weight: 700;
+    }
+
+    .navbar-alias-refresh {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+
+    .navbar-alias-refresh:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    body:not(.dark-mode) .navbar-identity-dropdown {
       background: #ffffff;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
     }
 
-    body:not(.dark-mode) .other-popup-header {
-      color: #1f2937;
-      border-bottom-color: #e5e7eb;
-    }
-
-    body:not(.dark-mode) .other-popup-close {
+    body:not(.dark-mode) .navbar-dropdown-label {
       color: #6b7280;
     }
 
-    body:not(.dark-mode) .other-popup-label {
-      color: #6b7280;
-    }
-
-    body:not(.dark-mode) .other-identity-option {
-      background: #f3f4f6;
-    }
-
-    body:not(.dark-mode) .other-identity-option:hover {
+    body:not(.dark-mode) .navbar-dropdown-divider {
       background: #e5e7eb;
     }
 
-    body:not(.dark-mode) .other-identity-option.selected {
+    body:not(.dark-mode) .navbar-identity-option {
+      background: #f3f4f6;
+    }
+
+    body:not(.dark-mode) .navbar-identity-option:hover {
+      background: #e5e7eb;
+    }
+
+    body:not(.dark-mode) .navbar-identity-option.selected {
       background: rgba(0, 168, 132, 0.15);
     }
 
-    body:not(.dark-mode) .other-opt-name {
+    body:not(.dark-mode) .navbar-opt-name {
       color: #1f2937;
     }
 
-    body:not(.dark-mode) .other-identity-option.selected .other-opt-name {
+    body:not(.dark-mode) .navbar-identity-option.selected .navbar-opt-name {
       color: #059669;
     }
 
-    body:not(.dark-mode) .other-msgtype-option {
+    body:not(.dark-mode) .navbar-msgtype-option {
       background: #f3f4f6;
       color: #374151;
     }
 
-    body:not(.dark-mode) .other-msgtype-option:hover {
+    body:not(.dark-mode) .navbar-msgtype-option:hover {
       background: #e5e7eb;
     }
 
-    body:not(.dark-mode) .other-msgtype-option.selected {
+    body:not(.dark-mode) .navbar-msgtype-option.selected {
       background: rgba(0, 168, 132, 0.15);
       color: #059669;
     }
 
     @media (max-width: 480px) {
-      .other-plus-menu-popup {
-        left: 10px;
-        right: 10px;
-        width: auto;
-        max-width: none;
+      .navbar-identity-dropdown {
+        right: -10px;
+        width: calc(100vw - 20px);
       }
 
       .other-input-row {
@@ -579,19 +576,19 @@ function injectWaStyles() {
         font-size: 14px;
       }
 
-      .other-identity-option {
+      .navbar-identity-option {
         padding: 10px 12px;
       }
 
-      .other-opt-icon {
+      .navbar-opt-icon {
         font-size: 18px;
       }
 
-      .other-opt-name {
+      .navbar-opt-name {
         font-size: 13px;
       }
 
-      .other-msgtype-option {
+      .navbar-msgtype-option {
         padding: 8px 10px;
         font-size: 12px;
       }
@@ -644,19 +641,17 @@ function generateAvatarHTML(avatarUrl, name, isLecturer) {
 
 function getInitials(name) {
   if (!name) return '??';
-  const parts = name.trim().split(' ');
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
   return name.substring(0, 2).toUpperCase();
 }
 
 function getColorFromName(name) {
   if (!name) return '#6b7280';
-  const colors = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899'];
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
   }
+  const colors = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
   return colors[Math.abs(hash) % colors.length];
 }

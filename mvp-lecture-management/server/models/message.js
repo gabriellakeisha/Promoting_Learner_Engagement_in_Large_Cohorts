@@ -13,7 +13,7 @@ const messageSchema = new mongoose.Schema({
   },
   text: {
     type: String,
-    required: function() { return !this.isPoll; },
+    required: function() { return !this.isPoll && !(this.attachment && this.attachment.dataUrl); },
     maxLength: 1000,
   },
   type: {
@@ -95,6 +95,12 @@ const messageSchema = new mongoose.Schema({
       type: Date,
       default: null,
     }
+  },
+  attachment: {
+    dataUrl: { type: String, default: null },
+    filename: { type: String, default: null },
+    mimetype: { type: String, default: null },
+    size: { type: Number, default: null },
   }
 });
 

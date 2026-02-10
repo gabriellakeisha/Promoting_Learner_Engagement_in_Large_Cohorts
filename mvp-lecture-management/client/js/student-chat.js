@@ -276,7 +276,8 @@ function initializeSocket() {
       alias: message.alias,
       reactions: message.reactions || {},
       isPoll: message.isPoll || false,
-      poll: message.poll || null
+      poll: message.poll || null,
+      attachment: message.attachment || null
     });
     scrollToBottom();
     
@@ -434,7 +435,8 @@ async function loadMessages() {
           alias: msg.alias,
           reactions: msg.reactions || {},
           isPoll: msg.isPoll || false,
-          poll: msg.poll || null
+          poll: msg.poll || null,
+          attachment: msg.attachment || null
         });
       });
       scrollToBottom();
@@ -491,6 +493,11 @@ function setupInputArea() {
           <span style="font-size:18px;">📊</span>
           <span>Create Poll</span>
         </button>
+        <button type="button" onclick="document.getElementById('chat-file-input').click()" style="display:flex;align-items:center;gap:10px;padding:10px 8px;cursor:pointer;border-radius:8px;transition:background 0.2s;color:white;background:transparent;border:none;width:100%;text-align:left;font-size:14px;" onmouseover="this.style.background='#334155'" onmouseout="this.style.background='transparent'">
+          <span style="font-size:18px;">📎</span>
+          <span>Attach File</span>
+        </button>
+        <input type="file" id="chat-file-input" accept="image/*,.pdf,.doc,.docx,.txt" style="display:none;" onchange="handleFileSelected(event)">
       </div>
       <div class="other-input-row" style="display:flex;align-items:center;gap:8px;position:relative;">
         <button id="plus-btn" type="button" class="other-plus-btn" style="width:44px;height:44px;border-radius:50%;border:none;background:#374151;color:white;font-size:24px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;">+</button>
@@ -582,7 +589,7 @@ async function sendMessage() {
     var isAnnouncement = document.getElementById('is-announcement')?.checked || false;
     var shouldPin = document.getElementById('pin-message')?.checked || false;
 
-    messageData = { sessionId: sessionId, text: text, type: 'COMMENT', replyTo: replyingTo ? replyingTo.id : null, isAnnouncement: isAnnouncement };
+    messageData = { sessionId: sessionId, text: text || '', type: 'COMMENT', replyTo: replyingTo ? replyingTo.id : null, isAnnouncement: isAnnouncement, attachment: pendingAttachment || null };
     try {
       var response = await fetch('/api/messages/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(messageData) });
       if (!response.ok) { var errorData = await response.json(); throw new Error(errorData.message || 'Failed'); }
@@ -599,17 +606,18 @@ async function sendMessage() {
       var plusBtn = document.getElementById('plus-btn');
       if (plusBtn) { plusBtn.textContent = '+'; plusBtn.style.background = '#374151'; }
       cancelReply();
+      cancelAttachment();
       input.focus();
     } catch (error) { alert('Failed to send: ' + error.message); }
   } else {
     var typeSelect = document.getElementById('message-type');
     var identityMode = typeof getIdentityMode === 'function' ? getIdentityMode() : 'anonymous';
     var alias = identityMode === 'pseudonymous' && typeof getSessionAlias === 'function' ? getSessionAlias() : null;
-    messageData = { sessionId: sessionId, text: text, type: typeSelect ? typeSelect.value : 'NONE', replyTo: replyingTo ? replyingTo.id : null, identityMode: identityMode, alias: alias };
+    messageData = { sessionId: sessionId, text: text || '', type: typeSelect ? typeSelect.value : 'NONE', replyTo: replyingTo ? replyingTo.id : null, identityMode: identityMode, alias: alias, attachment: pendingAttachment || null };
     try {
       var response = await fetch('/api/messages/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(messageData) });
       if (!response.ok) { var errorData = await response.json(); throw new Error(errorData.message || 'Failed'); }
-      input.value = ''; cancelReply(); input.focus();
+      input.value = ''; cancelReply(); cancelAttachment(); input.focus();
     } catch (error) { alert('Failed to send: ' + error.message); }
   }
 }
@@ -680,6 +688,14 @@ function appendMessage(message) {
     }
   }
 
+  var attachmentHTML = '';
+  if (message.attachment && message.attachment.dataUrl) {
+    if (message.attachment.mimetype && message.attachment.mimetype.startsWith('image/')) {
+      attachmentHTML = '<div class="message-attachment"><img src="' + message.attachment.dataUrl + '" alt="' + escapeHtml(message.attachment.filename || 'image') + '" style="max-width:100%;max-height:300px;border-radius:8px;margin-top:6px;cursor:pointer;" onclick="window.open(this.src,\'_blank\')"></div>';
+    } else {
+      attachmentHTML = '<div class="message-attachment" style="margin-top:6px;"><a href="' + message.attachment.dataUrl + '" download="' + escapeHtml(message.attachment.filename || 'file') + '" style="display:inline-flex;align-items:center;gap:6px;padding:8px 12px;background:rgba(0,168,132,0.15);border-radius:8px;color:#00a884;text-decoration:none;font-size:13px;">📎 ' + escapeHtml(message.attachment.filename || 'Download file') + '</a></div>';
+    }
+  }
   var lecturerBadge = isLecturer ? '<span class="lecturer-badge-inline">👨‍🏫 LECTURER</span>' : '';
   var replyHTML = '';
   if (message.replyTo) {
@@ -716,7 +732,7 @@ function appendMessage(message) {
   if (message.isPoll && message.poll) {
     pollHTML = renderPollHTML(message);
   }
-  var messageBodyHTML = message.isPoll ? '' : '<div class="message-body"><span class="message-type-indicator">' + typeIcon + '</span><span class="message-text">' + escapeHtml(message.text) + '</span></div>';
+  var messageBodyHTML = message.isPoll ? '' : '<div class="message-body"><span class="message-type-indicator">' + typeIcon + '</span><span class="message-text">' + escapeHtml(message.text) + '</span></div>' + attachmentHTML;
 
   messageDiv.innerHTML = '<div class="message-avatar-wrapper">' + avatarHTML + '</div><div class="message-content-wrapper"><div class="message-header"><span class="message-username ' + (isLecturer ? 'lecturer' : 'student') + '">' + escapeHtml(displayName) + '</span>' + lecturerBadge + identityBadge + '<span class="message-time">' + formatTime(message.timestamp || message.createdAt || new Date()) + '</span></div>' + replyHTML + messageBodyHTML + pollHTML + reactionsHTML + '<div class="message-footer">' + badgeHTML + '<div class="message-actions">' + actionButtonsHTML + '</div></div></div>';
 
@@ -1043,7 +1059,7 @@ function getDateKey(timestamp) {
   return new Date(timestamp).toDateString();
 }
 var lastDateKey = null;
-function getTypeIcon(type) { return { 'NONE': '📝', 'QUESTION': '❓', 'COMMENT': '💬', 'CONFUSION': '❗', 'POLL': '📊' }[type] || '📝'; }
+function getTypeIcon(type) { return { 'NONE': '', 'QUESTION': '❓', 'COMMENT': '', 'CONFUSION': '❗', 'POLL': '📊' }[type] || ''; }
 function scrollToBottom() { 
   var container = document.getElementById('messages-container'); 
   if (container) {
@@ -1054,6 +1070,68 @@ function scrollToBottom() {
     });
   }
 }
+
+var pendingAttachment = null;
+
+function handleFileSelected(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    alert('File must be under 5MB');
+    event.target.value = '';
+    return;
+  }
+  var allowed = ['image/jpeg','image/png','image/gif','image/webp','application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','text/plain'];
+  if (!allowed.includes(file.type)) {
+    alert('File type not supported. Use: images, PDF, DOC, TXT');
+    event.target.value = '';
+    return;
+  }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    pendingAttachment = {
+      dataUrl: e.target.result,
+      filename: file.name,
+      mimetype: file.type,
+      size: file.size
+    };
+    showAttachmentPreview(file.name, file.type, e.target.result);
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+  var menu = document.getElementById('options-menu');
+  var plusBtn = document.getElementById('plus-btn');
+  if (menu) menu.style.display = 'none';
+  optionsMenuOpen = false;
+  if (plusBtn) { plusBtn.textContent = '+'; plusBtn.style.background = '#374151'; }
+}
+
+function showAttachmentPreview(filename, mimetype, dataUrl) {
+  var existing = document.getElementById('attachment-preview');
+  if (existing) existing.remove();
+  var preview = document.createElement('div');
+  preview.id = 'attachment-preview';
+  preview.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;margin:0 12px 8px;background:rgba(0,168,132,0.15);border-left:3px solid #00a884;border-radius:8px;font-size:13px;color:#e9edef;';
+  var thumbHTML = '';
+  if (mimetype && mimetype.startsWith('image/')) {
+    thumbHTML = '<img src="' + dataUrl + '" style="width:40px;height:40px;object-fit:cover;border-radius:6px;">';
+  } else {
+    thumbHTML = '<span style="font-size:20px;">📎</span>';
+  }
+  preview.innerHTML = thumbHTML + '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(filename) + '</span><button onclick="cancelAttachment()" style="background:none;border:none;color:#ef4444;font-size:18px;cursor:pointer;">×</button>';
+  var inputContainer = document.querySelector('.chat-input-container');
+  var inputRow = inputContainer.querySelector('.other-input-row') || inputContainer.querySelector('.chat-input-wrapper');
+  if (inputRow) inputContainer.insertBefore(preview, inputRow);
+}
+
+function cancelAttachment() {
+  pendingAttachment = null;
+  var preview = document.getElementById('attachment-preview');
+  if (preview) preview.remove();
+}
+
+window.handleFileSelected = handleFileSelected;
+window.cancelAttachment = cancelAttachment;
 
 window.setReplyTo = setReplyTo;
 window.cancelReply = cancelReply;

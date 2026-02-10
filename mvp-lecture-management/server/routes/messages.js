@@ -5,7 +5,6 @@ const Session = require('../models/Session');
 const Membership = require('../models/Membership');
 const { isAuthenticated } = require('../middleware/auth');
 
-// Middleware to verify session access
 const verifySessionAccess = async (req, res, next) => {
   try {
     const { sessionId } = req.params;
@@ -32,10 +31,9 @@ const verifySessionAccess = async (req, res, next) => {
   }
 };
 
-// Send message - WITH SOCKET.IO BROADCAST
 router.post('/send', isAuthenticated, async (req, res) => {
   try {
-    const { sessionId, text, type, replyTo, isAnnouncement, identityMode, alias } = req.body;
+    const { sessionId, text, type, replyTo, isAnnouncement, identityMode, alias, attachment } = req.body;
     const userId = req.session.userId;
 
     console.log('Sending message:', {
@@ -46,15 +44,13 @@ router.post('/send', isAuthenticated, async (req, res) => {
       from: userId
     });
 
-    // Validate required fields
-    if (!sessionId || !text || !type) {
+    if (!sessionId || (!text && !attachment) || !type) {
       return res.status(400).json({
         success: false,
         message: 'Missing required fields'
       });
     }
 
-    // Verify session exists and is active
     const session = await Session.findById(sessionId);
     if (!session) {
       return res.status(404).json({
@@ -70,7 +66,6 @@ router.post('/send', isAuthenticated, async (req, res) => {
       });
     }
 
-    // Verify user has access
     const isLecturer = session.lecturer.toString() === userId;
     const membership = await Membership.findOne({ userId, sessionId });
 
@@ -81,7 +76,6 @@ router.post('/send', isAuthenticated, async (req, res) => {
       });
     }
 
-    // Validate message type (NONE is default for students)
     const validTypes = ['NONE', 'QUESTION', 'COMMENT', 'CONFUSION'];
     if (!validTypes.includes(type)) {
       return res.status(400).json({
@@ -90,15 +84,15 @@ router.post('/send', isAuthenticated, async (req, res) => {
       });
     }
 
-    // Validate text length
-    if (text.trim().length === 0 || text.length > 2000) {
-      return res.status(400).json({
-        success: false,
-        message: 'Message text must be between 1 and 2000 characters'
-      });
+    if (text && (text.trim().length === 0 && !attachment || text.length > 2000)) {
+      if (!attachment) {
+        return res.status(400).json({
+          success: false,
+          message: 'Message text must be between 1 and 2000 characters'
+        });
+      }
     }
 
-    // If replyTo is provided, verify it exists
     if (replyTo) {
       const parentMessage = await Message.findById(replyTo);
       if (!parentMessage || parentMessage.sessionId.toString() !== sessionId) {
@@ -109,29 +103,26 @@ router.post('/send', isAuthenticated, async (req, res) => {
       }
     }
 
-    // Create message
     const message = new Message({
       sessionId,
       userId,
-      text: text.trim(),
+      text: text ? text.trim() : '',
       type,
       replyTo: replyTo || null,
       isAnnouncement: isAnnouncement || false,
       identityMode: identityMode || 'anonymous',
-      alias: identityMode === 'pseudonymous' ? alias : null
+      alias: identityMode === 'pseudonymous' ? alias : null,
+      attachment: attachment || null
     });
 
     await message.save();
     console.log('Message saved:', message._id);
 
-    // Update membership message count
     if (membership) {
       await membership.incrementMessageCount();
     }
 
-    // SOCKET.IO BROADCAST
     try {
-      // FIXED: Include 'avatar' in populate
       const populatedMessage = await Message.findById(message._id)
         .populate('userId', 'displayName role avatar')
         .populate({
@@ -157,6 +148,7 @@ router.post('/send', isAuthenticated, async (req, res) => {
           isPinned: populatedMessage.isPinned,
           isAnnouncement: populatedMessage.isAnnouncement,
           isReported: populatedMessage.isReported,
+          attachment: populatedMessage.attachment || null,
 
           identityMode: populatedMessage.identityMode || 'identified',
           alias: populatedMessage.alias,
@@ -176,7 +168,6 @@ router.post('/send', isAuthenticated, async (req, res) => {
             id: populatedMessage.userId._id,
             displayName: populatedMessage.userId.displayName,
             role: populatedMessage.userId.role,
-            // FIXED: Correct path to avatar
             avatarUrl: populatedMessage.userId.avatar?.imageUrl || null
           },
           userId: {
@@ -186,7 +177,6 @@ router.post('/send', isAuthenticated, async (req, res) => {
           },
           username: populatedMessage.userId.displayName,
           userRole: populatedMessage.userId.role,
-          // FIXED: Also at top level
           avatarUrl: populatedMessage.userId.avatar?.imageUrl || null
         };
 
@@ -210,7 +200,8 @@ router.post('/send', isAuthenticated, async (req, res) => {
         type: message.type,
         timestamp: message.createdAt || message.timestamp,
         isAnnouncement: message.isAnnouncement,
-        isPinned: message.isPinned
+        isPinned: message.isPinned,
+        attachment: message.attachment || null
       }
     });
 
@@ -224,7 +215,6 @@ router.post('/send', isAuthenticated, async (req, res) => {
   }
 });
 
-// Get messages for a session
 router.get('/session/:sessionId', isAuthenticated, verifySessionAccess, async (req, res) => {
   try {
     const { sessionId } = req.params;
@@ -240,7 +230,6 @@ router.get('/session/:sessionId', isAuthenticated, verifySessionAccess, async (r
       .sort({ createdAt: 1 })
       .skip(skip)
       .limit(limit)
-      // FIXED: Include 'avatar' in populate
       .populate('userId', 'displayName role avatar')
       .populate({
         path: 'replyTo',
@@ -264,6 +253,7 @@ router.get('/session/:sessionId', isAuthenticated, verifySessionAccess, async (r
       isAnnouncement: msg.isAnnouncement,
       isReported: msg.isReported,
       reactions: msg.reactions,
+      attachment: msg.attachment || null,
 
       identityMode: msg.identityMode || 'identified',
       alias: msg.alias,
@@ -283,15 +273,12 @@ router.get('/session/:sessionId', isAuthenticated, verifySessionAccess, async (r
         id: msg.userId?._id,
         displayName: msg.userId?.displayName || 'Unknown',
         role: msg.userId?.role || 'student',
-        // FIXED: Correct path to avatar
         avatarUrl: msg.userId?.avatar?.imageUrl || null
       },
       username: msg.userId?.displayName || 'Unknown',
       userRole: msg.userId?.role || 'student',
-      // FIXED: Also at top level for easy access
       avatarUrl: msg.userId?.avatar?.imageUrl || null,
       
-      // POLL DATA
       isPoll: msg.isPoll || false,
       poll: msg.isPoll && msg.poll ? {
         question: msg.poll.question,
@@ -323,7 +310,6 @@ router.get('/session/:sessionId', isAuthenticated, verifySessionAccess, async (r
   }
 });
 
-// DELETE MESSAGE (HARD DELETE)
 router.delete('/:messageId', isAuthenticated, async (req, res) => {
   try {
     const { messageId } = req.params;
@@ -354,7 +340,6 @@ router.delete('/:messageId', isAuthenticated, async (req, res) => {
 
     const io = req.app.get('io');
     if (io) {
-      // When sessionId is populated, it's an object - use _id
       const roomId = message.sessionId._id ? message.sessionId._id.toString() : message.sessionId.toString();
       console.log('📡 Broadcasting delete to room: session-' + roomId);
       io.to(`session-${roomId}`).emit('message-deleted', {
@@ -377,7 +362,6 @@ router.delete('/:messageId', isAuthenticated, async (req, res) => {
   }
 });
 
-// EDIT MESSAGE
 router.put('/:messageId', isAuthenticated, async (req, res) => {
   try {
     const { messageId } = req.params;
@@ -439,7 +423,6 @@ router.put('/:messageId', isAuthenticated, async (req, res) => {
   }
 });
 
-// REPORT MESSAGE
 router.post('/:messageId/report', isAuthenticated, async (req, res) => {
   try {
     const { messageId } = req.params;
@@ -482,7 +465,6 @@ router.post('/:messageId/report', isAuthenticated, async (req, res) => {
   }
 });
 
-// PIN/UNPIN MESSAGE (Lecturer only)
 router.post('/:messageId/pin', isAuthenticated, async (req, res) => {
   try {
     const { messageId } = req.params;
@@ -532,14 +514,12 @@ router.post('/:messageId/pin', isAuthenticated, async (req, res) => {
   }
 });
 
-// ADD REACTION TO MESSAGE (Max 1 reaction per user per message)
 router.post('/:messageId/react', isAuthenticated, async (req, res) => {
   try {
     const { messageId } = req.params;
     const { emoji } = req.body;
     const userId = req.session.userId;
 
-    // Validate emoji
     if (!emoji || typeof emoji !== 'string' || emoji.length > 10) {
       return res.status(400).json({
         success: false,
@@ -555,12 +535,10 @@ router.post('/:messageId/react', isAuthenticated, async (req, res) => {
       });
     }
 
-    // Initialize reactions if needed
     if (!message.reactions) {
       message.reactions = new Map();
     }
 
-    // First, remove user from ALL existing reactions (max 1 reaction per user)
     let userPreviousEmoji = null;
     message.reactions.forEach((users, em) => {
       if (Array.isArray(users)) {
@@ -577,8 +555,6 @@ router.post('/:messageId/react', isAuthenticated, async (req, res) => {
       }
     });
 
-    // If clicking same emoji = toggle off (don't add back)
-    // If clicking different emoji = add user to new emoji
     let action = 'removed';
     if (userPreviousEmoji !== emoji) {
       let usersForEmoji = message.reactions.get(emoji) || [];
@@ -590,13 +566,11 @@ router.post('/:messageId/react', isAuthenticated, async (req, res) => {
 
     await message.save();
 
-    // Convert Map to plain object
     const reactionsObj = {};
     message.reactions.forEach((users, em) => {
       reactionsObj[em] = users;
     });
 
-    // Broadcast via Socket.IO
     const io = req.app.get('io');
     if (io) {
       const roomId = message.sessionId._id ? message.sessionId._id.toString() : message.sessionId.toString();
@@ -674,22 +648,10 @@ router.post('/poll/create', isAuthenticated, async (req, res) => {
     if (io) {
       const pollData = {
         id: populatedMessage._id.toString(),
-        text: populatedMessage.text,
+        text: question,
         type: 'POLL',
-        timestamp: populatedMessage.createdAt,
         isPoll: true,
-        poll: {
-          question: populatedMessage.poll.question,
-          options: populatedMessage.poll.options.map(opt => ({
-            id: opt.id,
-            text: opt.text,
-            voteCount: opt.votes.length
-          })),
-          allowMultiple: populatedMessage.poll.allowMultiple,
-          isAnonymous: populatedMessage.poll.isAnonymous,
-          isClosed: populatedMessage.poll.isClosed,
-          totalVotes: populatedMessage.poll.options.reduce((sum, opt) => sum + opt.votes.length, 0)
-        },
+        timestamp: populatedMessage.createdAt || populatedMessage.timestamp,
         user: {
           id: populatedMessage.userId._id,
           displayName: populatedMessage.userId.displayName,
@@ -697,25 +659,45 @@ router.post('/poll/create', isAuthenticated, async (req, res) => {
           avatarUrl: populatedMessage.userId.avatar?.imageUrl || null
         },
         username: populatedMessage.userId.displayName,
-        userRole: populatedMessage.userId.role
+        userRole: populatedMessage.userId.role,
+        avatarUrl: populatedMessage.userId.avatar?.imageUrl || null,
+        poll: {
+          question,
+          options: pollOptions.map(opt => ({
+            id: opt.id,
+            text: opt.text,
+            voteCount: 0,
+            hasVoted: false
+          })),
+          allowMultiple: allowMultiple || false,
+          isAnonymous: isAnonymous !== false,
+          isClosed: false,
+          totalVotes: 0
+        }
       };
-      io.to('session-' + sessionId).emit('new-message', pollData);
+
+      io.to(`session-${sessionId}`).emit('new-message', pollData);
     }
 
-    res.json({ success: true, message: 'Poll created', pollId: message._id });
+    res.status(201).json({
+      success: true,
+      message: 'Poll created',
+      pollId: message._id
+    });
+
   } catch (error) {
     console.error('Create poll error:', error);
     res.status(500).json({ success: false, message: 'Failed to create poll' });
   }
 });
 
-router.post('/poll/:pollId/vote', isAuthenticated, async (req, res) => {
+router.post('/poll/:messageId/vote', isAuthenticated, async (req, res) => {
   try {
-    const { pollId } = req.params;
+    const { messageId } = req.params;
     const { optionIds } = req.body;
     const userId = req.session.userId;
 
-    const message = await Message.findById(pollId);
+    const message = await Message.findById(messageId);
     if (!message || !message.isPoll) {
       return res.status(404).json({ success: false, message: 'Poll not found' });
     }
@@ -724,92 +706,54 @@ router.post('/poll/:pollId/vote', isAuthenticated, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Poll is closed' });
     }
 
-    if (message.poll.endsAt && new Date() > message.poll.endsAt) {
-      message.poll.isClosed = true;
-      await message.save();
-      return res.status(400).json({ success: false, message: 'Poll has ended' });
+    message.poll.options.forEach(opt => {
+      const idx = opt.votes.indexOf(userId);
+      if (idx > -1) opt.votes.splice(idx, 1);
+    });
+
+    const ids = Array.isArray(optionIds) ? optionIds : [optionIds];
+    if (!message.poll.allowMultiple && ids.length > 1) {
+      return res.status(400).json({ success: false, message: 'Only one vote allowed' });
     }
 
-    const membership = await Membership.findOne({ userId, sessionId: message.sessionId });
-    const session = await Session.findById(message.sessionId);
-    const isLecturer = session && session.lecturer.toString() === userId;
-
-    if (!membership && !isLecturer) {
-      return res.status(403).json({ success: false, message: 'You must be a member of this session to vote' });
-    }
-
-    if (!Array.isArray(optionIds) || optionIds.length === 0) {
-      return res.status(400).json({ success: false, message: 'Please select at least one option' });
-    }
-
-    if (!message.poll.allowMultiple && optionIds.length > 1) {
-      return res.status(400).json({ success: false, message: 'This poll only allows one vote' });
-    }
-
-    const hasVoted = message.poll.options.some(opt => 
-      opt.votes.some(v => v.toString() === userId)
-    );
-
-    if (hasVoted) {
-      message.poll.options.forEach(opt => {
-        opt.votes = opt.votes.filter(v => v.toString() !== userId);
-      });
-    }
-
-    optionIds.forEach(optId => {
-      const option = message.poll.options.find(opt => opt.id === optId);
-      if (option && !option.votes.some(v => v.toString() === userId)) {
-        option.votes.push(userId);
-      }
+    ids.forEach(optId => {
+      const option = message.poll.options.find(o => o.id === optId);
+      if (option) option.votes.push(userId);
     });
 
     await message.save();
 
     const io = req.app.get('io');
     if (io) {
-      const pollUpdate = {
-        pollId: message._id.toString(),
-        visOwnerId: userId,
+      io.to(`session-${message.sessionId}`).emit('poll-update', {
+        pollId: messageId,
         options: message.poll.options.map(opt => ({
           id: opt.id,
-          text: opt.text,
-          voteCount: opt.votes.length,
-          hasVoted: opt.votes.some(v => v.toString() === userId)
-        })),
-        totalVotes: message.poll.options.reduce((sum, opt) => sum + opt.votes.length, 0)
-      };
-      io.to('session-' + message.sessionId.toString()).emit('poll-update', pollUpdate);
+          voteCount: opt.votes.length
+        }))
+      });
     }
 
-    res.json({ 
-      success: true, 
-      message: 'Vote recorded',
-      options: message.poll.options.map(opt => ({
-        id: opt.id,
-        text: opt.text,
-        voteCount: opt.votes.length,
-        hasVoted: opt.votes.some(v => v.toString() === userId)
-      })),
-      totalVotes: message.poll.options.reduce((sum, opt) => sum + opt.votes.length, 0)
-    });
+    res.json({ success: true, message: 'Vote recorded' });
+
   } catch (error) {
     console.error('Vote error:', error);
-    res.status(500).json({ success: false, message: 'Failed to record vote' });
+    res.status(500).json({ success: false, message: 'Failed to vote' });
   }
 });
 
-router.post('/poll/:pollId/close', isAuthenticated, async (req, res) => {
+router.post('/poll/:messageId/close', isAuthenticated, async (req, res) => {
   try {
-    const { pollId } = req.params;
+    const { messageId } = req.params;
     const userId = req.session.userId;
 
-    const message = await Message.findById(pollId).populate('sessionId');
+    const message = await Message.findById(messageId).populate('sessionId');
     if (!message || !message.isPoll) {
       return res.status(404).json({ success: false, message: 'Poll not found' });
     }
 
     if (message.sessionId.lecturer.toString() !== userId) {
-      return res.status(403).json({ success: false, message: 'Only the lecturer can close polls' });
+      return res.status(403).json({ success: false, message: 'Only lecturers can close polls' });
     }
 
     message.poll.isClosed = true;
@@ -817,53 +761,15 @@ router.post('/poll/:pollId/close', isAuthenticated, async (req, res) => {
 
     const io = req.app.get('io');
     if (io) {
-      io.to('session-' + message.sessionId._id.toString()).emit('poll-closed', { pollId: message._id.toString() });
+      const roomId = message.sessionId._id ? message.sessionId._id.toString() : message.sessionId.toString();
+      io.to(`session-${roomId}`).emit('poll-closed', { pollId: messageId });
     }
 
     res.json({ success: true, message: 'Poll closed' });
+
   } catch (error) {
     console.error('Close poll error:', error);
     res.status(500).json({ success: false, message: 'Failed to close poll' });
-  }
-});
-
-router.get('/poll/:pollId/results', isAuthenticated, async (req, res) => {
-  try {
-    const { pollId } = req.params;
-    const userId = req.session.userId;
-
-    const message = await Message.findById(pollId)
-      .populate('poll.options.votes', 'displayName');
-    
-    if (!message || !message.isPoll) {
-      return res.status(404).json({ success: false, message: 'Poll not found' });
-    }
-
-    const results = {
-      question: message.poll.question,
-      isClosed: message.poll.isClosed,
-      isAnonymous: message.poll.isAnonymous,
-      totalVotes: message.poll.options.reduce((sum, opt) => sum + opt.votes.length, 0),
-      options: message.poll.options.map(opt => ({
-        id: opt.id,
-        text: opt.text,
-        voteCount: opt.votes.length,
-        percentage: 0,
-        hasVoted: opt.votes.some(v => (v._id || v).toString() === userId),
-        voters: message.poll.isAnonymous ? [] : opt.votes.map(v => v.displayName || 'Anonymous')
-      }))
-    };
-
-    if (results.totalVotes > 0) {
-      results.options.forEach(opt => {
-        opt.percentage = Math.round((opt.voteCount / results.totalVotes) * 100);
-      });
-    }
-
-    res.json({ success: true, results });
-  } catch (error) {
-    console.error('Get poll results error:', error);
-    res.status(500).json({ success: false, message: 'Failed to get poll results' });
   }
 });
 
