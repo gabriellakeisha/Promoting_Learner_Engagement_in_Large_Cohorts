@@ -21,7 +21,7 @@ Unlike existing tools (Vevox, Padlet, Slido, Mentimeter) which offer partial sol
 
 ## Key Features
 
-### Real-Time Backchannel Chat Interface (~40% of project focus)
+### Real-Time Backchannel Chat Interface
 - **Message Classification:** Students tag messages as Question, Comment, Confusion, or None — prompting metacognitive reflection and enabling lecturer-side filtering.
 - **Configurable Identity Modes:** Anonymous (no identifier), Pseudonymous (consistent alias per session), Identified (real display name). Switchable per-message via the `+` menu.
 - **Message Threading & Replies:** Visual reply chains for peer-to-peer support and lecturer responses.
@@ -115,6 +115,9 @@ npm install
 # 4. Start MongoDB can be locally or via app -- MongoDB
 # 5. Start the server
 npm start
+
+# 6. To run the performance test, install socket.io-client
+npm install socket.io-client
 
 ```
 
