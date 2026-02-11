@@ -8,6 +8,8 @@
  * 
  * All passwords: "password123"
  * 
+ * only run this script once - will reset all data 
+ * 
  */
 
 require('dotenv').config();
