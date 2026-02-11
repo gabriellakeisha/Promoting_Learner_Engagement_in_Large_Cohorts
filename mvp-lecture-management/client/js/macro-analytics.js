@@ -103,7 +103,7 @@ async function loadMacroDashboard(moduleFilter) {
 
     var filterHtml = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">' +
       '<label style="font-size:13px;color:var(--text-secondary);">Filter by module:</label>' +
-      '<select id="macro-module-filter" onchange="loadMacroDashboard(this.value)" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border-color);background:var(--input-bg,#1e293b);color:var(--text-color);font-size:13px;">' +
+      '<select id="macro-module-filter" onchange="loadMacroDashboard(this.value)" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border-color);background:var(--card-bg,var(--bg-secondary,#f3f4f6));color:var(--text-color);font-size:13px;">' +
       '<option value="">All Modules</option>';
     modules.forEach(function(m) {
       var selected = (moduleFilter === m) ? ' selected' : '';
@@ -150,7 +150,7 @@ async function loadMacroDashboard(moduleFilter) {
       </div>
 
       ${insightText ? `
-      <div style="margin-bottom:24px;padding:14px 18px;background:rgba(59,130,246,0.08);border-left:4px solid #3b82f6;border-radius:0 8px 8px 0;font-size:13px;line-height:1.6;color:var(--text-color);">
+      <div style="margin-bottom:24px;padding:14px 18px;background:var(--card-bg,#ffffff);border-left:4px solid #3b82f6;border-radius:0 8px 8px 0;font-size:13px;line-height:1.6;color:var(--text-color);box-shadow:0 1px 3px rgba(0,0,0,0.08);">
         <span style="font-weight:600;color:#3b82f6;">Teaching Insights:</span> ${insightText}
       </div>
       ` : ''}

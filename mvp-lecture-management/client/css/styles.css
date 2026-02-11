@@ -3604,3 +3604,25 @@ body:not(.dark-mode) .alias-preview {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.85; }
 }
+
+/* Reflection tab styling */
+.reflection-tab {
+  border: 1px solid var(--border-color, #e5e7eb);
+  background: transparent;
+  color: var(--text-secondary, #6b7280);
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.reflection-tab:hover {
+  background: var(--bg-secondary, #f3f4f6);
+}
+
+.reflection-tab.active {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
