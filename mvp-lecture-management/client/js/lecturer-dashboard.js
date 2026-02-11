@@ -474,7 +474,7 @@ function exportToCSV() {
   btn.innerHTML = 'Exporting...';
   btn.disabled = true;
 
-  fetch(`/api/analytics/export-csv/${sessionId}`, {
+  fetch(`/api/analytics/export/${sessionId}`, {
     method: 'GET',
     credentials: 'include'
   })
