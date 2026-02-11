@@ -2,12 +2,12 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 
-// Register new user
+const LECTURER_ACCESS_CODE = process.env.LECTURER_ACCESS_CODE || 'ECHOCLASS-LECTURER-2026';
+
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, displayName, role } = req.body;
+    const { email, password, displayName, role, lecturerCode } = req.body;
 
-    // Validation
     if (!email || !password || !displayName) {
       return res.status(400).json({
         success: false,
@@ -15,7 +15,15 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    // Check if user already exists
+    if (role === 'lecturer') {
+      if (!lecturerCode || lecturerCode.trim() !== LECTURER_ACCESS_CODE) {
+        return res.status(403).json({
+          success: false,
+          message: 'Invalid lecturer access code. Contact your department administrator to obtain a valid code.',
+        });
+      }
+    }
+
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
       return res.status(400).json({
@@ -24,7 +32,6 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    // Create new user
     const user = new User({
       email: email.toLowerCase(),
       password,
@@ -54,12 +61,10 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Login user
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validation
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -67,7 +72,6 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Find user
     const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) {
       return res.status(401).json({
@@ -76,7 +80,6 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Check password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({
@@ -85,37 +88,20 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Update login tracking
+    req.session.userId = user._id;
+    req.session.userRole = user.role;
+
     await user.updateLoginTracking();
 
-    // Save user info to session
-    req.session.userId = user._id.toString();
-    req.session.userEmail = user.email;
-    req.session.userRole = user.role;
-    req.session.displayName = user.displayName;
-
-    // Save session explicitly
-    req.session.save((err) => {
-      if (err) {
-        console.error('Session save error:', err);
-        return res.status(500).json({
-          success: false,
-          message: 'Error saving session',
-        });
-      }
-
-      res.json({
-        success: true,
-        message: 'Login successful',
-        user: {
-          id: user._id,
-          email: user.email,
-          displayName: user.displayName,
-          role: user.role,
-          lastLogin: user.lastLogin,
-          loginCount: user.loginCount,
-        },
-      });
+    res.json({
+      success: true,
+      message: 'Login successful',
+      user: {
+        id: user._id,
+        email: user.email,
+        displayName: user.displayName,
+        role: user.role,
+      },
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -127,60 +113,35 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Logout user
 router.post('/logout', async (req, res) => {
   try {
-    if (req.session && req.session.userId) {
-      // Set user offline
-      await User.findByIdAndUpdate(req.session.userId, { isOnline: false });
-
-      // Destroy session
-      req.session.destroy((err) => {
-        if (err) {
-          return res.status(500).json({
-            success: false,
-            message: 'Error during logout',
-          });
-        }
-
-        res.clearCookie('connect.sid');
-        res.json({
-          success: true,
-          message: 'Logout successful',
-        });
-      });
-    } else {
-      res.json({
-        success: true,
-        message: 'Already logged out',
-      });
+    if (req.session.userId) {
+      const user = await User.findById(req.session.userId);
+      if (user) await user.setOffline();
     }
+
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ success: false, message: 'Logout failed' });
+      }
+      res.clearCookie('connect.sid');
+      res.json({ success: true, message: 'Logged out successfully' });
+    });
   } catch (error) {
     console.error('Logout error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error during logout',
-      error: error.message,
-    });
+    res.status(500).json({ success: false, message: 'Server error during logout' });
   }
 });
 
-// Get current user
 router.get('/me', async (req, res) => {
   try {
     if (!req.session.userId) {
-      return res.status(401).json({
-        success: false,
-        message: 'Not authenticated',
-      });
+      return res.status(401).json({ success: false, message: 'Not authenticated' });
     }
 
     const user = await User.findById(req.session.userId).select('-password');
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found',
-      });
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
 
     res.json({
@@ -190,18 +151,15 @@ router.get('/me', async (req, res) => {
         email: user.email,
         displayName: user.displayName,
         role: user.role,
-        isOnline: user.isOnline,
+        avatar: user.avatar || null,
+        createdAt: user.createdAt,
         lastLogin: user.lastLogin,
         loginCount: user.loginCount,
-        avatarUrl: user.avatar?.imageUrl || null,
       },
     });
   } catch (error) {
-    console.error('Get current user error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-    });
+    console.error('Get user error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 

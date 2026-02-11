@@ -52,11 +52,36 @@
         </div>
 
         <div class="form-group">
+          <label for="confirmPassword">Confirm Password</label>
+          <input 
+            type="password" 
+            id="confirmPassword" 
+            class="form-input" 
+            placeholder="Re-enter your password"
+            required
+            minlength="6"
+          >
+        </div>
+
+        <div class="form-group">
           <label for="role">I am a...</label>
           <select id="role" class="form-select" required>
             <option value="student">Student</option>
             <option value="lecturer">Lecturer</option>
           </select>
+        </div>
+
+        <div class="form-group" id="lecturer-code-group" style="display:none;">
+          <label for="lecturerCode">Lecturer Access Code</label>
+          <input 
+            type="text" 
+            id="lecturerCode" 
+            class="form-input" 
+            placeholder="Enter the code provided by your department"
+          >
+          <p style="font-size:12px;color:var(--text-secondary);margin-top:6px;">
+            A valid access code is required to register as a lecturer. Contact your department administrator if you do not have one.
+          </p>
         </div>
 
         <button type="submit" class="btn btn-primary" id="register-btn">
@@ -72,7 +97,16 @@
   </div>
 
   <script>
-    // Register functionality
+    document.getElementById('role').addEventListener('change', function() {
+      var codeGroup = document.getElementById('lecturer-code-group');
+      if (this.value === 'lecturer') {
+        codeGroup.style.display = 'block';
+      } else {
+        codeGroup.style.display = 'none';
+        document.getElementById('lecturerCode').value = '';
+      }
+    });
+
     document.getElementById('register-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       
@@ -86,6 +120,18 @@
         password: document.getElementById('password').value,
         role: document.getElementById('role').value
       };
+
+      var confirmPassword = document.getElementById('confirmPassword').value;
+      if (data.password !== confirmPassword) {
+        showAlert('Passwords do not match. Please re-enter.', 'error');
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+        return;
+      }
+
+      if (data.role === 'lecturer') {
+        data.lecturerCode = document.getElementById('lecturerCode').value;
+      }
       
       try {
         const response = await fetch('/api/auth/register', {
@@ -98,14 +144,13 @@
         
         if (result.success) {
           showAlert('Account created successfully! Redirecting to login...', 'success');
-          setTimeout(() => window.location.href = '/', 2000);
+          setTimeout(() => { window.location.href = '/'; }, 2000);
         } else {
-          showAlert(result.message, 'error');
-          btn.disabled = false;
-          btn.textContent = 'Create Account';
+          showAlert(result.message || 'Registration failed', 'error');
         }
       } catch (error) {
-        showAlert('Error creating account. Please try again.', 'error');
+        showAlert('Network error. Please try again.', 'error');
+      } finally {
         btn.disabled = false;
         btn.textContent = 'Create Account';
       }
@@ -113,7 +158,15 @@
     
     function showAlert(message, type) {
       const container = document.getElementById('alert-container');
-      container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+      container.innerHTML = `
+        <div class="alert alert-${type}" style="padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:14px;
+          ${type === 'success' ? 'background:#dcfce7;color:#166534;border:1px solid #bbf7d0;' : ''}
+          ${type === 'error' ? 'background:#fef2f2;color:#991b1b;border:1px solid #fecaca;' : ''}
+        ">
+          ${message}
+        </div>
+      `;
+      setTimeout(() => { container.innerHTML = ''; }, 5000);
     }
   </script>
   <script src="/js/dark-mode.js"></script>
