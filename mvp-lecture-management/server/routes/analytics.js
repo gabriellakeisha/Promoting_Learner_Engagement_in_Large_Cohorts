@@ -55,6 +55,13 @@ router.get('/lecturer/:sessionId', isAuthenticated, isLecturer, async (req, res)
     const messagesLast10Min = await Message.countDocuments({ sessionId, isDeleted: false, timestamp: { $gte: tenMinutesAgo } });
     const messagesPerMinute = (messagesLast5Min / 5).toFixed(1);
 
+    const confusionLast3Min = await Message.countDocuments({
+      sessionId, isDeleted: false, type: 'CONFUSION',
+      timestamp: { $gte: new Date(now - 3 * 60 * 1000) }
+    });
+    const confusionSpikeActive = confusionLast3Min >= 3;
+    const confusionPerMinute = (confusionLast3Min / 3).toFixed(1);
+
     const topContributors = await Message.aggregate([
       { $match: { sessionId: session._id, isDeleted: false } },
       { $lookup: { from: 'users', localField: 'userId', foreignField: '_id', as: 'user' } },
@@ -118,6 +125,11 @@ router.get('/lecturer/:sessionId', isAuthenticated, isLecturer, async (req, res)
         messagesByType: typeCounts,
         confusionRate: parseFloat(confusionRate),
         questionRate: parseFloat(questionRate),
+        confusionSpike: {
+          active: confusionSpikeActive,
+          confusionLast3Min: confusionLast3Min,
+          confusionPerMinute: parseFloat(confusionPerMinute),
+        },
         identityModes, timeline, peakActivity,
         topContributors: topContributorsWithNames, keywords,
       },
@@ -232,7 +244,7 @@ router.get('/macro', isAuthenticated, isLecturer, async (req, res) => {
 
     const lecturerSessions = await Session.find({ lecturer: lecturerId }).sort({ createdAt: 1 });
     if (!lecturerSessions || lecturerSessions.length === 0) {
-      return res.json({ success: true, sessions: [], modules: [], confusionTopics: [] });
+      return res.json({ success: true, sessions: [], modules: [], confusionTopics: [], identityTrends: [] });
     }
 
     const modules = [...new Set(lecturerSessions.map(s => s.moduleCode).filter(Boolean))];
@@ -257,6 +269,7 @@ router.get('/macro', isAuthenticated, isLecturer, async (req, res) => {
     ]);
 
     const confusionTopicMap = {};
+    const identityTrends = [];
 
     const sessionAnalytics = await Promise.all(
       filteredSessions.map(async (session) => {
@@ -295,6 +308,22 @@ router.get('/macro', isAuthenticated, isLecturer, async (req, res) => {
           });
         });
 
+        const identityBreakdown = await Message.aggregate([
+          { $match: { sessionId: session._id, isDeleted: false } },
+          { $group: { _id: { $ifNull: ['$identityMode', 'identified'] }, count: { $sum: 1 } } },
+        ]);
+        const modes = { anonymous: 0, pseudonymous: 0, identified: 0 };
+        identityBreakdown.forEach(item => { modes[item._id] = item.count; });
+
+        identityTrends.push({
+          sessionTitle: session.title,
+          date: session.createdAt,
+          anonymous: modes.anonymous,
+          pseudonymous: modes.pseudonymous,
+          identified: modes.identified,
+          total: totalMessages,
+        });
+
         return {
           sessionId: session._id, title: session.title, moduleCode: session.moduleCode || '',
           date: session.createdAt, status: session.status, totalMessages,
@@ -315,6 +344,7 @@ router.get('/macro', isAuthenticated, isLecturer, async (req, res) => {
       modules: modules,
       totalSessions: sessionAnalytics.length,
       confusionTopics: confusionTopics,
+      identityTrends: identityTrends,
     });
   } catch (error) {
     console.error('Macro analytics error:', error);

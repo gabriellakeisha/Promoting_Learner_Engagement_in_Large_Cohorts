@@ -4,7 +4,7 @@ function generateInsight(sessions) {
   if (!sessions || sessions.length < 2) return '';
   var insights = [];
 
-  var participations = sessions.map(function(s) { return parseFloat(s.participationRate); });
+  var participations = sessions.map(function(s) { return Math.min(100, parseFloat(s.participationRate)); });
   var first = participations[0];
   var last = participations[participations.length - 1];
   var diff = last - first;
@@ -51,7 +51,6 @@ function renderConfusionTopics(confusionTopics) {
 
   var recurring = confusionTopics.filter(function(t) { return t.sessionCount > 1; });
   var all = confusionTopics.slice(0, 10);
-
   var html = '';
 
   if (recurring.length > 0) {
@@ -64,23 +63,20 @@ function renderConfusionTopics(confusionTopics) {
       html += '<span style="color:var(--text-secondary);margin-left:6px;">(' + t.count + 'x in ' + t.sessionCount + ' sessions)</span>';
       html += '</div>';
     });
-    html += '</div>';
-    html += '</div>';
+    html += '</div></div>';
   }
 
   html += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
   all.forEach(function(t) {
     var opacity = Math.max(0.5, Math.min(1, t.count / 5));
     html += '<span style="background:rgba(245,158,11,' + (opacity * 0.2) + ');border:1px solid rgba(245,158,11,0.3);border-radius:20px;padding:6px 12px;font-size:12px;color:var(--text-color);">';
-    html += t.word + ' <span style="font-weight:600;">(' + t.count + ')</span>';
-    html += '</span>';
+    html += t.word + ' <span style="font-weight:600;">(' + t.count + ')</span></span>';
   });
   html += '</div>';
 
   if (recurring.length > 0) {
     html += '<div style="margin-top:12px;padding:10px 14px;background:rgba(239,68,68,0.08);border-radius:8px;font-size:12px;color:var(--text-secondary);border-left:3px solid #ef4444;">';
-    html += 'These recurring confusion topics appear across multiple sessions. Consider redesigning how these concepts are taught.';
-    html += '</div>';
+    html += 'These recurring confusion topics appear across multiple sessions. Consider redesigning how these concepts are taught.</div>';
   }
 
   return html;
@@ -103,6 +99,7 @@ async function loadMacroDashboard(moduleFilter) {
     var sessions = result.sessions || [];
     var modules = result.modules || [];
     var confusionTopics = result.confusionTopics || [];
+    var identityTrends = result.identityTrends || [];
 
     var filterHtml = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">' +
       '<label style="font-size:13px;color:var(--text-secondary);">Filter by module:</label>' +
@@ -185,6 +182,14 @@ async function loadMacroDashboard(moduleFilter) {
           <div class="chart-container-small" style="height:180px;">
             <canvas id="macro-confusion-chart"></canvas>
           </div>
+        </div>
+      </div>
+
+      <div class="analytics-chart-card" style="margin-bottom:24px;">
+        <h3 class="chart-title">Identity Mode Trends Across Sessions (RQ1)</h3>
+        <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">How anonymous, pseudonymous, and identified participation changes over sessions. Tracks whether students become more comfortable using real names over time.</p>
+        <div class="chart-container" style="height:240px;">
+          <canvas id="macro-identity-trend-chart"></canvas>
         </div>
       </div>
 
@@ -330,6 +335,34 @@ async function loadMacroDashboard(moduleFilter) {
           }
         }
       });
+    }
+
+    if (identityTrends && identityTrends.length > 0) {
+      var idLabels = identityTrends.map(function(t) {
+        return t.sessionTitle.length > 18 ? t.sessionTitle.substring(0, 18) + '...' : t.sessionTitle;
+      });
+      var idCtx = document.getElementById('macro-identity-trend-chart');
+      if (idCtx) {
+        macroChartInstances.identityTrend = new Chart(idCtx.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: idLabels,
+            datasets: [
+              { label: 'Anonymous', data: identityTrends.map(function(t){ return t.anonymous; }), backgroundColor: '#6366f1', borderRadius: 4 },
+              { label: 'Pseudonymous', data: identityTrends.map(function(t){ return t.pseudonymous; }), backgroundColor: '#8b5cf6', borderRadius: 4 },
+              { label: 'Identified', data: identityTrends.map(function(t){ return t.identified; }), backgroundColor: '#10b981', borderRadius: 4 }
+            ]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { padding: 12, font: { size: 11 } } } },
+            scales: {
+              x: { stacked: true, grid: { display: false }, ticks: { color: tickColor, maxRotation: 45 } },
+              y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: tickColor } }
+            }
+          }
+        });
+      }
     }
 
   } catch (error) {

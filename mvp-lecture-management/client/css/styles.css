@@ -3599,3 +3599,8 @@ body:not(.dark-mode) .alias-preview {
     font-size: 18px;
   }
 }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}

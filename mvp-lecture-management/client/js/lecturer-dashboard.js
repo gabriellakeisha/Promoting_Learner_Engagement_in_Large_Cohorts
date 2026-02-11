@@ -170,8 +170,21 @@ function displayAnalytics(analytics) {
   const confRate = confusionRate || (summary.totalMessages > 0 ? ((messagesByType?.CONFUSION || 0) / summary.totalMessages * 100).toFixed(1) : 0);
   const questRate = questionRate || (summary.totalMessages > 0 ? ((messagesByType?.QUESTION || 0) / summary.totalMessages * 100).toFixed(1) : 0);
 
+  const spikeData = analytics.confusionSpike || {};
+  const spikeActive = spikeData.active || false;
+
   container.innerHTML = `
+    ${spikeActive ? `
+    <div style="margin-bottom:20px;padding:14px 20px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.4);border-radius:12px;display:flex;align-items:center;gap:12px;animation:pulse 2s infinite;">
+      <span style="font-size:28px;">&#x1F6A8;</span>
+      <div>
+        <div style="font-weight:700;color:#ef4444;font-size:15px;">Confusion Spike Detected</div>
+        <div style="font-size:12px;color:var(--text-secondary);">${spikeData.confusionLast3Min || 0} confusion messages in the last 3 minutes (${spikeData.confusionPerMinute || 0}/min). Students may need clarification on the current topic.</div>
+      </div>
+    </div>
+    ` : ''}
     <div class="analytics-stats-row">
+
       <div class="analytics-stat-card stat-orange">
         <div class="stat-label">Total Messages</div>
         <div class="stat-value">${summary.totalMessages || 0}</div>
