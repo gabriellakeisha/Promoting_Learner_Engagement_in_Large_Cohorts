@@ -241,6 +241,8 @@ router.get('/macro', isAuthenticated, isLecturer, async (req, res) => {
   try {
     const lecturerId = req.session.userId;
     const moduleFilter = req.query.module || null;
+    const dateFrom = req.query.from || null;
+    const dateTo = req.query.to || null;
 
     const lecturerSessions = await Session.find({ lecturer: lecturerId }).sort({ createdAt: 1 });
     if (!lecturerSessions || lecturerSessions.length === 0) {
@@ -248,9 +250,19 @@ router.get('/macro', isAuthenticated, isLecturer, async (req, res) => {
     }
 
     const modules = [...new Set(lecturerSessions.map(s => s.moduleCode).filter(Boolean))];
-    const filteredSessions = moduleFilter
+    let filteredSessions = moduleFilter
       ? lecturerSessions.filter(s => s.moduleCode === moduleFilter)
       : lecturerSessions;
+
+    if (dateFrom) {
+      const fromDate = new Date(dateFrom);
+      filteredSessions = filteredSessions.filter(s => new Date(s.createdAt) >= fromDate);
+    }
+    if (dateTo) {
+      const toDate = new Date(dateTo);
+      toDate.setHours(23, 59, 59, 999);
+      filteredSessions = filteredSessions.filter(s => new Date(s.createdAt) <= toDate);
+    }
 
     const stopWords = new Set([
       'the','a','an','is','are','was','were','be','been','being','have','has','had',

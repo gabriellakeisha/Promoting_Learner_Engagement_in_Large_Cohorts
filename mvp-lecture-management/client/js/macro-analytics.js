@@ -82,14 +82,17 @@ function renderConfusionTopics(confusionTopics) {
   return html;
 }
 
-async function loadMacroDashboard(moduleFilter) {
+async function loadMacroDashboard(moduleFilter, dateFrom, dateTo) {
   var container = document.getElementById('macro-dashboard-content');
   if (!container) return;
   container.innerHTML = '<div class="spinner" style="margin:20px auto;"></div>';
 
   try {
-    var url = '/api/analytics/macro';
-    if (moduleFilter) url += '?module=' + encodeURIComponent(moduleFilter);
+    var params = [];
+    if (moduleFilter) params.push('module=' + encodeURIComponent(moduleFilter));
+    if (dateFrom) params.push('from=' + encodeURIComponent(dateFrom));
+    if (dateTo) params.push('to=' + encodeURIComponent(dateTo));
+    var url = '/api/analytics/macro' + (params.length > 0 ? '?' + params.join('&') : '');
 
     var response = await fetch(url, { credentials: 'include' });
     if (!response.ok) throw new Error('Failed to load analytics');
@@ -101,15 +104,22 @@ async function loadMacroDashboard(moduleFilter) {
     var confusionTopics = result.confusionTopics || [];
     var identityTrends = result.identityTrends || [];
 
+    var inputStyle = 'padding:8px 12px;border-radius:8px;border:1px solid var(--border-color);background:var(--card-bg,var(--bg-secondary,#f3f4f6));color:var(--text-color);font-size:13px;';
+
     var filterHtml = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">' +
-      '<label style="font-size:13px;color:var(--text-secondary);">Filter by module:</label>' +
-      '<select id="macro-module-filter" onchange="loadMacroDashboard(this.value)" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border-color);background:var(--card-bg,var(--bg-secondary,#f3f4f6));color:var(--text-color);font-size:13px;">' +
+      '<label style="font-size:13px;color:var(--text-secondary);">Module:</label>' +
+      '<select id="macro-module-filter" onchange="applyMacroFilters()" style="' + inputStyle + '">' +
       '<option value="">All Modules</option>';
     modules.forEach(function(m) {
       var selected = (moduleFilter === m) ? ' selected' : '';
       filterHtml += '<option value="' + m + '"' + selected + '>' + m + '</option>';
     });
     filterHtml += '</select>' +
+      '<label style="font-size:13px;color:var(--text-secondary);margin-left:8px;">From:</label>' +
+      '<input type="date" id="macro-date-from" value="' + (dateFrom || '') + '" onchange="applyMacroFilters()" style="' + inputStyle + '">' +
+      '<label style="font-size:13px;color:var(--text-secondary);">To:</label>' +
+      '<input type="date" id="macro-date-to" value="' + (dateTo || '') + '" onchange="applyMacroFilters()" style="' + inputStyle + '">' +
+      '<button onclick="clearMacroFilters()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:12px;cursor:pointer;">Clear</button>' +
       '<span style="font-size:12px;color:var(--text-secondary);">' + sessions.length + ' session(s)</span></div>';
 
     if (sessions.length === 0) {
@@ -371,4 +381,18 @@ async function loadMacroDashboard(moduleFilter) {
   }
 }
 
-loadMacroDashboard('');
+function applyMacroFilters() {
+  var moduleEl = document.getElementById('macro-module-filter');
+  var fromEl = document.getElementById('macro-date-from');
+  var toEl = document.getElementById('macro-date-to');
+  var module = moduleEl ? moduleEl.value : '';
+  var from = fromEl ? fromEl.value : '';
+  var to = toEl ? toEl.value : '';
+  loadMacroDashboard(module, from, to);
+}
+
+function clearMacroFilters() {
+  loadMacroDashboard('', '', '');
+}
+
+loadMacroDashboard('', '', '');

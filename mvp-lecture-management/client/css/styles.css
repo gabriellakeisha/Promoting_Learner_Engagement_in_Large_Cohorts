@@ -830,29 +830,30 @@ body.dark-mode tbody tr:hover {
 /* Dark mode toggle button */
 .dark-mode-toggle {
   position: fixed;
-  top: 20px;
+  bottom: 20px;
   right: 20px;
   background: var(--primary-color);
   color: white;
   border: none;
   border-radius: 50%;
-  width: 50px;
-  height: 50px;
+  width: 40px;
+  height: 40px;
   cursor: pointer;
-  font-size: 24px;
+  font-size: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   transition: all 0.3s ease;
   z-index: 1000;
+  opacity: 0.85;
 }
 
 .dark-mode-toggle:hover {
   transform: scale(1.1);
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  opacity: 1;
 }
-
 body.dark-mode .dark-mode-toggle {
   background: #f59e0b;
 }
