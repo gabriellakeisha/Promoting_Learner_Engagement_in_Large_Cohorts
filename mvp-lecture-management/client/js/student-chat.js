@@ -318,7 +318,7 @@ function initializeSocket() {
     if (el) { var textEl = el.querySelector('.message-text'); if (textEl) textEl.textContent = data.text; }
   });
   
-  // Updated message-pinned handler with pin bar update
+  // Updated message-pinned handler with pin bar 
   socket.on('message-pinned', function (data) {
     var msgId = data.messageId || data.id;
     var el = document.querySelector('[data-message-id="' + msgId + '"]');

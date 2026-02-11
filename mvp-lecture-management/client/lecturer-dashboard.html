@@ -115,16 +115,15 @@
     </div>
   </div>
 
-  <!-- Analytics Modal (per-session micro) -->
+<!-- Analytics Modal (per-session micro) -->
   <div id="analytics-modal" class="analytics-overlay">
-    <div style="max-width: 1200px; margin: 0 auto; background: white; border-radius: 16px; padding: 32px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
-        <h2 id="analytics-title">Session Analytics</h2>
-        <div style="display: flex; gap: 12px;">
-          <button class="btn btn-secondary export-csv-btn" onclick="exportToCSV()">
-            Export CSV
-          </button>
-          <button class="btn btn-secondary btn-small" id="close-analytics-btn">Close</button>
+    <div style="max-width: 1200px; margin: 0 auto; background: var(--card-bg, #ffffff); border-radius: 16px; padding: 24px;">
+      <div style="margin-bottom: 24px;">
+        <h2 id="analytics-title" style="margin:0 0 12px;font-size:20px;color:var(--text-color);">Session Analytics</h2>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-secondary btn-small export-csv-btn" onclick="exportToCSV()" style="white-space:nowrap;padding:6px 14px;font-size:13px;">Export CSV</button>
+          <button class="btn btn-primary btn-small" onclick="generateAISummary()" id="ai-summary-btn" style="white-space:nowrap;padding:6px 14px;font-size:13px;">Session Summary</button>
+          <button class="btn btn-secondary btn-small" id="close-analytics-btn" style="white-space:nowrap;padding:6px 14px;font-size:13px;">Close</button>
         </div>
       </div>
       <div id="analytics-content">

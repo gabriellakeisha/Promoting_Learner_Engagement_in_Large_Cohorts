@@ -515,4 +515,117 @@ function showAlert(message, type) {
   setTimeout(() => container.innerHTML = '', 5000);
 }
 
+async function generateAISummary() {
+  var sessionId = currentAnalyticsSessionId;
+  if (!sessionId) { alert('No session selected'); return; }
+
+  var btn = document.getElementById('ai-summary-btn');
+  var originalText = btn.innerHTML;
+  btn.innerHTML = '⏳ Generating...';
+  btn.disabled = true;
+
+  try {
+    var response = await fetch('/api/analytics/ai-summary/' + sessionId, { credentials: 'include' });
+    if (!response.ok) throw new Error('Failed to generate summary');
+    var result = await response.json();
+    if (!result.success) throw new Error(result.message || 'Summary generation failed');
+
+    var summary = result.summary;
+    var modalHtml = '<div id="ai-summary-overlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;">';
+    modalHtml += '<div style="background:var(--card-bg,#ffffff);border-radius:16px;max-width:800px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);">';
+
+    modalHtml += '<div style="padding:24px 28px;border-bottom:1px solid var(--border-color,#e5e7eb);display:flex;justify-content:space-between;align-items:center;">';
+    modalHtml += '<div>';
+    modalHtml += '<h2 style="margin:0;font-size:20px;color:var(--text-color);">Session Summary</h2>';
+    modalHtml += '<p style="margin:4px 0 0;font-size:12px;color:var(--text-secondary);">Generated: ' + new Date(summary.generatedAt).toLocaleString() + '</p>';
+    modalHtml += '</div>';
+    modalHtml += '<button onclick="document.getElementById(\'ai-summary-overlay\').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--text-secondary);padding:4px 8px;">×</button>';
+    modalHtml += '</div>';
+
+    modalHtml += '<div style="padding:24px 28px;">';
+
+    modalHtml += '<div style="padding:16px;background:rgba(59,130,246,0.08);border-left:4px solid #3b82f6;border-radius:0 10px 10px 0;margin-bottom:20px;font-size:14px;line-height:1.7;color:var(--text-color);">';
+    modalHtml += summary.overview;
+    modalHtml += '</div>';
+
+    if (summary.stats) {
+      modalHtml += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;">';
+      var statItems = [
+        { label: 'Messages', value: summary.stats.totalMessages },
+        { label: 'Contributors', value: summary.stats.uniqueContributors + '/' + summary.stats.totalMembers },
+        { label: 'Participation', value: summary.stats.participationRate + '%' },
+        { label: 'Duration', value: summary.stats.durationMinutes + ' min' },
+        { label: 'Msg/Min', value: summary.stats.messagesPerMinute },
+        { label: 'Session', value: summary.sessionTitle }
+      ];
+      statItems.forEach(function(s) {
+        modalHtml += '<div style="background:var(--card-bg,var(--bg-secondary,#f3f4f6));border:1px solid var(--border-color,#e5e7eb);border-radius:10px;padding:12px;text-align:center;">';
+        modalHtml += '<div style="font-size:20px;font-weight:700;color:var(--text-color);">' + s.value + '</div>';
+        modalHtml += '<div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">' + s.label + '</div>';
+        modalHtml += '</div>';
+      });
+      modalHtml += '</div>';
+    }
+
+    if (summary.sections && summary.sections.length > 0) {
+      summary.sections.forEach(function(section) {
+        var isRecommendation = section.title === 'Recommendations';
+        var borderColor = isRecommendation ? '#f59e0b' : (section.title === 'Areas of Confusion' ? '#ef4444' : 'var(--border-color,#e5e7eb)');
+        var bgColor = isRecommendation ? 'rgba(245,158,11,0.06)' : (section.title === 'Areas of Confusion' ? 'rgba(239,68,68,0.06)' : 'transparent');
+
+        modalHtml += '<div style="margin-bottom:16px;padding:14px 16px;border:1px solid ' + borderColor + ';border-radius:10px;background:' + bgColor + ';">';
+        modalHtml += '<h4 style="margin:0 0 8px;font-size:14px;font-weight:600;color:var(--text-color);">';
+        if (section.title === 'Engagement Pattern') modalHtml += '📊 ';
+        else if (section.title === 'Message Classification Breakdown') modalHtml += '💬 ';
+        else if (section.title === 'Areas of Confusion') modalHtml += '😕 ';
+        else if (section.title === 'Key Questions Raised') modalHtml += '❓ ';
+        else if (section.title === 'Discussion Topics') modalHtml += '🏷️ ';
+        else if (section.title === 'Identity Mode Usage') modalHtml += '🔒 ';
+        else if (section.title === 'Recommendations') modalHtml += '💡 ';
+        modalHtml += section.title + '</h4>';
+        modalHtml += '<p style="margin:0;font-size:13px;line-height:1.7;color:var(--text-color);">' + section.content + '</p>';
+        modalHtml += '</div>';
+      });
+    }
+
+    modalHtml += '</div>';
+
+    modalHtml += '<div style="padding:16px 28px;border-top:1px solid var(--border-color,#e5e7eb);display:flex;justify-content:flex-end;gap:10px;">';
+    modalHtml += '<button onclick="copyAISummary()" class="btn btn-secondary btn-small">📋 Copy to Clipboard</button>';
+    modalHtml += '<button onclick="document.getElementById(\'ai-summary-overlay\').remove()" class="btn btn-primary btn-small">Close</button>';
+    modalHtml += '</div>';
+
+    modalHtml += '</div></div>';
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+  } catch (error) {
+    alert('Error generating summary: ' + error.message);
+  } finally {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  }
+}
+
+function copyAISummary() {
+  var overlay = document.getElementById('ai-summary-overlay');
+  if (!overlay) return;
+  var textParts = [];
+  overlay.querySelectorAll('h2, h4, p, div').forEach(function(el) {
+    var text = el.textContent.trim();
+    if (text && text.length > 10 && el.tagName !== 'DIV') {
+      textParts.push(text);
+    }
+  });
+  var uniqueText = [];
+  textParts.forEach(function(t) {
+    if (uniqueText.indexOf(t) === -1) uniqueText.push(t);
+  });
+  navigator.clipboard.writeText(uniqueText.join('\n\n')).then(function() {
+    alert('Summary copied to clipboard!');
+  }).catch(function() {
+    alert('Failed to copy. Please select and copy manually.');
+  });
+}
+
 init();

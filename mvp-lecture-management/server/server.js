@@ -140,7 +140,7 @@ io.on('connection', async (socket) => {
     console.log('⚠️ Socket connected without session - will authenticate on join-session');
   }
 
-  // Join session room - FIXED with better error handling
+  // Join session room
   socket.on('join-session', async (data) => {
     console.log('📥 join-session received:', JSON.stringify(data));
     

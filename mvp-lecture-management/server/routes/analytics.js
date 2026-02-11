@@ -364,4 +364,235 @@ router.get('/macro', isAuthenticated, isLecturer, async (req, res) => {
   }
 });
 
+router.get('/ai-summary/:sessionId', isAuthenticated, isLecturer, async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const session = await Session.findById(sessionId);
+    if (!session) return res.status(404).json({ success: false, message: 'Session not found' });
+
+    const messages = await Message.find({ sessionId, isDeleted: false })
+      .populate('userId', 'displayName role')
+      .sort({ timestamp: 1 });
+
+    const totalMembers = await Membership.countDocuments({ sessionId });
+
+    if (messages.length === 0) {
+      return res.json({
+        success: true,
+        summary: {
+          overview: 'No messages recorded in this session. The summary will be available once students begin participating.',
+          sections: []
+        }
+      });
+    }
+
+    var totalMessages = messages.length;
+    var uniqueContributors = [...new Set(messages.map(m => m.userId?._id?.toString()).filter(Boolean))].length;
+    var participationRate = totalMembers > 0 ? ((uniqueContributors / totalMembers) * 100).toFixed(1) : 0;
+
+    var typeCounts = { QUESTION: 0, COMMENT: 0, CONFUSION: 0, NONE: 0 };
+    messages.forEach(function(m) {
+      if (typeCounts[m.type] !== undefined) typeCounts[m.type]++;
+      else typeCounts.NONE++;
+    });
+
+    var identityCounts = { anonymous: 0, pseudonymous: 0, identified: 0 };
+    messages.forEach(function(m) {
+      var mode = m.identityMode || 'identified';
+      if (identityCounts[mode] !== undefined) identityCounts[mode]++;
+    });
+
+    var sessionStart = messages[0].timestamp;
+    var sessionEnd = messages[messages.length - 1].timestamp;
+    var durationMs = new Date(sessionEnd) - new Date(sessionStart);
+    var durationMin = Math.max(1, Math.round(durationMs / 60000));
+
+    var bucketSize = 5;
+    var maxSessionMinutes = 180;
+    var buckets = {};
+    messages.forEach(function(msg) {
+      var min = Math.floor((new Date(msg.timestamp) - new Date(sessionStart)) / 60000);
+      if (min < 0 || min > maxSessionMinutes) return;
+      var bucketKey = Math.floor(min / bucketSize) * bucketSize;
+      if (!buckets[bucketKey]) buckets[bucketKey] = 0;
+      buckets[bucketKey]++;
+    });
+
+    var coreMessages = messages.filter(function(m) {
+      var min = Math.floor((new Date(m.timestamp) - new Date(sessionStart)) / 60000);
+      return min >= 0 && min <= maxSessionMinutes;
+    });
+    var coreDurationMs = coreMessages.length > 1 ? (new Date(coreMessages[coreMessages.length - 1].timestamp) - new Date(coreMessages[0].timestamp)) : durationMs;
+    var coreDurationMin = Math.max(1, Math.round(coreDurationMs / 60000));
+    durationMin = coreDurationMin;
+
+    var peakBucket = null;
+    var peakCount = 0;
+    var quietBucket = null;
+    var quietCount = Infinity;
+    Object.keys(buckets).forEach(function(k) {
+      if (buckets[k] > peakCount) { peakCount = buckets[k]; peakBucket = parseInt(k); }
+      if (buckets[k] < quietCount) { quietCount = buckets[k]; quietBucket = parseInt(k); }
+    });
+
+    var firstHalfMsgs = coreMessages.filter(function(m) {
+      return (new Date(m.timestamp) - new Date(sessionStart)) < coreDurationMs / 2;
+    }).length;
+    var secondHalfMsgs = coreMessages.length - firstHalfMsgs;
+
+    var engagementTrend = 'steady';
+    if (secondHalfMsgs > firstHalfMsgs * 1.4) engagementTrend = 'increasing';
+    else if (firstHalfMsgs > secondHalfMsgs * 1.4) engagementTrend = 'decreasing';
+
+    var stopWords = new Set(['the','a','an','is','are','was','were','be','been','being','have','has','had','do','does','did','will','would','shall','should','may','might','must','can','could','i','me','my','we','our','you','your','he','him','his','she','her','it','its','they','them','their','this','that','these','those','what','which','who','whom','how','when','where','why','am','not','no','yes','so','if','or','and','but','for','nor','on','at','to','from','by','up','about','into','through','during','before','after','above','below','between','out','off','over','under','again','further','then','once','here','there','all','each','every','both','few','more','most','other','some','such','only','own','same','than','too','very','just','because','as','until','while','of','with','in','also','im','dont','cant','thats','its','ive','like','get','got','really','think','know','going','want','need','one','much','well','even','still','thing','right','back','way','make','say','said','see','go','come','take','give','tell','ask','try','use','find','let','put','keep','work','look','thanks','thank','good','great','nice','okay','ok','yeah','yep','sure','agree','lol','haha','wow','cool','interesting','helpful','clear','clearer','clarification','clarify','explanation','explain','example','similar','found','slides','textbook','lecture','class','professor','question','comment','please','sorry','maybe','actually','basically','definitely','probably','exactly','pretty','quite','anyway','though','seems','feel','lot','bit','now']);
+
+    var preserveTerms = {};
+    messages.forEach(function(m) {
+      if (!m.text) return;
+      var matches = m.text.match(/[A-Z]{2,}(?:\/[A-Z]{2,})+/g);
+      if (matches) {
+        matches.forEach(function(term) {
+          var key = term.toLowerCase().replace(/\//g, '');
+          preserveTerms[key] = term;
+        });
+      }
+    });
+
+    var wordCounts = {};
+    messages.forEach(function(m) {
+      if (!m.text) return;
+      var words = m.text.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/);
+      words.forEach(function(w) {
+        if (w.length > 2 && !stopWords.has(w)) {
+          wordCounts[w] = (wordCounts[w] || 0) + 1;
+        }
+      });
+    });
+    var topKeywords = Object.entries(wordCounts)
+      .sort(function(a, b) { return b[1] - a[1]; })
+      .slice(0, 10)
+      .map(function(e) { return preserveTerms[e[0]] || e[0]; });
+
+    var confusionMessages = messages.filter(function(m) { return m.type === 'CONFUSION'; });
+    var confusionKeywords = {};
+    confusionMessages.forEach(function(m) {
+      if (!m.text) return;
+      var words = m.text.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/);
+      words.forEach(function(w) {
+        if (w.length > 2 && !stopWords.has(w)) {
+          confusionKeywords[w] = (confusionKeywords[w] || 0) + 1;
+        }
+      });
+    });
+    var topConfusionTopics = Object.entries(confusionKeywords)
+      .sort(function(a, b) { return b[1] - a[1]; })
+      .slice(0, 5)
+      .map(function(e) { return preserveTerms[e[0]] || e[0]; });
+
+    var questionMessages = messages.filter(function(m) { return m.type === 'QUESTION'; });
+    var questionSamples = questionMessages.slice(0, 5).map(function(m) { return m.text.substring(0, 120); });
+
+    var dominantIdentity = 'identified';
+    if (identityCounts.anonymous >= identityCounts.pseudonymous && identityCounts.anonymous >= identityCounts.identified) dominantIdentity = 'anonymous';
+    else if (identityCounts.pseudonymous >= identityCounts.anonymous && identityCounts.pseudonymous >= identityCounts.identified) dominantIdentity = 'pseudonymous';
+
+    var sections = [];
+
+    var participationLevel = parseFloat(participationRate) >= 70 ? 'high' : (parseFloat(participationRate) >= 40 ? 'moderate' : 'low');
+    var overviewText = 'Session "' + session.title + '" lasted approximately ' + durationMin + ' minutes with ' + totalMessages + ' messages from ' + uniqueContributors + ' of ' + totalMembers + ' enrolled students (' + participationRate + '% participation rate). ';
+    overviewText += 'This represents ' + participationLevel + ' engagement. ';
+    overviewText += 'The messaging rate averaged ' + (totalMessages / durationMin).toFixed(1) + ' messages per minute.';
+
+    sections.push({
+      title: 'Engagement Pattern',
+      content: 'Engagement was ' + engagementTrend + ' over the session. ' +
+        'Peak activity occurred at the ' + peakBucket + '-' + (peakBucket + bucketSize) + ' minute mark (' + peakCount + ' messages). ' +
+        (quietBucket !== null && quietBucket !== peakBucket ? 'The quietest period was at ' + quietBucket + '-' + (quietBucket + bucketSize) + ' minutes (' + quietCount + ' messages). ' : '') +
+        (engagementTrend === 'decreasing' ? 'Engagement dropped in the second half, which may indicate content difficulty increased or attention waned. Consider adding interactive elements (polls, breakout questions) during the latter portion.' : '') +
+        (engagementTrend === 'increasing' ? 'Students became more engaged as the session progressed, suggesting the topic generated growing interest or that students became more comfortable participating.' : '') +
+        (engagementTrend === 'steady' ? 'Engagement remained consistent throughout, indicating a well-paced session.' : '')
+    });
+
+    sections.push({
+      title: 'Message Classification Breakdown',
+      content: 'Questions: ' + typeCounts.QUESTION + ' (' + (totalMessages > 0 ? (typeCounts.QUESTION / totalMessages * 100).toFixed(0) : 0) + '%), ' +
+        'Comments: ' + typeCounts.COMMENT + ' (' + (totalMessages > 0 ? (typeCounts.COMMENT / totalMessages * 100).toFixed(0) : 0) + '%), ' +
+        'Confusion signals: ' + typeCounts.CONFUSION + ' (' + (totalMessages > 0 ? (typeCounts.CONFUSION / totalMessages * 100).toFixed(0) : 0) + '%)' +
+        (typeCounts.NONE > 0 ? ', Unclassified: ' + typeCounts.NONE + ' (' + (totalMessages > 0 ? (typeCounts.NONE / totalMessages * 100).toFixed(0) : 0) + '%)' : '') + '. ' +
+        (typeCounts.CONFUSION > typeCounts.QUESTION ? 'Confusion signals exceeded questions, suggesting students struggled to articulate their difficulties. Consider proactively addressing common confusion areas.' : '') +
+        (typeCounts.QUESTION > totalMessages * 0.4 ? 'A high proportion of questions indicates active inquiry-based learning.' : '')
+    });
+
+    if (topConfusionTopics.length > 0) {
+      sections.push({
+        title: 'Areas of Confusion',
+        content: 'The most frequent terms in confusion-flagged messages were: ' + topConfusionTopics.join(', ') + '. ' +
+          'These topics may benefit from additional explanation, worked examples, or supplementary materials in follow-up sessions.'
+      });
+    }
+
+    if (questionSamples.length > 0) {
+      sections.push({
+        title: 'Key Questions Raised',
+        content: 'Students asked ' + typeCounts.QUESTION + ' questions during the session. Representative examples include: "' +
+          questionSamples.join('", "') + '". ' +
+          (typeCounts.QUESTION > 3 ? 'The volume of questions suggests areas where students sought clarification or deeper understanding.' : '')
+      });
+    }
+
+    if (topKeywords.length > 0) {
+      sections.push({
+        title: 'Discussion Topics',
+        content: 'The most frequently discussed terms were: ' + topKeywords.join(', ') + '. ' +
+          'These keywords reflect the primary focus areas of student discussion during the session.'
+      });
+    }
+
+    sections.push({
+      title: 'Identity Mode Usage',
+      content: 'Students used: anonymous (' + identityCounts.anonymous + ' messages), pseudonymous/alias (' + identityCounts.pseudonymous + ' messages), and identified/real name (' + identityCounts.identified + ' messages). ' +
+        'The dominant mode was ' + dominantIdentity + '. ' +
+        (dominantIdentity === 'anonymous' ? 'High anonymous usage suggests students prefer privacy when participating, which is common in larger cohorts where students may feel self-conscious.' : '') +
+        (dominantIdentity === 'identified' ? 'Students were comfortable using their real identities, indicating a trusting classroom environment.' : '') +
+        (dominantIdentity === 'pseudonymous' ? 'Alias usage balances participation comfort with some sense of identity continuity across messages.' : '')
+    });
+
+    var recommendations = [];
+    if (parseFloat(participationRate) < 40) recommendations.push('Participation was below 40%. Consider using polls or direct prompts to encourage more students to engage.');
+    if (engagementTrend === 'decreasing') recommendations.push('Engagement declined over the session. Try scheduling interactive activities in the second half to maintain attention.');
+    if (typeCounts.CONFUSION > totalMessages * 0.2) recommendations.push('Over 20% of messages were confusion signals. Review the flagged topics and consider revisiting them in the next session.');
+    if (uniqueContributors < totalMembers * 0.3) recommendations.push('Less than 30% of enrolled students contributed. The lurker ratio is high. Anonymous mode or simpler participation methods (reactions, polls) may help.');
+    if (typeCounts.QUESTION === 0) recommendations.push('No questions were recorded. Encourage students to use the question tag to flag things they want clarified.');
+
+    if (recommendations.length > 0) {
+      sections.push({
+        title: 'Recommendations',
+        content: recommendations.join(' ')
+      });
+    }
+
+    res.json({
+      success: true,
+      summary: {
+        overview: overviewText,
+        sessionTitle: session.title,
+        moduleCode: session.moduleCode,
+        generatedAt: new Date().toISOString(),
+        stats: {
+          totalMessages: totalMessages,
+          uniqueContributors: uniqueContributors,
+          totalMembers: totalMembers,
+          participationRate: participationRate,
+          durationMinutes: durationMin,
+          messagesPerMinute: (totalMessages / durationMin).toFixed(1)
+        },
+        sections: sections
+      }
+    });
+  } catch (error) {
+    console.error('Generate summary error:', error);
+    res.status(500).json({ success: false, message: 'Server error generating summary', error: error.message });
+  }
+});
+
 module.exports = router;

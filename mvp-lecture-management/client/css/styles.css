@@ -711,9 +711,7 @@ body.dark-mode .send-btn-corner:hover {
   background: #60a5fa;
 }
 
-/* ============================================
-   DARK MODE - CHAT MESSAGES (USERNAME FIX)
-   ============================================ */
+/* DARK MODE - CHAT MESSAGES */
 
 /* Dark mode chat message container */
 body.dark-mode .chat-message {
@@ -1078,12 +1076,12 @@ body.dark-mode .dashboard-header h2 {
   color: #e2e8f0 !important;
 }
 
-/* Fix: "My Sessions" title on dashboard in dark mode */
+/*"My Sessions" title on dashboard in dark mode */
 body.dark-mode .dashboard-section h3 {
   color: #e2e8f0 !important;
 }
 
-/* Fix: All heading text in dark mode */
+/* All heading text in dark mode */
 body.dark-mode h1,
 body.dark-mode h2,
 body.dark-mode h3,
@@ -1091,12 +1089,12 @@ body.dark-mode h4 {
   color: #e2e8f0 !important;
 }
 
-/* Fix: Session card titles in dark mode */
+/* Session card titles in dark mode */
 body.dark-mode .session-title {
   color: #e2e8f0 !important;
 }
 
-/* Fix: Any text that might overlap with dark background */
+/* Any text that might overlap with dark background */
 body.dark-mode .section-title,
 body.dark-mode .page-title,
 body.dark-mode .card-title {
@@ -1131,7 +1129,7 @@ body.dark-mode #loading .spinner {
   border-top-color: #60a5fa;
 }
 
-/* INPUT CONTAINER LAYOUT FIX */
+/* INPUT CONTAINER LAYOUT & STYLES */
 .chat-input-container {
   padding: 16px;
   background: var(--card-bg);
@@ -2172,7 +2170,7 @@ body.dark-mode .report-btn:hover::after {
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* Fix Display Name input - readable in dark and light mode */
+/* Display Name input - readable in dark and light mode */
 .profile-text-input {
   width: 100%;
   padding: 12px 16px;
@@ -2327,9 +2325,7 @@ body.dark-mode .report-btn:hover::after {
   -webkit-text-fill-color: #9ca3af !important;
 }
 
-/* ========================================
-   FIX: Navbar avatar size (40px)
-   ======================================== */
+/*  Navbar avatar size (40px) */
 .navbar-avatar {
   width: 40px !important;
   height: 40px !important;
@@ -2348,7 +2344,7 @@ body.dark-mode .report-btn:hover::after {
   border-radius: 50% !important;
 }
 
-/* Profile Input Row - Fix layout */
+/* Profile Input Row*/
 .profile-input-row {
   display: flex !important;
   flex-direction: row !important;
@@ -2466,9 +2462,7 @@ body:not(.dark-mode) #new-password::placeholder {
   -webkit-text-fill-color: #6b7280 !important;
 }
 
-/* ========================================
-   FIX NAVBAR AVATAR SIZE
-   ======================================== */
+/* NAVBAR AVATAR SIZE  */
 .navbar-avatar {
   width: 40px !important;
   height: 40px !important;
