@@ -166,7 +166,7 @@ function displayAnalytics(analytics) {
 
   const { summary, messagesByType, identityModes, keywords, topContributors, timeline, peakActivity, confusionRate, questionRate } = analytics;
 
-  const consumersCount = summary.consumersCount || (summary.totalMembers - summary.activeUsers) || 0;
+  const consumersCount = Math.max(0, summary.consumersCount || (summary.totalMembers - summary.activeUsers) || 0);
   const confRate = confusionRate || (summary.totalMessages > 0 ? ((messagesByType?.CONFUSION || 0) / summary.totalMessages * 100).toFixed(1) : 0);
   const questRate = questionRate || (summary.totalMessages > 0 ? ((messagesByType?.QUESTION || 0) / summary.totalMessages * 100).toFixed(1) : 0);
 
@@ -183,7 +183,7 @@ function displayAnalytics(analytics) {
       </div>
       <div class="analytics-stat-card stat-orange">
         <div class="stat-label">Participation Rate</div>
-        <div class="stat-value">${summary.participationRate || 0}%</div>
+        <div class="stat-value">${Math.min(100, summary.participationRate || 0)}%</div>
       </div>
       <div class="analytics-stat-card stat-green">
         <div class="stat-label">Messages/Minute</div>

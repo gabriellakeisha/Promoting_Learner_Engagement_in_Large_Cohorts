@@ -25,8 +25,8 @@ router.get('/lecturer/:sessionId', isAuthenticated, isLecturer, async (req, res)
     const activeUserIds = await Message.distinct('userId', { sessionId, isDeleted: false });
     const activeUserCount = activeUserIds.length;
     const totalMembers = await Membership.countDocuments({ sessionId });
-    const consumersCount = totalMembers - activeUserCount;
-    const participationRate = totalMembers > 0 ? ((activeUserCount / totalMembers) * 100).toFixed(1) : 0;
+    const consumersCount = Math.max(0, totalMembers - activeUserCount);
+    const participationRate = totalMembers > 0 ? Math.min(100, ((activeUserCount / totalMembers) * 100)).toFixed(1) : 0;
 
     const engagementTimeline = await Message.aggregate([
       { $match: { sessionId: session._id, isDeleted: false } },
@@ -128,6 +128,57 @@ router.get('/lecturer/:sessionId', isAuthenticated, isLecturer, async (req, res)
   }
 });
 
+router.get('/export/:sessionId', isAuthenticated, isLecturer, async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const session = await Session.findById(sessionId);
+    if (!session) return res.status(404).json({ success: false, message: 'Session not found' });
+    if (session.lecturer.toString() !== req.session.userId) return res.status(403).json({ success: false, message: 'Access denied' });
+
+    const messages = await Message.find({ sessionId, isDeleted: false })
+      .populate('userId', 'displayName email role').sort({ timestamp: 1 });
+
+    const totalMessages = messages.length;
+    const activeUsers = [...new Set(messages.map(m => m.userId?._id?.toString()))].length;
+    const totalMembers = await Membership.countDocuments({ sessionId });
+
+    const typeCounts = { QUESTION: 0, COMMENT: 0, CONFUSION: 0 };
+    messages.forEach(m => { if (typeCounts[m.type] !== undefined) typeCounts[m.type]++; });
+
+    let csv = 'Session Analytics Export\n';
+    csv += `Session Title,${session.title}\n`;
+    csv += `Module Code,${session.moduleCode || 'N/A'}\n`;
+    csv += `Join Code,${session.joinCode}\n`;
+    csv += `Export Date,${new Date().toISOString()}\n\n`;
+    csv += 'Summary Statistics\n';
+    csv += `Total Messages,${totalMessages}\n`;
+    csv += `Active Contributors,${activeUsers}\n`;
+    csv += `Total Members,${totalMembers}\n`;
+    csv += `Participation Rate,${totalMembers > 0 ? Math.min(100, ((activeUsers / totalMembers) * 100)).toFixed(1) : 0}%\n`;
+    csv += `Questions,${typeCounts.QUESTION}\n`;
+    csv += `Comments,${typeCounts.COMMENT}\n`;
+    csv += `Confusion,${typeCounts.CONFUSION}\n\n`;
+    csv += 'Message Log\n';
+    csv += 'Timestamp,User,Role,Type,Identity Mode,Message\n';
+    messages.forEach(msg => {
+      const timestamp = new Date(msg.timestamp).toISOString();
+      const user = msg.userId?.displayName || 'Unknown';
+      const role = msg.userId?.role || 'student';
+      const type = msg.type || 'COMMENT';
+      const identityMode = msg.identityMode || 'identified';
+      const text = `"${(msg.text || '').replace(/"/g, '""')}"`;
+      csv += `${timestamp},${user},${role},${type},${identityMode},${text}\n`;
+    });
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="session_${session.joinCode}_analytics.csv"`);
+    res.send(csv);
+  } catch (error) {
+    console.error('CSV export error:', error);
+    res.status(500).json({ success: false, message: 'Server error exporting CSV', error: error.message });
+  }
+});
+
 router.get('/student/:sessionId', isAuthenticated, async (req, res) => {
   try {
     const { sessionId } = req.params;
@@ -158,101 +209,19 @@ router.get('/student/:sessionId', isAuthenticated, async (req, res) => {
       analytics: {
         personal: {
           messageCount: myMessageCount, messagesByType: myTypeCounts, rank: myRank || null,
-          percentile: myRank && allParticipants.length > 0 ? ((1 - (myRank - 1) / allParticipants.length) * 100).toFixed(1) : null,
+          percentile: myRank && allParticipants.length > 0 ?
+            ((1 - myRank / allParticipants.length) * 100).toFixed(0) : null,
         },
         class: { average: parseFloat(classAverage), totalMessages, totalMembers, activeMembers: allParticipants.length },
-        comparison: { aboveAverage: myMessageCount > parseFloat(classAverage), difference: (myMessageCount - parseFloat(classAverage)).toFixed(1) },
+        comparison: {
+          aboveAverage: myMessageCount > parseFloat(classAverage),
+          difference: (myMessageCount - parseFloat(classAverage)).toFixed(1),
+        },
       },
     });
   } catch (error) {
     console.error('Student analytics error:', error);
-    res.status(500).json({ success: false, message: 'Server error fetching analytics', error: error.message });
-  }
-});
-
-router.get('/live/:sessionId', isAuthenticated, async (req, res) => {
-  try {
-    const { sessionId } = req.params;
-    const session = await Session.findById(sessionId);
-    if (!session) return res.status(404).json({ success: false, message: 'Session not found' });
-
-    const membership = await Membership.findOne({ userId: req.session.userId, sessionId });
-    const isLecturerUser = session.lecturer.toString() === req.session.userId;
-    if (!membership && !isLecturerUser) return res.status(403).json({ success: false, message: 'Access denied.' });
-
-    const now = new Date();
-    const oneMinuteAgo = new Date(now - 60 * 1000);
-    const fiveMinutesAgo = new Date(now - 5 * 60 * 1000);
-
-    const totalMessages = await Message.countDocuments({ sessionId, isDeleted: false });
-    const messagesLastMinute = await Message.countDocuments({ sessionId, isDeleted: false, timestamp: { $gte: oneMinuteAgo } });
-    const messagesLast5Min = await Message.countDocuments({ sessionId, isDeleted: false, timestamp: { $gte: fiveMinutesAgo } });
-    const activeUsers = await Message.distinct('userId', { sessionId, isDeleted: false });
-    const totalMembers = await Membership.countDocuments({ sessionId });
-
-    res.json({
-      success: true,
-      live: {
-        totalMessages, messagesLastMinute, messagesLast5Min,
-        messagesPerMinute: (messagesLast5Min / 5).toFixed(1),
-        activeUsers: activeUsers.length, totalMembers,
-        participationRate: totalMembers > 0 ? ((activeUsers.length / totalMembers) * 100).toFixed(1) : 0,
-      },
-    });
-  } catch (error) {
-    console.error('Live stats error:', error);
-    res.status(500).json({ success: false, message: 'Server error fetching live stats', error: error.message });
-  }
-});
-
-router.get('/export-csv/:sessionId', isAuthenticated, isLecturer, async (req, res) => {
-  try {
-    const { sessionId } = req.params;
-    const session = await Session.findById(sessionId);
-    if (!session) return res.status(404).json({ success: false, message: 'Session not found' });
-    if (session.lecturer.toString() !== req.session.userId) return res.status(403).json({ success: false, message: 'Access denied.' });
-
-    const messages = await Message.find({ sessionId, isDeleted: false })
-      .populate('userId', 'displayName email role').sort({ timestamp: 1 });
-
-    const totalMessages = messages.length;
-    const activeUsers = [...new Set(messages.map(m => m.userId?._id?.toString()))].length;
-    const totalMembers = await Membership.countDocuments({ sessionId });
-
-    const typeCounts = { QUESTION: 0, COMMENT: 0, CONFUSION: 0 };
-    messages.forEach(m => { if (typeCounts[m.type] !== undefined) typeCounts[m.type]++; });
-
-    let csv = 'Session Analytics Export\n';
-    csv += `Session Title,${session.title}\n`;
-    csv += `Module Code,${session.moduleCode || 'N/A'}\n`;
-    csv += `Join Code,${session.joinCode}\n`;
-    csv += `Export Date,${new Date().toISOString()}\n\n`;
-    csv += 'Summary Statistics\n';
-    csv += `Total Messages,${totalMessages}\n`;
-    csv += `Active Contributors,${activeUsers}\n`;
-    csv += `Total Members,${totalMembers}\n`;
-    csv += `Participation Rate,${totalMembers > 0 ? ((activeUsers / totalMembers) * 100).toFixed(1) : 0}%\n`;
-    csv += `Questions,${typeCounts.QUESTION}\n`;
-    csv += `Comments,${typeCounts.COMMENT}\n`;
-    csv += `Confusion,${typeCounts.CONFUSION}\n\n`;
-    csv += 'Message Log\n';
-    csv += 'Timestamp,User,Role,Type,Identity Mode,Message\n';
-    messages.forEach(msg => {
-      const timestamp = new Date(msg.timestamp).toISOString();
-      const user = msg.userId?.displayName || 'Unknown';
-      const role = msg.userId?.role || 'student';
-      const type = msg.type || 'COMMENT';
-      const identityMode = msg.identityMode || 'identified';
-      const text = `"${(msg.text || '').replace(/"/g, '""')}"`;
-      csv += `${timestamp},${user},${role},${type},${identityMode},${text}\n`;
-    });
-
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename="session_${session.joinCode}_analytics.csv"`);
-    res.send(csv);
-  } catch (error) {
-    console.error('CSV export error:', error);
-    res.status(500).json({ success: false, message: 'Server error exporting CSV', error: error.message });
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 
@@ -263,13 +232,31 @@ router.get('/macro', isAuthenticated, isLecturer, async (req, res) => {
 
     const lecturerSessions = await Session.find({ lecturer: lecturerId }).sort({ createdAt: 1 });
     if (!lecturerSessions || lecturerSessions.length === 0) {
-      return res.json({ success: true, sessions: [], modules: [] });
+      return res.json({ success: true, sessions: [], modules: [], confusionTopics: [] });
     }
 
     const modules = [...new Set(lecturerSessions.map(s => s.moduleCode).filter(Boolean))];
     const filteredSessions = moduleFilter
       ? lecturerSessions.filter(s => s.moduleCode === moduleFilter)
       : lecturerSessions;
+
+    const stopWords = new Set([
+      'the','a','an','is','are','was','were','be','been','being','have','has','had',
+      'do','does','did','will','would','could','should','may','might','must','shall',
+      'can','need','dare','ought','used','to','of','in','for','on','with','at','by',
+      'from','as','into','through','during','before','after','above','below','between',
+      'under','again','further','then','once','here','there','when','where','why','how',
+      'all','each','few','more','most','other','some','such','no','nor','not','only',
+      'own','same','so','than','too','very','just','and','but','if','or','because',
+      'until','while','this','that','these','those','what','which','who','whom','i',
+      'me','my','we','our','you','your','he','him','his','she','her','it','its',
+      'they','them','their','am','get','got','also','like','know','think','dont',
+      "don't",'im',"i'm",'about','yes','yeah','ok','okay','really','much','thing',
+      'things','something','anything','everything','nothing','way','well','still',
+      'even','back','going','come','make','made','take','want','see','look','find'
+    ]);
+
+    const confusionTopicMap = {};
 
     const sessionAnalytics = await Promise.all(
       filteredSessions.map(async (session) => {
@@ -287,9 +274,26 @@ router.get('/macro', isAuthenticated, isLecturer, async (req, res) => {
 
         const activeUserIds = await Message.distinct('userId', { sessionId, isDeleted: false });
         const totalMembers = await Membership.countDocuments({ sessionId });
-        const participationRate = totalMembers > 0 ? ((activeUserIds.length / totalMembers) * 100).toFixed(1) : '0.0';
+        const participationRate = totalMembers > 0 ? Math.min(100, ((activeUserIds.length / totalMembers) * 100)).toFixed(1) : '0.0';
         const confusionRate = totalMessages > 0 ? ((typeCounts.CONFUSION / totalMessages) * 100).toFixed(1) : '0.0';
         const questionRate = totalMessages > 0 ? ((typeCounts.QUESTION / totalMessages) * 100).toFixed(1) : '0.0';
+
+        const confusionMessages = await Message.find({
+          sessionId, isDeleted: false, type: 'CONFUSION'
+        }).select('text');
+
+        confusionMessages.forEach(msg => {
+          if (!msg.text) return;
+          const words = msg.text.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/)
+            .filter(word => word.length > 2 && !stopWords.has(word));
+          words.forEach(word => {
+            if (!confusionTopicMap[word]) {
+              confusionTopicMap[word] = { word: word, count: 0, sessions: new Set() };
+            }
+            confusionTopicMap[word].count++;
+            confusionTopicMap[word].sessions.add(session.title);
+          });
+        });
 
         return {
           sessionId: session._id, title: session.title, moduleCode: session.moduleCode || '',
@@ -300,7 +304,18 @@ router.get('/macro', isAuthenticated, isLecturer, async (req, res) => {
       })
     );
 
-    res.json({ success: true, sessions: sessionAnalytics, modules: modules, totalSessions: sessionAnalytics.length });
+    const confusionTopics = Object.values(confusionTopicMap)
+      .map(t => ({ word: t.word, count: t.count, sessionCount: t.sessions.size, sessions: [...t.sessions] }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 20);
+
+    res.json({
+      success: true,
+      sessions: sessionAnalytics,
+      modules: modules,
+      totalSessions: sessionAnalytics.length,
+      confusionTopics: confusionTopics,
+    });
   } catch (error) {
     console.error('Macro analytics error:', error);
     res.status(500).json({ success: false, message: 'Failed to load cross-session analytics', error: error.message });

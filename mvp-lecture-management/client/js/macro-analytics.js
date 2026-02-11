@@ -1,5 +1,91 @@
 var macroChartInstances = {};
 
+function generateInsight(sessions) {
+  if (!sessions || sessions.length < 2) return '';
+  var insights = [];
+
+  var participations = sessions.map(function(s) { return parseFloat(s.participationRate); });
+  var first = participations[0];
+  var last = participations[participations.length - 1];
+  var diff = last - first;
+  if (Math.abs(diff) >= 5) {
+    if (diff > 0) {
+      insights.push('Participation has increased by ' + diff.toFixed(1) + '% from the first to the latest session, suggesting growing student engagement.');
+    } else {
+      insights.push('Participation has decreased by ' + Math.abs(diff).toFixed(1) + '% since the first session. Consider introducing new engagement strategies.');
+    }
+  }
+
+  var highestConfusion = sessions.reduce(function(max, s) {
+    return parseFloat(s.confusionRate) > parseFloat(max.confusionRate) ? s : max;
+  }, sessions[0]);
+  if (parseFloat(highestConfusion.confusionRate) > 15) {
+    insights.push('"' + highestConfusion.title + '" had the highest confusion rate at ' + highestConfusion.confusionRate + '%. Review the topic delivery for this session.');
+  }
+
+  var lowestParticipation = sessions.reduce(function(min, s) {
+    return parseFloat(s.participationRate) < parseFloat(min.participationRate) ? s : min;
+  }, sessions[0]);
+  if (parseFloat(lowestParticipation.participationRate) < 50 && sessions.length > 1) {
+    insights.push('"' + lowestParticipation.title + '" had the lowest participation at ' + lowestParticipation.participationRate + '%. Consider what factors may have discouraged engagement.');
+  }
+
+  var totalQuestions = sessions.reduce(function(s, x) { return s + x.questions; }, 0);
+  var totalConfusion = sessions.reduce(function(s, x) { return s + x.confusion; }, 0);
+  if (totalQuestions > 0 && totalConfusion > 0) {
+    var ratio = (totalQuestions / totalConfusion).toFixed(1);
+    if (parseFloat(ratio) > 2) {
+      insights.push('Students ask ' + ratio + 'x more questions than confusion signals, indicating active learning behaviour.');
+    } else if (parseFloat(ratio) < 0.5) {
+      insights.push('Confusion signals outnumber questions. Students may be struggling but not asking for help.');
+    }
+  }
+
+  return insights.length > 0 ? insights.join(' ') : 'Collect more session data to generate cross-session insights.';
+}
+
+function renderConfusionTopics(confusionTopics) {
+  if (!confusionTopics || confusionTopics.length === 0) {
+    return '<p style="color:var(--text-secondary);text-align:center;padding:16px;">No confusion messages recorded yet. Confusion topics will appear here as students flag areas of difficulty.</p>';
+  }
+
+  var recurring = confusionTopics.filter(function(t) { return t.sessionCount > 1; });
+  var all = confusionTopics.slice(0, 10);
+
+  var html = '';
+
+  if (recurring.length > 0) {
+    html += '<div style="margin-bottom:16px;">';
+    html += '<div style="font-size:13px;font-weight:600;color:#ef4444;margin-bottom:8px;">Recurring across multiple sessions:</div>';
+    html += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+    recurring.forEach(function(t) {
+      html += '<div style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:8px 14px;font-size:13px;">';
+      html += '<span style="font-weight:600;color:#ef4444;">' + t.word + '</span>';
+      html += '<span style="color:var(--text-secondary);margin-left:6px;">(' + t.count + 'x in ' + t.sessionCount + ' sessions)</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+    html += '</div>';
+  }
+
+  html += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+  all.forEach(function(t) {
+    var opacity = Math.max(0.5, Math.min(1, t.count / 5));
+    html += '<span style="background:rgba(245,158,11,' + (opacity * 0.2) + ');border:1px solid rgba(245,158,11,0.3);border-radius:20px;padding:6px 12px;font-size:12px;color:var(--text-color);">';
+    html += t.word + ' <span style="font-weight:600;">(' + t.count + ')</span>';
+    html += '</span>';
+  });
+  html += '</div>';
+
+  if (recurring.length > 0) {
+    html += '<div style="margin-top:12px;padding:10px 14px;background:rgba(239,68,68,0.08);border-radius:8px;font-size:12px;color:var(--text-secondary);border-left:3px solid #ef4444;">';
+    html += 'These recurring confusion topics appear across multiple sessions. Consider redesigning how these concepts are taught.';
+    html += '</div>';
+  }
+
+  return html;
+}
+
 async function loadMacroDashboard(moduleFilter) {
   var container = document.getElementById('macro-dashboard-content');
   if (!container) return;
@@ -16,6 +102,7 @@ async function loadMacroDashboard(moduleFilter) {
 
     var sessions = result.sessions || [];
     var modules = result.modules || [];
+    var confusionTopics = result.confusionTopics || [];
 
     var filterHtml = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">' +
       '<label style="font-size:13px;color:var(--text-secondary);">Filter by module:</label>' +
@@ -36,9 +123,12 @@ async function loadMacroDashboard(moduleFilter) {
     }
 
     var totalMsgs = sessions.reduce(function(s, x) { return s + x.totalMessages; }, 0);
-    var totalStudents = sessions.reduce(function(s, x) { return s + x.totalMembers; }, 0);
-    var avgParticipation = (sessions.reduce(function(s, x) { return s + parseFloat(x.participationRate); }, 0) / sessions.length).toFixed(1);
+    var totalActiveStudents = sessions.reduce(function(s, x) { return s + x.activeUsers; }, 0);
+    var totalEnrolled = sessions.reduce(function(s, x) { return s + x.totalMembers; }, 0);
+    var avgParticipation = (sessions.reduce(function(s, x) { return s + Math.min(100, parseFloat(x.participationRate)); }, 0) / sessions.length).toFixed(1);
     var avgConfusion = (sessions.reduce(function(s, x) { return s + parseFloat(x.confusionRate); }, 0) / sessions.length).toFixed(1);
+
+    var insightText = generateInsight(sessions);
 
     container.innerHTML = filterHtml + `
       <div class="analytics-stats-row" style="margin-bottom:24px;">
@@ -48,8 +138,9 @@ async function loadMacroDashboard(moduleFilter) {
           <div class="stat-sub">Across ${sessions.length} sessions</div>
         </div>
         <div class="analytics-stat-card stat-green">
-          <div class="stat-label">Total Students</div>
-          <div class="stat-value">${totalStudents}</div>
+          <div class="stat-label">Active / Enrolled</div>
+          <div class="stat-value">${totalActiveStudents}/${totalEnrolled}</div>
+          <div class="stat-sub">Across all sessions</div>
         </div>
         <div class="analytics-stat-card stat-orange">
           <div class="stat-label">Avg Participation</div>
@@ -60,6 +151,12 @@ async function loadMacroDashboard(moduleFilter) {
           <div class="stat-value">${avgConfusion}%</div>
         </div>
       </div>
+
+      ${insightText ? `
+      <div style="margin-bottom:24px;padding:14px 18px;background:rgba(59,130,246,0.08);border-left:4px solid #3b82f6;border-radius:0 8px 8px 0;font-size:13px;line-height:1.6;color:var(--text-color);">
+        <span style="font-weight:600;color:#3b82f6;">Teaching Insights:</span> ${insightText}
+      </div>
+      ` : ''}
 
       <div class="analytics-charts-row" style="margin-bottom:24px;">
         <div class="analytics-chart-card chart-wide">
@@ -91,6 +188,16 @@ async function loadMacroDashboard(moduleFilter) {
         </div>
       </div>
 
+      <div class="analytics-chart-card" style="margin-bottom:24px;">
+        <h3 class="chart-title" style="display:flex;align-items:center;gap:8px;">
+          <span style="color:#f59e0b;">&#9888;</span> Confusion Hotspots
+        </h3>
+        <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">Keywords extracted from confusion-tagged messages across sessions. Recurring topics may indicate concepts that need redesigned delivery.</p>
+        <div id="confusion-topics-content">
+          ${renderConfusionTopics(confusionTopics)}
+        </div>
+      </div>
+
       <div class="analytics-chart-card">
         <h3 class="chart-title">Cross-Session Breakdown</h3>
         <div style="overflow-x:auto;">
@@ -109,13 +216,14 @@ async function loadMacroDashboard(moduleFilter) {
             </thead>
             <tbody>
               ${sessions.map(function(s) {
+                var cappedParticipation = Math.min(100, parseFloat(s.participationRate)).toFixed(1);
                 return '<tr style="border-bottom:1px solid var(--border-color);">' +
                   '<td style="padding:10px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + s.title + '</td>' +
                   '<td style="padding:10px;">' + (s.moduleCode || '-') + '</td>' +
                   '<td style="padding:10px;">' + new Date(s.date).toLocaleDateString() + '</td>' +
                   '<td style="padding:10px;">' + s.totalMessages + '</td>' +
                   '<td style="padding:10px;">' + s.activeUsers + '/' + s.totalMembers + '</td>' +
-                  '<td style="padding:10px;">' + s.participationRate + '%</td>' +
+                  '<td style="padding:10px;">' + cappedParticipation + '%</td>' +
                   '<td style="padding:10px;' + (parseFloat(s.confusionRate) > 20 ? 'color:#ef4444;font-weight:600;' : '') + '">' + s.confusionRate + '%</td>' +
                   '<td style="padding:10px;">' + s.questionRate + '%</td>' +
                 '</tr>';
@@ -184,7 +292,7 @@ async function loadMacroDashboard(moduleFilter) {
           labels: labels,
           datasets: [{
             label: 'Participation %',
-            data: sessions.map(function(s){ return parseFloat(s.participationRate); }),
+            data: sessions.map(function(s){ return Math.min(100, parseFloat(s.participationRate)); }),
             borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)',
             fill: true, tension: 0.3, pointRadius: 5, pointBackgroundColor: '#10b981'
           }]
