@@ -66,7 +66,8 @@ function displaySessions(sessions) {
         <button class="btn btn-secondary btn-small" onclick="viewAnalytics('${session._id || session.id}', '${session.title}')">
           📊 Analytics
         </button>
-        ${session.status === 'active' ? `
+        ${session.status === 'active' ?
+          `
           <button class="btn btn-danger btn-small" onclick="endSession('${session._id || session.id}')">
             End Session
           </button>
@@ -146,7 +147,7 @@ async function viewAnalytics(sessionId, title) {
     console.error('Analytics error:', error);
     document.getElementById('analytics-content').innerHTML =
       `<div style="padding: 40px; text-align: center; color: var(--text-color);">
-        <h3 style="color: var(--danger-color);">⚠️ Error Loading Analytics</h3>
+        <h3 style="color: var(--danger-color);">Error Loading Analytics</h3>
         <p style="margin-top: 12px;">${error.message}</p>
         <p style="color: var(--text-secondary); margin-top: 12px;">Please try again or contact support if the issue persists.</p>
       </div>`;
@@ -171,7 +172,7 @@ function displayAnalytics(analytics) {
 
   container.innerHTML = `
     <div class="analytics-stats-row">
-      <div class="analytics-stat-card stat-purple">
+      <div class="analytics-stat-card stat-orange">
         <div class="stat-label">Total Messages</div>
         <div class="stat-value">${summary.totalMessages || 0}</div>
       </div>
@@ -184,7 +185,7 @@ function displayAnalytics(analytics) {
         <div class="stat-label">Participation Rate</div>
         <div class="stat-value">${summary.participationRate || 0}%</div>
       </div>
-      <div class="analytics-stat-card stat-blue">
+      <div class="analytics-stat-card stat-green">
         <div class="stat-label">Messages/Minute</div>
         <div class="stat-value">${summary.messagesPerMinute || 0}</div>
         <div class="stat-sub">Last 5 min: ${summary.messagesLast5Min || 0}</div>
@@ -195,19 +196,19 @@ function displayAnalytics(analytics) {
       <div class="indicator-card indicator-confusion">
         <div class="indicator-content">
           <div class="indicator-info">
-            <div class="indicator-label">😕 Confusion Rate</div>
+            <div class="indicator-label">Confusion Rate</div>
             <div class="indicator-value ${parseFloat(confRate) > 20 ? 'text-danger' : ''}">${confRate}%</div>
           </div>
           <div class="indicator-emoji">😕</div>
         </div>
         <div class="indicator-footer">
-          ${parseFloat(confRate) > 20 ? '⚠️ High confusion - consider clarifying recent topics' : '✅ Normal confusion levels'}
+          ${parseFloat(confRate) > 20 ? 'High confusion - consider clarifying recent topics' : 'Normal confusion levels'}
         </div>
       </div>
       <div class="indicator-card indicator-question">
         <div class="indicator-content">
           <div class="indicator-info">
-            <div class="indicator-label">❓ Question Rate</div>
+            <div class="indicator-label">Question Rate</div>
             <div class="indicator-value">${questRate}%</div>
           </div>
           <div class="indicator-emoji">❓</div>
@@ -220,15 +221,15 @@ function displayAnalytics(analytics) {
 
     <div class="analytics-charts-row">
       <div class="analytics-chart-card chart-wide">
-        <h3 class="chart-title">📈 Engagement Over Time</h3>
+        <h3 class="chart-title">Engagement Over Time</h3>
         <div class="chart-container">
           <canvas id="timeline-chart"></canvas>
         </div>
-        ${peakActivity ? `<div class="peak-activity">🔥 Peak activity: <strong>${peakActivity.time}</strong> (${peakActivity.count} messages)</div>` : ''}
+        ${peakActivity ? `<div class="peak-activity">Peak activity: <strong>${peakActivity.time}</strong> (${peakActivity.count} messages)</div>` : ''}
       </div>
       
       <div class="analytics-chart-card chart-narrow">
-        <h3 class="chart-title">📊 Message Types</h3>
+        <h3 class="chart-title">Message Types</h3>
         <div class="chart-container">
           <canvas id="type-chart"></canvas>
         </div>
@@ -237,7 +238,7 @@ function displayAnalytics(analytics) {
 
     <div class="analytics-bottom-row">
       <div class="analytics-chart-card">
-        <h3 class="chart-title">🔒 Identity Mode Usage</h3>
+        <h3 class="chart-title">Identity Mode Usage</h3>
         <div class="chart-container-small">
           <canvas id="identity-chart"></canvas>
         </div>
@@ -261,9 +262,9 @@ function displayAnalytics(analytics) {
       </div>
 
       <div class="analytics-chart-card">
-        <h3 class="chart-title">🔤 Top Keywords</h3>
+        <h3 class="chart-title">Top Keywords</h3>
         <div class="keyword-cloud">
-          ${(keywords || []).length > 0 ? 
+          ${(keywords || []).length > 0 ?
             keywords.map((k, i) => {
               const size = Math.max(12, 20 - i * 1.2);
               const opacity = Math.max(0.6, 1 - i * 0.04);
@@ -278,13 +279,13 @@ function displayAnalytics(analytics) {
     ${topContributors && topContributors.length > 0 ? `
     <div class="analytics-contributors">
       <div class="analytics-chart-card">
-        <h3 class="chart-title">🏆 Top Contributors</h3>
+        <h3 class="chart-title">Top Contributors</h3>
         <div class="contributors-list">
           ${topContributors.slice(0, 5).map((c, i) => `
             <div class="contributor-item">
               <div class="contributor-rank">#${i + 1}</div>
               <div class="contributor-name">${c.displayName || c.alias || 'Anonymous'}</div>
-              <div class="contributor-count">${c.count} msgs</div>
+              <div class="contributor-count">${c.messageCount || 0} msgs</div>
             </div>
           `).join('')}
         </div>
@@ -421,134 +422,13 @@ function initializeCharts(analytics) {
   }
 }
 
-let chartInstances = {};
-
-function createEnhancedCharts(analytics) {
-  const { messagesByType, identityModes, timeline } = analytics;
-
-  if (chartInstances.typeChart) chartInstances.typeChart.destroy();
-  if (chartInstances.timelineChart) chartInstances.timelineChart.destroy();
-  if (chartInstances.identityChart) chartInstances.identityChart.destroy();
-
-  const typeCtx = document.getElementById('type-chart')?.getContext('2d');
-  if (typeCtx) {
-    chartInstances.typeChart = new Chart(typeCtx, {
-      type: 'doughnut',
-      data: {
-        labels: ['❓ Questions', '💬 Comments', '😕 Confusion'],
-        datasets: [{
-          data: [
-            messagesByType?.QUESTION || 0, 
-            messagesByType?.COMMENT || 0, 
-            messagesByType?.CONFUSION || 0
-          ],
-          backgroundColor: ['#3b82f6', '#10b981', '#f59e0b'],
-          borderWidth: 0
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { 
-            position: 'bottom',
-            labels: { 
-              color: getComputedStyle(document.body).getPropertyValue('--text-color') || '#fff',
-              padding: 12,
-              font: { size: 11 }
-            }
-          }
-        }
-      }
-    });
-  }
-
-  const timelineCtx = document.getElementById('timeline-chart')?.getContext('2d');
-  if (timelineCtx && timeline?.length > 0) {
-    chartInstances.timelineChart = new Chart(timelineCtx, {
-      type: 'line',
-      data: {
-        labels: timeline.map(d => d.time),
-        datasets: [{
-          label: 'Messages',
-          data: timeline.map(d => d.count),
-          borderColor: '#667eea',
-          backgroundColor: 'rgba(102, 126, 234, 0.15)',
-          tension: 0.4,
-          fill: true,
-          pointRadius: 4,
-          pointBackgroundColor: '#667eea'
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false }
-        },
-        scales: {
-          y: { 
-            beginAtZero: true,
-            grid: { color: 'rgba(255,255,255,0.1)' },
-            ticks: { color: getComputedStyle(document.body).getPropertyValue('--text-secondary') || '#9ca3af' }
-          },
-          x: {
-            grid: { display: false },
-            ticks: { 
-              color: getComputedStyle(document.body).getPropertyValue('--text-secondary') || '#9ca3af',
-              maxRotation: 45
-            }
-          }
-        }
-      }
-    });
-  }
-
-  const identityCtx = document.getElementById('identity-chart')?.getContext('2d');
-  if (identityCtx) {
-    chartInstances.identityChart = new Chart(identityCtx, {
-      type: 'bar',
-      data: {
-        labels: ['Anonymous', 'Alias', 'Real Name'],
-        datasets: [{
-          data: [
-            identityModes?.anonymous || 0,
-            identityModes?.pseudonymous || 0,
-            identityModes?.identified || 0
-          ],
-          backgroundColor: ['#6b7280', '#667eea', '#10b981'],
-          borderRadius: 8,
-          borderSkipped: false
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false }
-        },
-        scales: {
-          y: { 
-            beginAtZero: true,
-            grid: { color: 'rgba(255,255,255,0.1)' },
-            ticks: { color: getComputedStyle(document.body).getPropertyValue('--text-secondary') || '#9ca3af' }
-          },
-          x: {
-            grid: { display: false },
-            ticks: { color: getComputedStyle(document.body).getPropertyValue('--text-secondary') || '#9ca3af' }
-          }
-        }
-      }
-    });
-  }
-}
-
 document.getElementById('close-analytics-btn').addEventListener('click', () => {
   document.getElementById('analytics-modal').classList.remove('show');
 });
 
 async function endSession(sessionId) {
-  if (!confirm('Are you sure you want to end this session?')) return;
+  if (!confirm('Are you sure you want to end this session?'))
+    return;
 
   try {
     const response = await fetch(`/api/sessions/${sessionId}/end`, {
@@ -578,7 +458,7 @@ function exportToCSV() {
 
   const btn = document.querySelector('.export-csv-btn');
   const originalText = btn.innerHTML;
-  btn.innerHTML = '⏳ Exporting...';
+  btn.innerHTML = 'Exporting...';
   btn.disabled = true;
 
   fetch(`/api/analytics/export-csv/${sessionId}`, {
@@ -599,13 +479,13 @@ function exportToCSV() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      alert('✅ Analytics exported successfully!');
+      alert('Analytics exported successfully!');
       btn.innerHTML = originalText;
       btn.disabled = false;
     })
     .catch(error => {
       console.error('CSV export error:', error);
-      alert('❌ Failed to export CSV');
+      alert('Failed to export CSV');
       btn.innerHTML = originalText;
       btn.disabled = false;
     });

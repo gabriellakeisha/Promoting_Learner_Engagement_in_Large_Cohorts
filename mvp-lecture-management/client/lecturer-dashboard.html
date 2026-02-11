@@ -45,14 +45,11 @@
 </head>
 
 <body>
-  <!-- Navigation -->
   <nav class="navbar">
     <div class="navbar-content">
       <div class="navbar-brand"> 🔊 Echo Class - Lecturer</div>
       <div class="navbar-user">
-        <!-- Avatar (clickable) -->
         <div class="navbar-avatar" id="navbar-avatar" onclick="openProfileModal()" title="Edit Profile">
-          <!-- Will be populated by JS -->
         </div>
         <div class="user-info">
           <div class="user-name" id="user-name">Loading...</div>
@@ -73,7 +70,6 @@
 
       <div id="alert-container"></div>
 
-      <!-- Create Session Modal -->
       <div id="create-modal" class="modal-overlay">
         <div style="background: white; border-radius: 16px; padding: 32px; max-width: 500px; width: 90%;">
           <h3 style="margin-bottom: 24px;">Create New Session</h3>
@@ -98,7 +94,6 @@
         </div>
       </div>
 
-      <!-- Sessions List -->
       <div id="loading">
         <div class="spinner"></div>
       </div>
@@ -110,28 +105,37 @@
         </div>
       </div>
 
-      <!-- Analytics Modal -->
-      <div id="analytics-modal" class="analytics-overlay">
-        <div style="max-width: 1200px; margin: 0 auto; background: white; border-radius: 16px; padding: 32px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
-            <h2 id="analytics-title">Session Analytics</h2>
-            <div style="display: flex; gap: 12px;">
-              <button class="btn btn-secondary export-csv-btn" onclick="exportToCSV()">
-                📊 Export CSV
-              </button>
-              <button class="btn btn-secondary btn-small" id="close-analytics-btn">Close</button>
-            </div>
-          </div>
-
-          <div id="analytics-content">
-            <div class="spinner"></div>
-          </div>
+      <!-- Semester Analytics (Macro) -->
+      <div id="macro-dashboard-section" style="margin-top: 32px;">
+        <h2 style="margin-bottom: 16px;">Semester Analytics</h2>
+        <div id="macro-dashboard-content" style="background: var(--card-bg, #1e293b); border-radius: 16px; padding: 24px;">
+          <div class="spinner" style="margin: 20px auto;"></div>
         </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Analytics Modal (per-session micro) -->
+  <div id="analytics-modal" class="analytics-overlay">
+    <div style="max-width: 1200px; margin: 0 auto; background: white; border-radius: 16px; padding: 32px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
+        <h2 id="analytics-title">Session Analytics</h2>
+        <div style="display: flex; gap: 12px;">
+          <button class="btn btn-secondary export-csv-btn" onclick="exportToCSV()">
+            Export CSV
+          </button>
+          <button class="btn btn-secondary btn-small" id="close-analytics-btn">Close</button>
+        </div>
+      </div>
+      <div id="analytics-content">
+        <div class="spinner"></div>
       </div>
     </div>
   </div>
 
   <script src="/js/lecturer-dashboard.js"></script>
+  <script src="/js/macro-analytics.js"></script>
   <script src="/js/profile.js"></script>
   <script src="/js/dark-mode.js"></script>
   <script src="/js/manage-students.js"></script>
