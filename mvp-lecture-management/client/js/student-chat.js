@@ -16,7 +16,7 @@ console.log('🚀 student-chat.js loaded');
   var style = document.createElement('style');
   style.id = 'reaction-styles';
   style.textContent = `
-    /* WhatsApp-style Reaction Picker */
+    /* Emoji Reaction Picker */
     .reaction-picker {
       background: #1f2c34;
       border-radius: 24px;
@@ -709,10 +709,33 @@ function appendMessage(message) {
 
   var attachmentHTML = '';
   if (message.attachment && message.attachment.dataUrl) {
+    var fname = escapeHtml(message.attachment.filename || 'file');
+    var dataUrl = message.attachment.dataUrl;
     if (message.attachment.mimetype && message.attachment.mimetype.startsWith('image/')) {
-      attachmentHTML = '<div class="message-attachment"><img src="' + message.attachment.dataUrl + '" alt="' + escapeHtml(message.attachment.filename || 'image') + '" style="max-width:100%;max-height:300px;border-radius:8px;margin-top:6px;cursor:pointer;" onclick="window.open(this.src,\'_blank\')"></div>';
+      attachmentHTML = '<div class="message-attachment attachment-image-wrap">' +
+        '<img src="' + dataUrl + '" alt="' + fname + '" class="attachment-thumb" onclick="previewAttachment(\'' + dataUrl.replace(/'/g, "\\'") + '\', \'' + fname.replace(/'/g, "\\'") + '\', true)">' +
+        '<div class="attachment-actions">' +
+        '<button class="attachment-action-btn" onclick="previewAttachment(\'' + dataUrl.replace(/'/g, "\\'") + '\', \'' + fname.replace(/'/g, "\\'") + '\', true)" title="Preview">🔍 Preview</button>' +
+        '<button class="attachment-action-btn" onclick="downloadAttachment(\'' + dataUrl.replace(/'/g, "\\'") + '\', \'' + fname.replace(/'/g, "\\'") + '\')" title="Download">⬇️ Download</button>' +
+        '</div></div>';
     } else {
-      attachmentHTML = '<div class="message-attachment" style="margin-top:6px;"><a href="' + message.attachment.dataUrl + '" download="' + escapeHtml(message.attachment.filename || 'file') + '" style="display:inline-flex;align-items:center;gap:6px;padding:8px 12px;background:rgba(0,168,132,0.15);border-radius:8px;color:#00a884;text-decoration:none;font-size:13px;">📎 ' + escapeHtml(message.attachment.filename || 'Download file') + '</a></div>';
+      var fileIcon = '📄';
+      var mime = message.attachment.mimetype || '';
+      if (mime.includes('pdf')) fileIcon = '📕';
+      else if (mime.includes('word') || mime.includes('document')) fileIcon = '📘';
+      else if (mime.includes('text')) fileIcon = '📝';
+      var fileSize = message.attachment.size ? formatFileSize(message.attachment.size) : '';
+      attachmentHTML = '<div class="message-attachment attachment-file-wrap">' +
+        '<div class="attachment-file-info">' +
+        '<span class="attachment-file-icon">' + fileIcon + '</span>' +
+        '<div class="attachment-file-details">' +
+        '<span class="attachment-file-name">' + fname + '</span>' +
+        (fileSize ? '<span class="attachment-file-size">' + fileSize + '</span>' : '') +
+        '</div></div>' +
+        '<div class="attachment-actions">' +
+        '<button class="attachment-action-btn" onclick="previewAttachment(\'' + dataUrl.replace(/'/g, "\\'") + '\', \'' + fname.replace(/'/g, "\\'") + '\', false)" title="Preview">🔍 Preview</button>' +
+        '<button class="attachment-action-btn" onclick="downloadAttachment(\'' + dataUrl.replace(/'/g, "\\'") + '\', \'' + fname.replace(/'/g, "\\'") + '\')" title="Download">⬇️ Download</button>' +
+        '</div></div>';
     }
   }
   var lecturerBadge = isLecturer ? '<span class="lecturer-badge-inline">👨‍🏫 LECTURER</span>' : '';
@@ -746,7 +769,7 @@ function appendMessage(message) {
 
   var reactionsHTML = renderReactions(msgId, message.reactions);
 
-  // Poll rendering - WhatsApp style
+  // Poll rendering 
   var pollHTML = '';
   if (message.isPoll && message.poll) {
     pollHTML = renderPollHTML(message);
@@ -763,7 +786,7 @@ function appendMessage(message) {
 // EMOJI REACTION SYSTEM (Using emoji-picker-element)
 // ========================================
 
-// Quick reactions - the main 6 that appear first (like WhatsApp)
+// Quick reactions - the main 6 that appear first
 const QUICK_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
 let currentReactionMessageId = null;
@@ -1159,7 +1182,7 @@ window.scrollToMessage = scrollToMessage;
 window.toggleOptionsMenu = toggleOptionsMenu;
 
 // ========================================
-// POLL SYSTEM - WhatsApp Style
+// POLL SYSTEM 
 // ========================================
 
 function openPollCreator() {
@@ -1294,7 +1317,7 @@ async function viewPollVotes(pollId) {
   } catch (error) { console.error('View votes error:', error); }
 }
 
-// WhatsApp Style Poll Rendering
+// Style Poll Rendering
 function renderPollHTML(message) {
   var poll = message.poll;
   if (!poll) return '';
@@ -1304,16 +1327,16 @@ function renderPollHTML(message) {
   var isLecturer = currentUser && currentUser.role === 'lecturer';
   var msgId = message.id || message._id;
 
-  // WhatsApp style header
+  //  style header
   var headerHTML = '<div style="margin-bottom:12px;"><div style="font-size:16px;font-weight:600;color:white;margin-bottom:4px;">' + escapeHtml(poll.question) + '</div><div style="display:flex;align-items:center;gap:6px;color:#00a884;font-size:13px;"><span>📊</span><span>' + (poll.allowMultiple ? 'Select one or more' : 'Select one option') + '</span></div></div>';
 
-  // WhatsApp style options
+  // style options
   var optionsHTML = poll.options.map(function (opt) {
     var voteCount = opt.voteCount || opt.votes?.length || 0;
     var percentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
     var voted = opt.hasVoted;
 
-    // Radio circle style (like WhatsApp)
+    // Radio circle style 
     var circleHTML = voted ?
       '<div style="width:24px;height:24px;border-radius:50%;border:2px solid #00a884;background:#00a884;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>' :
       '<div style="width:24px;height:24px;border-radius:50%;border:2px solid #4a5568;flex-shrink:0;"></div>';
@@ -1359,3 +1382,192 @@ document.addEventListener('DOMContentLoaded', function () {
   console.log('📄 DOM ready, calling init()');
   init();
 });
+
+// ATTACHMENT PREVIEW 
+
+function formatFileSize(bytes) {
+  if (!bytes || bytes === 0) return '';
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+window._previewZoomLevel = 100;
+
+window.downloadAttachment = function(dataUrl, filename) {
+  var a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = filename || 'download';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+};
+
+window.previewAttachment = function(dataUrl, filename, isImage) {
+  var existing = document.getElementById('attachment-preview-overlay');
+  if (existing) existing.remove();
+
+  var overlay = document.createElement('div');
+  overlay.id = 'attachment-preview-overlay';
+  overlay.className = 'attachment-overlay';
+
+  var fname = escapeHtml(filename || 'file');
+  var safeDataUrl = dataUrl.replace(/'/g, "\\'");
+  var safeFname = fname.replace(/'/g, "\\'");
+
+  var isDocx = filename.toLowerCase().endsWith('.docx') || filename.toLowerCase().endsWith('.doc');
+  var isWordMime = dataUrl.startsWith('data:application/vnd.openxmlformats') || dataUrl.startsWith('data:application/msword');
+  var isPdf = dataUrl.startsWith('data:application/pdf');
+  var isText = dataUrl.startsWith('data:text/');
+
+  // Toolbar
+  var toolbarHTML =
+    '<div class="preview-toolbar">' +
+      '<div class="preview-toolbar-left">' +
+        '<span class="preview-toolbar-filename">' + fname + '</span>' +
+      '</div>' +
+      '<div class="preview-toolbar-right">' +
+        '<button class="preview-tool-btn" onclick="previewZoom(-1)" title="Zoom out">−</button>' +
+        '<span class="preview-zoom-label" id="preview-zoom-label">100%</span>' +
+        '<button class="preview-tool-btn" onclick="previewZoom(1)" title="Zoom in">+</button>' +
+        '<span class="preview-toolbar-divider"></span>' +
+        '<button class="preview-tool-btn" onclick="downloadAttachment(\'' + safeDataUrl + '\', \'' + safeFname + '\')" title="Download">⬇️</button>' +
+        '<button class="preview-tool-btn preview-close-x" onclick="closePreviewOverlay()" title="Close">✕</button>' +
+      '</div>' +
+    '</div>';
+
+  // Content
+  var contentHTML = '';
+
+  if (isImage) {
+    contentHTML =
+      '<div class="preview-document-area">' +
+        '<div class="preview-page-wrapper">' +
+          '<img src="' + dataUrl + '" alt="' + fname + '" class="preview-image" id="preview-zoomable">' +
+        '</div>' +
+      '</div>';
+
+  } else if (isPdf) {
+    // PDF: use iframe with the data URL — browsers render PDFs natively
+    contentHTML =
+      '<div class="preview-document-area preview-pdf-area">' +
+        '<iframe src="' + dataUrl + '" class="preview-pdf-iframe"></iframe>' +
+      '</div>';
+
+  } else if (isText) {
+    var textContent = '';
+    try {
+      var base64 = dataUrl.split(',')[1];
+      textContent = atob(base64);
+    } catch(e) { textContent = 'Could not decode text file'; }
+    contentHTML =
+      '<div class="preview-document-area">' +
+        '<div class="preview-page-wrapper">' +
+          '<div class="preview-doc-page" id="preview-zoomable">' +
+            '<pre style="white-space:pre-wrap;word-wrap:break-word;margin:0;font-size:14px;line-height:1.7;">' +
+            escapeHtml(textContent) + '</pre>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+  } else if ((isDocx || isWordMime) && typeof mammoth !== 'undefined') {
+    contentHTML =
+      '<div class="preview-document-area">' +
+        '<div id="docx-preview-container" class="preview-docx-loading">' +
+          '<div class="docx-spinner"></div>' +
+          '<p style="color:#9CA3AF;margin-top:16px;">Loading document preview...</p>' +
+        '</div>' +
+      '</div>';
+
+  } else {
+    var icon = (isDocx || isWordMime) ? '📘' : '📄';
+    contentHTML =
+      '<div class="preview-document-area">' +
+        '<div class="preview-unsupported">' +
+          '<span style="font-size:64px;">' + icon + '</span>' +
+          '<p style="font-size:18px;margin-top:16px;">' + fname + '</p>' +
+          '<p style="color:#9CA3AF;margin-top:8px;">Preview not available for this file type.<br>Click download to view.</p>' +
+        '</div>' +
+      '</div>';
+  }
+
+  overlay.innerHTML = toolbarHTML + contentHTML;
+
+  // Click outside to close
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay || e.target.classList.contains('preview-document-area')) {
+      closePreviewOverlay();
+    }
+  });
+
+  document.body.appendChild(overlay);
+  requestAnimationFrame(function() { overlay.classList.add('show'); });
+
+  // DOCX: convert with mammoth
+  if ((isDocx || isWordMime) && typeof mammoth !== 'undefined') {
+    try {
+      var base64Data = dataUrl.split(',')[1];
+      var binaryString = atob(base64Data);
+      var bytes = new Uint8Array(binaryString.length);
+      for (var i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      mammoth.convertToHtml({ arrayBuffer: bytes.buffer })
+        .then(function(result) {
+          var container = document.getElementById('docx-preview-container');
+          if (container) {
+            container.className = '';
+            container.innerHTML =
+              '<div class="preview-page-wrapper">' +
+                '<div class="preview-doc-page" id="preview-zoomable">' +
+                  result.value +
+                '</div>' +
+              '</div>';
+          }
+        })
+        .catch(function(err) {
+          console.error('Mammoth error:', err);
+          var container = document.getElementById('docx-preview-container');
+          if (container) {
+            container.innerHTML =
+              '<div class="preview-unsupported">' +
+                '<span style="font-size:64px;">📘</span>' +
+                '<p style="font-size:18px;margin-top:16px;">' + fname + '</p>' +
+                '<p style="color:#9CA3AF;margin-top:8px;">Could not preview this document.<br>Click download to view.</p>' +
+              '</div>';
+          }
+        });
+    } catch(e) {
+      console.error('DOCX preview error:', e);
+    }
+  }
+
+  // Reset zoom
+  window._previewZoomLevel = 100;
+  document.addEventListener('keydown', handlePreviewEsc);
+};
+
+window.previewZoom = function(direction) {
+  window._previewZoomLevel = Math.max(50, Math.min(200, window._previewZoomLevel + (direction * 10)));
+  var label = document.getElementById('preview-zoom-label');
+  if (label) label.textContent = window._previewZoomLevel + '%';
+  var el = document.getElementById('preview-zoomable');
+  if (el) {
+    var scale = window._previewZoomLevel / 100;
+    el.style.transform = 'scale(' + scale + ')';
+    el.style.transformOrigin = 'top center';
+  }
+};
+
+function handlePreviewEsc(e) {
+  if (e.key === 'Escape') closePreviewOverlay();
+}
+
+window.closePreviewOverlay = function() {
+  var overlay = document.getElementById('attachment-preview-overlay');
+  if (overlay) {
+    overlay.classList.remove('show');
+    setTimeout(function() { overlay.remove(); }, 200);
+  }
+  document.removeEventListener('keydown', handlePreviewEsc);
+};

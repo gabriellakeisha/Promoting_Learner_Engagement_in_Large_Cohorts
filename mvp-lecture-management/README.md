@@ -26,7 +26,7 @@ Unlike existing tools (Vevox, Padlet, Slido, Mentimeter) which offer partial sol
 - **Configurable Identity Modes:** Anonymous (no identifier), Pseudonymous (consistent alias per session), Identified (real display name). Switchable per-message via the `+` menu.
 - **Message Threading & Replies:** Visual reply chains for peer-to-peer support and lecturer responses.
 - **Announcements & Pinned Messages:** Lecturer-only message types with distinct styling and filter support.
-- **Polls:** WhatsApp-style polls for quick comprehension checks with real-time anonymous voting.
+- **Polls:** Polls for quick comprehension checks with real-time anonymous voting.
 - **Emoji Reactions:** Low-barrier participation without adding to message volume.
 - **Edit & Delete:** Students edit/delete own messages; lecturers can moderate any message.
 - **Report Messages:** Lecturer can flag inappropriate content.
