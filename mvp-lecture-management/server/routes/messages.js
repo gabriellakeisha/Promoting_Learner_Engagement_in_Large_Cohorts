@@ -224,8 +224,7 @@ router.get('/session/:sessionId', isAuthenticated, verifySessionAccess, async (r
     console.log('Fetching messages for session:', sessionId);
 
     const messages = await Message.find({
-      sessionId,
-      isDeleted: false
+      sessionId
     })
       .sort({ createdAt: 1 })
       .skip(skip)
@@ -249,6 +248,9 @@ router.get('/session/:sessionId', isAuthenticated, verifySessionAccess, async (r
       type: msg.type,
       timestamp: msg.timestamp || msg.createdAt,
       isEdited: msg.isEdited,
+      editedAt: msg.editedAt || null,
+      isDeleted: msg.isDeleted || false,
+      deletedAt: msg.deletedAt || null,
       isPinned: msg.isPinned,
       isAnnouncement: msg.isAnnouncement,
       isReported: msg.isReported,
@@ -278,7 +280,7 @@ router.get('/session/:sessionId', isAuthenticated, verifySessionAccess, async (r
       username: msg.userId?.displayName || 'Unknown',
       userRole: msg.userId?.role || 'student',
       avatarUrl: msg.userId?.avatar?.imageUrl || null,
-      
+
       isPoll: msg.isPoll || false,
       poll: msg.isPoll && msg.poll ? {
         question: msg.poll.question,
@@ -334,23 +336,23 @@ router.delete('/:messageId', isAuthenticated, async (req, res) => {
       });
     }
 
-    await Message.findByIdAndDelete(messageId);
+    await message.softDelete(userId);
 
-    console.log(`✅ Message ${messageId} DELETED from MongoDB by ${userId}`);
+    console.log(`✅ Message ${messageId} SOFT DELETED by ${userId}`);
 
     const io = req.app.get('io');
     if (io) {
       const roomId = message.sessionId._id ? message.sessionId._id.toString() : message.sessionId.toString();
-      console.log('📡 Broadcasting delete to room: session-' + roomId);
       io.to(`session-${roomId}`).emit('message-deleted', {
         messageId: messageId,
-        deletedBy: userId
+        deletedBy: userId,
+        isDeleted: true
       });
     }
 
     res.json({
       success: true,
-      message: 'Message permanently deleted'
+      message: 'Message deleted'
     });
 
   } catch (error) {
@@ -394,6 +396,16 @@ router.put('/:messageId', isAuthenticated, async (req, res) => {
       });
     }
 
+    if (!message.originalText) {
+      message.originalText = message.text;
+    }
+    if (!message.editHistory) {
+      message.editHistory = [];
+    }
+    message.editHistory.push({
+      text: message.text,
+      editedAt: new Date()
+    });
     message.text = text.trim();
     message.isEdited = true;
     message.editedAt = new Date();

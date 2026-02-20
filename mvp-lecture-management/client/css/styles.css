@@ -3617,3 +3617,24 @@ body:not(.dark-mode) .alias-preview {
   color: white;
   border-color: #3b82f6;
 }
+
+/* Deleted message styling */
+.deleted-message {
+  opacity: 0.6;
+  pointer-events: none;
+}
+.deleted-message-content {
+  padding: 8px 16px;
+  color: #9CA3AF;
+  font-size: 13px;
+  font-style: italic;
+}
+.deleted-icon {
+  margin-right: 4px;
+}
+.edited-indicator {
+  font-size: 11px;
+  color: #9CA3AF;
+  font-style: italic;
+  margin-left: 4px;
+}

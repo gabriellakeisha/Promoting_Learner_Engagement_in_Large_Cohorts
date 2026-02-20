@@ -87,17 +87,17 @@ router.get('/lecturer/:sessionId', isAuthenticated, isLecturer, async (req, res)
 
     const allMessages = await Message.find({ sessionId, isDeleted: false }).select('text');
     const stopWords = new Set([
-      'the','a','an','is','are','was','were','be','been','being','have','has','had',
-      'do','does','did','will','would','could','should','may','might','must','shall',
-      'can','need','dare','ought','used','to','of','in','for','on','with','at','by',
-      'from','as','into','through','during','before','after','above','below','between',
-      'under','again','further','then','once','here','there','when','where','why','how',
-      'all','each','few','more','most','other','some','such','no','nor','not','only',
-      'own','same','so','than','too','very','just','and','but','if','or','because',
-      'until','while','this','that','these','those','what','which','who','whom','i',
-      'me','my','we','our','you','your','he','him','his','she','her','it','its',
-      'they','them','their','am','get','got','also','like','know','think','dont',
-      "don't",'im',"i'm",'about','yes','yeah','ok','okay'
+      'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had',
+      'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'shall',
+      'can', 'need', 'dare', 'ought', 'used', 'to', 'of', 'in', 'for', 'on', 'with', 'at', 'by',
+      'from', 'as', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'between',
+      'under', 'again', 'further', 'then', 'once', 'here', 'there', 'when', 'where', 'why', 'how',
+      'all', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only',
+      'own', 'same', 'so', 'than', 'too', 'very', 'just', 'and', 'but', 'if', 'or', 'because',
+      'until', 'while', 'this', 'that', 'these', 'those', 'what', 'which', 'who', 'whom', 'i',
+      'me', 'my', 'we', 'our', 'you', 'your', 'he', 'him', 'his', 'she', 'her', 'it', 'its',
+      'they', 'them', 'their', 'am', 'get', 'got', 'also', 'like', 'know', 'think', 'dont',
+      "don't", 'im', "i'm", 'about', 'yes', 'yeah', 'ok', 'okay'
     ]);
     const wordCounts = {};
     allMessages.forEach(msg => {
@@ -147,7 +147,7 @@ router.get('/export/:sessionId', isAuthenticated, isLecturer, async (req, res) =
     if (!session) return res.status(404).json({ success: false, message: 'Session not found' });
     if (session.lecturer.toString() !== req.session.userId) return res.status(403).json({ success: false, message: 'Access denied' });
 
-    const messages = await Message.find({ sessionId, isDeleted: false })
+    const messages = await Message.find({ sessionId })
       .populate('userId', 'displayName email role').sort({ timestamp: 1 });
 
     const totalMessages = messages.length;
@@ -171,15 +171,27 @@ router.get('/export/:sessionId', isAuthenticated, isLecturer, async (req, res) =
     csv += `Comments,${typeCounts.COMMENT}\n`;
     csv += `Confusion,${typeCounts.CONFUSION}\n\n`;
     csv += 'Message Log\n';
-    csv += 'Timestamp,User,Role,Type,Identity Mode,Message\n';
+    csv += 'Timestamp,User,Role,Type,Identity Mode,Status,Message,Original Text,Edit History\n';
     messages.forEach(msg => {
       const timestamp = new Date(msg.timestamp).toISOString();
       const user = msg.userId?.displayName || 'Unknown';
       const role = msg.userId?.role || 'student';
       const type = msg.type || 'COMMENT';
       const identityMode = msg.identityMode || 'identified';
+      const status = msg.isDeleted ? 'DELETED' : (msg.isEdited ? 'EDITED' : 'ACTIVE');
       const text = `"${(msg.text || '').replace(/"/g, '""')}"`;
-      csv += `${timestamp},${user},${role},${type},${identityMode},${text}\n`;
+      let originalText = '';
+      if (msg.originalText && msg.originalText !== msg.text) {
+        originalText = `"${msg.originalText.replace(/"/g, '""')}"`;
+      }
+      let editHistoryText = '';
+      if (msg.editHistory && msg.editHistory.length > 0) {
+        const historyParts = msg.editHistory.map(function(h) {
+          return h.text + ' (' + new Date(h.editedAt).toLocaleString() + ')';
+        });
+        editHistoryText = `"${historyParts.join(' → ').replace(/"/g, '""')}"`;
+      }
+      csv += `${timestamp},${user},${role},${type},${identityMode},${status},${text},${originalText},${editHistoryText}\n`;
     });
 
     res.setHeader('Content-Type', 'text/csv');
@@ -265,19 +277,19 @@ router.get('/macro', isAuthenticated, isLecturer, async (req, res) => {
     }
 
     const stopWords = new Set([
-      'the','a','an','is','are','was','were','be','been','being','have','has','had',
-      'do','does','did','will','would','could','should','may','might','must','shall',
-      'can','need','dare','ought','used','to','of','in','for','on','with','at','by',
-      'from','as','into','through','during','before','after','above','below','between',
-      'under','again','further','then','once','here','there','when','where','why','how',
-      'all','each','few','more','most','other','some','such','no','nor','not','only',
-      'own','same','so','than','too','very','just','and','but','if','or','because',
-      'until','while','this','that','these','those','what','which','who','whom','i',
-      'me','my','we','our','you','your','he','him','his','she','her','it','its',
-      'they','them','their','am','get','got','also','like','know','think','dont',
-      "don't",'im',"i'm",'about','yes','yeah','ok','okay','really','much','thing',
-      'things','something','anything','everything','nothing','way','well','still',
-      'even','back','going','come','make','made','take','want','see','look','find'
+      'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had',
+      'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'shall',
+      'can', 'need', 'dare', 'ought', 'used', 'to', 'of', 'in', 'for', 'on', 'with', 'at', 'by',
+      'from', 'as', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'between',
+      'under', 'again', 'further', 'then', 'once', 'here', 'there', 'when', 'where', 'why', 'how',
+      'all', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only',
+      'own', 'same', 'so', 'than', 'too', 'very', 'just', 'and', 'but', 'if', 'or', 'because',
+      'until', 'while', 'this', 'that', 'these', 'those', 'what', 'which', 'who', 'whom', 'i',
+      'me', 'my', 'we', 'our', 'you', 'your', 'he', 'him', 'his', 'she', 'her', 'it', 'its',
+      'they', 'them', 'their', 'am', 'get', 'got', 'also', 'like', 'know', 'think', 'dont',
+      "don't", 'im', "i'm", 'about', 'yes', 'yeah', 'ok', 'okay', 'really', 'much', 'thing',
+      'things', 'something', 'anything', 'everything', 'nothing', 'way', 'well', 'still',
+      'even', 'back', 'going', 'come', 'make', 'made', 'take', 'want', 'see', 'look', 'find'
     ]);
 
     const confusionTopicMap = {};
@@ -391,13 +403,13 @@ router.get('/ai-summary/:sessionId', isAuthenticated, isLecturer, async (req, re
     var participationRate = totalMembers > 0 ? ((uniqueContributors / totalMembers) * 100).toFixed(1) : 0;
 
     var typeCounts = { QUESTION: 0, COMMENT: 0, CONFUSION: 0, NONE: 0 };
-    messages.forEach(function(m) {
+    messages.forEach(function (m) {
       if (typeCounts[m.type] !== undefined) typeCounts[m.type]++;
       else typeCounts.NONE++;
     });
 
     var identityCounts = { anonymous: 0, pseudonymous: 0, identified: 0 };
-    messages.forEach(function(m) {
+    messages.forEach(function (m) {
       var mode = m.identityMode || 'identified';
       if (identityCounts[mode] !== undefined) identityCounts[mode]++;
     });
@@ -410,7 +422,7 @@ router.get('/ai-summary/:sessionId', isAuthenticated, isLecturer, async (req, re
     var bucketSize = 5;
     var maxSessionMinutes = 180;
     var buckets = {};
-    messages.forEach(function(msg) {
+    messages.forEach(function (msg) {
       var min = Math.floor((new Date(msg.timestamp) - new Date(sessionStart)) / 60000);
       if (min < 0 || min > maxSessionMinutes) return;
       var bucketKey = Math.floor(min / bucketSize) * bucketSize;
@@ -418,7 +430,7 @@ router.get('/ai-summary/:sessionId', isAuthenticated, isLecturer, async (req, re
       buckets[bucketKey]++;
     });
 
-    var coreMessages = messages.filter(function(m) {
+    var coreMessages = messages.filter(function (m) {
       var min = Math.floor((new Date(m.timestamp) - new Date(sessionStart)) / 60000);
       return min >= 0 && min <= maxSessionMinutes;
     });
@@ -430,12 +442,12 @@ router.get('/ai-summary/:sessionId', isAuthenticated, isLecturer, async (req, re
     var peakCount = 0;
     var quietBucket = null;
     var quietCount = Infinity;
-    Object.keys(buckets).forEach(function(k) {
+    Object.keys(buckets).forEach(function (k) {
       if (buckets[k] > peakCount) { peakCount = buckets[k]; peakBucket = parseInt(k); }
       if (buckets[k] < quietCount) { quietCount = buckets[k]; quietBucket = parseInt(k); }
     });
 
-    var firstHalfMsgs = coreMessages.filter(function(m) {
+    var firstHalfMsgs = coreMessages.filter(function (m) {
       return (new Date(m.timestamp) - new Date(sessionStart)) < coreDurationMs / 2;
     }).length;
     var secondHalfMsgs = coreMessages.length - firstHalfMsgs;
@@ -444,14 +456,14 @@ router.get('/ai-summary/:sessionId', isAuthenticated, isLecturer, async (req, re
     if (secondHalfMsgs > firstHalfMsgs * 1.4) engagementTrend = 'increasing';
     else if (firstHalfMsgs > secondHalfMsgs * 1.4) engagementTrend = 'decreasing';
 
-    var stopWords = new Set(['the','a','an','is','are','was','were','be','been','being','have','has','had','do','does','did','will','would','shall','should','may','might','must','can','could','i','me','my','we','our','you','your','he','him','his','she','her','it','its','they','them','their','this','that','these','those','what','which','who','whom','how','when','where','why','am','not','no','yes','so','if','or','and','but','for','nor','on','at','to','from','by','up','about','into','through','during','before','after','above','below','between','out','off','over','under','again','further','then','once','here','there','all','each','every','both','few','more','most','other','some','such','only','own','same','than','too','very','just','because','as','until','while','of','with','in','also','im','dont','cant','thats','its','ive','like','get','got','really','think','know','going','want','need','one','much','well','even','still','thing','right','back','way','make','say','said','see','go','come','take','give','tell','ask','try','use','find','let','put','keep','work','look','thanks','thank','good','great','nice','okay','ok','yeah','yep','sure','agree','lol','haha','wow','cool','interesting','helpful','clear','clearer','clarification','clarify','explanation','explain','example','similar','found','slides','textbook','lecture','class','professor','question','comment','please','sorry','maybe','actually','basically','definitely','probably','exactly','pretty','quite','anyway','though','seems','feel','lot','bit','now']);
+    var stopWords = new Set(['the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'shall', 'should', 'may', 'might', 'must', 'can', 'could', 'i', 'me', 'my', 'we', 'our', 'you', 'your', 'he', 'him', 'his', 'she', 'her', 'it', 'its', 'they', 'them', 'their', 'this', 'that', 'these', 'those', 'what', 'which', 'who', 'whom', 'how', 'when', 'where', 'why', 'am', 'not', 'no', 'yes', 'so', 'if', 'or', 'and', 'but', 'for', 'nor', 'on', 'at', 'to', 'from', 'by', 'up', 'about', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'between', 'out', 'off', 'over', 'under', 'again', 'further', 'then', 'once', 'here', 'there', 'all', 'each', 'every', 'both', 'few', 'more', 'most', 'other', 'some', 'such', 'only', 'own', 'same', 'than', 'too', 'very', 'just', 'because', 'as', 'until', 'while', 'of', 'with', 'in', 'also', 'im', 'dont', 'cant', 'thats', 'its', 'ive', 'like', 'get', 'got', 'really', 'think', 'know', 'going', 'want', 'need', 'one', 'much', 'well', 'even', 'still', 'thing', 'right', 'back', 'way', 'make', 'say', 'said', 'see', 'go', 'come', 'take', 'give', 'tell', 'ask', 'try', 'use', 'find', 'let', 'put', 'keep', 'work', 'look', 'thanks', 'thank', 'good', 'great', 'nice', 'okay', 'ok', 'yeah', 'yep', 'sure', 'agree', 'lol', 'haha', 'wow', 'cool', 'interesting', 'helpful', 'clear', 'clearer', 'clarification', 'clarify', 'explanation', 'explain', 'example', 'similar', 'found', 'slides', 'textbook', 'lecture', 'class', 'professor', 'question', 'comment', 'please', 'sorry', 'maybe', 'actually', 'basically', 'definitely', 'probably', 'exactly', 'pretty', 'quite', 'anyway', 'though', 'seems', 'feel', 'lot', 'bit', 'now']);
 
     var preserveTerms = {};
-    messages.forEach(function(m) {
+    messages.forEach(function (m) {
       if (!m.text) return;
       var matches = m.text.match(/[A-Z]{2,}(?:\/[A-Z]{2,})+/g);
       if (matches) {
-        matches.forEach(function(term) {
+        matches.forEach(function (term) {
           var key = term.toLowerCase().replace(/\//g, '');
           preserveTerms[key] = term;
         });
@@ -459,38 +471,38 @@ router.get('/ai-summary/:sessionId', isAuthenticated, isLecturer, async (req, re
     });
 
     var wordCounts = {};
-    messages.forEach(function(m) {
+    messages.forEach(function (m) {
       if (!m.text) return;
       var words = m.text.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/);
-      words.forEach(function(w) {
+      words.forEach(function (w) {
         if (w.length > 2 && !stopWords.has(w)) {
           wordCounts[w] = (wordCounts[w] || 0) + 1;
         }
       });
     });
     var topKeywords = Object.entries(wordCounts)
-      .sort(function(a, b) { return b[1] - a[1]; })
+      .sort(function (a, b) { return b[1] - a[1]; })
       .slice(0, 10)
-      .map(function(e) { return preserveTerms[e[0]] || e[0]; });
+      .map(function (e) { return preserveTerms[e[0]] || e[0]; });
 
-    var confusionMessages = messages.filter(function(m) { return m.type === 'CONFUSION'; });
+    var confusionMessages = messages.filter(function (m) { return m.type === 'CONFUSION'; });
     var confusionKeywords = {};
-    confusionMessages.forEach(function(m) {
+    confusionMessages.forEach(function (m) {
       if (!m.text) return;
       var words = m.text.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/);
-      words.forEach(function(w) {
+      words.forEach(function (w) {
         if (w.length > 2 && !stopWords.has(w)) {
           confusionKeywords[w] = (confusionKeywords[w] || 0) + 1;
         }
       });
     });
     var topConfusionTopics = Object.entries(confusionKeywords)
-      .sort(function(a, b) { return b[1] - a[1]; })
+      .sort(function (a, b) { return b[1] - a[1]; })
       .slice(0, 5)
-      .map(function(e) { return preserveTerms[e[0]] || e[0]; });
+      .map(function (e) { return preserveTerms[e[0]] || e[0]; });
 
-    var questionMessages = messages.filter(function(m) { return m.type === 'QUESTION'; });
-    var questionSamples = questionMessages.slice(0, 5).map(function(m) { return m.text.substring(0, 120); });
+    var questionMessages = messages.filter(function (m) { return m.type === 'QUESTION'; });
+    var questionSamples = questionMessages.slice(0, 5).map(function (m) { return m.text.substring(0, 120); });
 
     var dominantIdentity = 'identified';
     if (identityCounts.anonymous >= identityCounts.pseudonymous && identityCounts.anonymous >= identityCounts.identified) dominantIdentity = 'anonymous';

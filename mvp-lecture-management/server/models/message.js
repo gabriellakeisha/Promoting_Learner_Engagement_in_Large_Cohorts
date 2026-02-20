@@ -16,6 +16,10 @@ const messageSchema = new mongoose.Schema({
     required: function() { return !this.isPoll && !(this.attachment && this.attachment.dataUrl); },
     maxLength: 1000,
   },
+  originalText: {
+    type: String,
+    default: null,
+  },
   type: {
     type: String,
     enum: ['NONE', 'QUESTION', 'COMMENT', 'CONFUSION', 'POLL'],
@@ -44,10 +48,27 @@ const messageSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  deletedAt: {
+    type: Date,
+    default: null,
+  },
+  deletedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
+  },
   isEdited: {
     type: Boolean,
     default: false,
   },
+  editedAt: {
+    type: Date,
+    default: null,
+  },
+  editHistory: [{
+    text: String,
+    editedAt: { type: Date, default: Date.now }
+  }],
   isPinned: {
     type: Boolean,
     default: false,
@@ -59,6 +80,15 @@ const messageSchema = new mongoose.Schema({
   isReported: {
     type: Boolean,
     default: false,
+  },
+  reportedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
+  },
+  reportedAt: {
+    type: Date,
+    default: null,
   },
   reactions: {
     type: Map,
@@ -108,5 +138,37 @@ messageSchema.index({ sessionId: 1, timestamp: -1 });
 messageSchema.index({ userId: 1 });
 messageSchema.index({ sessionId: 1, identityMode: 1 });
 messageSchema.index({ sessionId: 1, isPoll: 1 });
+
+messageSchema.methods.softDelete = async function(deletedByUserId) {
+  if (!this.originalText) {
+    this.originalText = this.text;
+  }
+  this.isDeleted = true;
+  this.deletedAt = new Date();
+  this.deletedBy = deletedByUserId || this.userId;
+  await this.save();
+};
+
+messageSchema.methods.editMessage = async function(newText) {
+  if (!this.editHistory) {
+    this.editHistory = [];
+  }
+  this.editHistory.push({
+    text: this.text,
+    editedAt: new Date()
+  });
+  if (!this.originalText) {
+    this.originalText = this.text;
+  }
+  this.text = newText;
+  this.isEdited = true;
+  this.editedAt = new Date();
+  await this.save();
+};
+
+messageSchema.methods.togglePin = async function() {
+  this.isPinned = !this.isPinned;
+  await this.save();
+};
 
 module.exports = mongoose.model('Message', messageSchema);

@@ -184,9 +184,9 @@ async function init() {
 
     console.log('⌨️ Setting up input...');
     setupInputArea();
-    
+
     // Close reaction picker when clicking outside
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
       if (activeReactionPicker && !activeReactionPicker.contains(e.target) && !e.target.classList.contains('reaction-btn')) {
         closeReactionPicker();
       }
@@ -224,7 +224,7 @@ async function loadSession() {
 
 function initializeSocket() {
   socket = io({ transports: ['websocket', 'polling'], reconnection: true, reconnectionDelay: 1000, reconnectionAttempts: Infinity, forceNew: false, timeout: 20000 });
-  
+
   socket.on('connect', function () {
     console.log('🔌 Socket connected, id:', socket.id);
     socketJoined = false;
@@ -236,7 +236,7 @@ function initializeSocket() {
     console.log('📤 Emitting join-session for room: session-' + roomToJoin);
     socket.emit('join-session', { sessionId: roomToJoin, userId: currentUser._id, displayName: currentUser.displayName, role: currentUser.role });
   });
-  
+
   socket.on('joined-session', function (data) {
     socketJoined = true;
     console.log('✅ Joined session room:', data);
@@ -255,7 +255,7 @@ function initializeSocket() {
   socket.on('connect_error', function (error) {
     console.log('❌ Socket connection error:', error.message);
   });
-  
+
   socket.on('new-message', function (message) {
     console.log('📨 New message received via socket:', message.id || message._id);
     var visOwner = String(message.user?.id || message.userId?._id || message.userId || '');
@@ -280,7 +280,7 @@ function initializeSocket() {
       attachment: message.attachment || null
     });
     scrollToBottom();
-    
+
     // Track new announcements and pinned messages
     if (message.isAnnouncement && typeof addAnnouncement === 'function') {
       addAnnouncement({
@@ -304,10 +304,13 @@ function initializeSocket() {
       updateTypeBadges();
     }
   });
-  
+
   socket.on('message-deleted', function (data) {
     var el = document.querySelector('[data-message-id="' + data.messageId + '"]');
-    if (el) { el.style.transition = 'opacity 0.3s'; el.style.opacity = '0'; setTimeout(function () { el.remove(); }, 300); }
+    if (el) {
+      el.className = 'chat-message deleted-message';
+      el.innerHTML = '<div class="deleted-message-content"><span class="deleted-icon">🚫</span> <em>This message was deleted</em></div>';
+    }
   });
   socket.on('message-reported', function (data) {
     var el = document.querySelector('[data-message-id="' + data.messageId + '"]');
@@ -315,28 +318,33 @@ function initializeSocket() {
   });
   socket.on('message-edited', function (data) {
     var el = document.querySelector('[data-message-id="' + data.messageId + '"]');
-    if (el) { var textEl = el.querySelector('.message-text'); if (textEl) textEl.textContent = data.text; }
+    if (el) {
+      var textEl = el.querySelector('.message-text');
+      if (textEl) {
+        textEl.innerHTML = escapeHtml(data.text) + ' <span class="edited-indicator">(edited)</span>';
+      }
+    }
   });
-  
+
   // Updated message-pinned handler with pin bar 
   socket.on('message-pinned', function (data) {
     var msgId = data.messageId || data.id;
     var el = document.querySelector('[data-message-id="' + msgId + '"]');
-    if (el) { 
-      if (data.isPinned) el.classList.add('pinned'); 
-      else el.classList.remove('pinned'); 
+    if (el) {
+      if (data.isPinned) el.classList.add('pinned');
+      else el.classList.remove('pinned');
     }
     if (typeof handlePinUpdate === 'function') {
       handlePinUpdate(data);
     }
   });
-  
+
   // Handle reaction updates in real-time
   socket.on('message-reaction', function (data) {
     console.log('Reaction update received:', data);
     updateMessageReactions(data.messageId, data.reactions);
   });
-  
+
   // Poll real-time handlers
   socket.on('poll-update', function (data) {
     console.log('Poll update:', data);
@@ -345,24 +353,24 @@ function initializeSocket() {
       loadMessages(); // Refresh to show updated votes
     }
   });
-  
+
   socket.on('poll-closed', function (data) {
     console.log('Poll closed:', data);
     loadMessages();
   });
-  
-  socket.on('disconnect', function (reason) { 
-    socketJoined = false; 
-    console.log('🔌 Socket disconnected, reason:', reason); 
+
+  socket.on('disconnect', function (reason) {
+    socketJoined = false;
+    console.log('🔌 Socket disconnected, reason:', reason);
   });
-  
+
   socket.on('reconnect', function (attemptNumber) {
     console.log('🔄 Socket reconnected after', attemptNumber, 'attempts');
     if (sessionId && currentUser) {
       socket.emit('join-session', { sessionId: sessionId, userId: currentUser._id, displayName: currentUser.displayName, role: currentUser.role });
     }
   });
-  
+
   socket.on('connect_error', function (error) {
     console.error('❌ Socket connect error:', error.message);
   });
@@ -409,9 +417,9 @@ async function loadMessages() {
       var empty = container.querySelector('.empty-state');
       if (loading) loading.style.display = 'none';
       if (empty) empty.remove();
-      
+
       var existingMessages = container.querySelectorAll('.chat-message, .date-separator');
-      existingMessages.forEach(function(el) { el.remove(); });
+      existingMessages.forEach(function (el) { el.remove(); });
       lastDateKey = null;
 
       console.log('📥 Appending', result.messages.length, 'messages');
@@ -431,6 +439,8 @@ async function loadMessages() {
           isPinned: msg.isPinned,
           isAnnouncement: msg.isAnnouncement,
           isReported: msg.isReported,
+          isDeleted: msg.isDeleted || false,
+          isEdited: msg.isEdited || false,
           identityMode: msg.identityMode || 'identified',
           alias: msg.alias,
           reactions: msg.reactions || {},
@@ -441,9 +451,9 @@ async function loadMessages() {
       });
       scrollToBottom();
       console.log('📥 All messages appended');
-      
+
       // Initialize announcement and pinned messages feature
-      var formattedForFeature = result.messages.map(function(msg) {
+      var formattedForFeature = result.messages.map(function (msg) {
         return {
           id: msg.id || msg._id,
           username: msg.user?.displayName || msg.username || 'Anonymous',
@@ -459,7 +469,7 @@ async function loadMessages() {
       if (typeof updateTypeBadges === 'function') {
         updateTypeBadges();
       }
-      
+
     } else {
       console.log('📥 No messages found');
       showEmptyState();
@@ -569,7 +579,7 @@ var pendingMessages = [];
 function processPendingMessages() {
   if (pendingMessages.length > 0 && socketJoined) {
     console.log('📤 Processing', pendingMessages.length, 'pending messages');
-    pendingMessages.forEach(function(fn) { fn(); });
+    pendingMessages.forEach(function (fn) { fn(); });
     pendingMessages = [];
   }
 }
@@ -624,13 +634,13 @@ async function sendMessage() {
 
 function appendMessage(message) {
   console.log('📝 appendMessage called with:', message.id || message._id, message.text?.substring(0, 30));
-  
+
   var container = document.getElementById('messages-container');
   if (!container) {
     console.error('❌ messages-container not found!');
     return;
   }
-  
+
   var emptyState = container.querySelector('.empty-state');
   if (emptyState) emptyState.remove();
 
@@ -640,7 +650,7 @@ function appendMessage(message) {
     console.log('⚠️ Duplicate message, skipping:', msgId);
     return;
   }
-  
+
   var msgDateKey = getDateKey(message.timestamp || message.createdAt || new Date());
   if (msgDateKey !== lastDateKey) {
     var dateSeparator = document.createElement('div');
@@ -649,8 +659,17 @@ function appendMessage(message) {
     container.appendChild(dateSeparator);
     lastDateKey = msgDateKey;
   }
-  
+
   console.log('✅ Creating new message element for:', msgId);
+
+  if (message.isDeleted) {
+    var deletedDiv = document.createElement('div');
+    deletedDiv.className = 'chat-message deleted-message';
+    deletedDiv.setAttribute('data-message-id', msgId);
+    deletedDiv.innerHTML = '<div class="deleted-message-content"><span class="deleted-icon">🚫</span> <em>This message was deleted</em></div>';
+    container.appendChild(deletedDiv);
+    return;
+  }
 
   var messageDiv = document.createElement('div');
   var isLecturer = message.userRole === 'lecturer';
@@ -732,7 +751,7 @@ function appendMessage(message) {
   if (message.isPoll && message.poll) {
     pollHTML = renderPollHTML(message);
   }
-  var messageBodyHTML = message.isPoll ? '' : '<div class="message-body"><span class="message-type-indicator">' + typeIcon + '</span><span class="message-text">' + escapeHtml(message.text) + '</span></div>' + attachmentHTML;
+  var messageBodyHTML = message.isPoll ? '' : '<div class="message-body"><span class="message-type-indicator">' + typeIcon + '</span><span class="message-text">' + escapeHtml(message.text) + (message.isEdited ? ' <span class="edited-indicator">(edited)</span>' : '') + '</span></div>' + attachmentHTML;
 
   messageDiv.innerHTML = '<div class="message-avatar-wrapper">' + avatarHTML + '</div><div class="message-content-wrapper"><div class="message-header"><span class="message-username ' + (isLecturer ? 'lecturer' : 'student') + '">' + escapeHtml(displayName) + '</span>' + lecturerBadge + identityBadge + '<span class="message-time">' + formatTime(message.timestamp || message.createdAt || new Date()) + '</span></div>' + replyHTML + messageBodyHTML + pollHTML + reactionsHTML + '<div class="message-footer">' + badgeHTML + '<div class="message-actions">' + actionButtonsHTML + '</div></div></div>';
 
@@ -751,15 +770,15 @@ let currentReactionMessageId = null;
 
 function renderReactions(messageId, reactions) {
   var html = '<div class="message-reactions" data-message-id="' + messageId + '">';
-  
+
   if (reactions && typeof reactions === 'object') {
     var entries = reactions instanceof Map ? Array.from(reactions.entries()) : Object.entries(reactions);
-    
-    entries.forEach(function(entry) {
+
+    entries.forEach(function (entry) {
       var emoji = entry[0];
       var users = entry[1];
       var count = Array.isArray(users) ? users.length : (typeof users === 'number' ? users : 0);
-      
+
       if (count > 0) {
         var hasReacted = Array.isArray(users) && currentUser && users.includes(currentUser._id);
         html += '<button class="reaction-chip' + (hasReacted ? ' reacted' : '') + '" onclick="toggleReaction(\'' + messageId + '\', \'' + emoji + '\')">';
@@ -769,7 +788,7 @@ function renderReactions(messageId, reactions) {
       }
     });
   }
-  
+
   html += '</div>';
   return html;
 }
@@ -797,12 +816,12 @@ function showReactionPicker(event, messageId) {
   quickRow.className = 'quick-reactions';
   quickRow.style.display = 'flex';
   quickRow.style.gap = '2px';
-  
-  QUICK_REACTIONS.forEach(function(emoji) {
+
+  QUICK_REACTIONS.forEach(function (emoji) {
     var btn = document.createElement('button');
     btn.className = 'reaction-picker-btn';
     btn.textContent = emoji;
-    btn.onclick = function(e) {
+    btn.onclick = function (e) {
       e.stopPropagation();
       closeReactionPicker();
       toggleReaction(messageId, emoji);
@@ -814,7 +833,7 @@ function showReactionPicker(event, messageId) {
   var plusBtn = document.createElement('button');
   plusBtn.className = 'reaction-picker-btn';
   plusBtn.innerHTML = '<span style="font-size:20px;color:#8696a0;">+</span>';
-  plusBtn.onclick = function(e) {
+  plusBtn.onclick = function (e) {
     e.stopPropagation();
     closeReactionPicker();
     showFullEmojiPicker(messageId);
@@ -839,7 +858,7 @@ function showFullEmojiPicker(messageId) {
   var overlay = document.createElement('div');
   overlay.className = 'emoji-picker-overlay';
   overlay.id = 'emoji-picker-overlay';
-  overlay.onclick = function(e) {
+  overlay.onclick = function (e) {
     if (e.target === overlay) {
       overlay.remove();
     }
@@ -847,11 +866,11 @@ function showFullEmojiPicker(messageId) {
 
   var wrapper = document.createElement('div');
   wrapper.className = 'emoji-picker-wrapper';
-  wrapper.onclick = function(e) { e.stopPropagation(); };
+  wrapper.onclick = function (e) { e.stopPropagation(); };
 
   // Use the emoji-picker-element web component
   var picker = document.createElement('emoji-picker');
-  picker.addEventListener('emoji-click', function(event) {
+  picker.addEventListener('emoji-click', function (event) {
     overlay.remove();
     toggleReaction(messageId, event.detail.unicode);
   });
@@ -939,13 +958,14 @@ window.editMessage = async function (messageId) {
   if (!el) return;
   var textEl = el.querySelector('.message-text');
   if (!textEl) return;
-  var currentText = textEl.textContent.trim();
+  var editedSpan = textEl.querySelector('.edited-indicator');
+  var currentText = editedSpan ? textEl.textContent.replace(editedSpan.textContent, '').trim() : textEl.textContent.trim();
   var newText = prompt('Edit your message:', currentText);
   if (newText === null || newText.trim() === '' || newText.trim() === currentText) return;
   try {
     var response = await fetch('/api/messages/' + messageId, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ text: newText.trim() }) });
     if (!response.ok) { var e = await response.json(); throw new Error(e.message || 'Failed'); }
-    textEl.textContent = newText.trim();
+    textEl.innerHTML = escapeHtml(newText.trim()) + ' <span class="edited-indicator">(edited)</span>';
   } catch (error) { alert('Failed: ' + error.message); }
 };
 
@@ -1008,17 +1028,17 @@ function scrollToMessage(messageId) {
   if (typeof clearPinnedFilter === 'function' && typeof isFilteringPinned !== 'undefined' && isFilteringPinned) {
     clearPinnedFilter();
   }
-  
+
   var el = document.querySelector('[data-message-id="' + messageId + '"]');
-  if (el) { 
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
-    el.classList.add('message-highlighted'); 
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.add('message-highlighted');
     el.style.transition = 'background 0.3s';
     el.style.background = 'rgba(0, 168, 132, 0.3)';
-    setTimeout(function () { 
-      el.classList.remove('message-highlighted'); 
+    setTimeout(function () {
+      el.classList.remove('message-highlighted');
       el.style.background = '';
-    }, 2000); 
+    }, 2000);
   }
 }
 
@@ -1060,11 +1080,11 @@ function getDateKey(timestamp) {
 }
 var lastDateKey = null;
 function getTypeIcon(type) { return { 'NONE': '', 'QUESTION': '❓', 'COMMENT': '', 'CONFUSION': '❗', 'POLL': '📊' }[type] || ''; }
-function scrollToBottom() { 
-  var container = document.getElementById('messages-container'); 
+function scrollToBottom() {
+  var container = document.getElementById('messages-container');
   if (container) {
-    requestAnimationFrame(function() {
-      setTimeout(function() {
+    requestAnimationFrame(function () {
+      setTimeout(function () {
         container.scrollTop = container.scrollHeight + 1000;
       }, 10);
     });
@@ -1081,14 +1101,14 @@ function handleFileSelected(event) {
     event.target.value = '';
     return;
   }
-  var allowed = ['image/jpeg','image/png','image/gif','image/webp','application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','text/plain'];
+  var allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
   if (!allowed.includes(file.type)) {
     alert('File type not supported. Use: images, PDF, DOC, TXT');
     event.target.value = '';
     return;
   }
   var reader = new FileReader();
-  reader.onload = function(e) {
+  reader.onload = function (e) {
     pendingAttachment = {
       dataUrl: e.target.result,
       filename: file.name,
@@ -1148,7 +1168,7 @@ function openPollCreator() {
   if (menu) menu.style.display = 'none';
   optionsMenuOpen = false;
   if (plusBtn) { plusBtn.textContent = '+'; plusBtn.style.background = '#374151'; }
-  
+
   var pollCreator = document.getElementById('poll-creator');
   if (!pollCreator) return;
   pollCreatorOpen = true;
@@ -1188,7 +1208,7 @@ function openPollCreator() {
       </div>
     </div>
   `;
-  setTimeout(function() { var q = document.getElementById('poll-question'); if (q) q.focus(); }, 100);
+  setTimeout(function () { var q = document.getElementById('poll-question'); if (q) q.focus(); }, 100);
 }
 
 function closePollCreator() {
@@ -1217,7 +1237,7 @@ function removePollOption(btn) {
 
 function updatePollOptionNumbers() {
   var inputs = document.querySelectorAll('.poll-option-input');
-  inputs.forEach(function(input, index) { input.placeholder = 'Option ' + (index + 1); });
+  inputs.forEach(function (input, index) { input.placeholder = 'Option ' + (index + 1); });
 }
 
 async function submitPoll() {
@@ -1226,7 +1246,7 @@ async function submitPoll() {
   var allowMultiple = document.getElementById('poll-multiple')?.checked || false;
   if (!question) { alert('Please enter a question'); return; }
   var options = [];
-  optionInputs.forEach(function(input) { var val = input.value.trim(); if (val) options.push(val); });
+  optionInputs.forEach(function (input) { var val = input.value.trim(); if (val) options.push(val); });
   if (options.length < 2) { alert('Please add at least 2 options'); return; }
   try {
     var response = await fetch('/api/messages/poll/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ sessionId: sessionId, question: question, options: options, allowMultiple: allowMultiple, isAnonymous: true }) });
@@ -1241,8 +1261,8 @@ async function votePoll(pollId, optionId) {
     var result = await response.json();
     if (result.success) {
       loadMessages(); // Refresh to show vote
-    } else { 
-      alert(result.message || 'Failed to vote'); 
+    } else {
+      alert(result.message || 'Failed to vote');
     }
   } catch (error) { console.error('Vote error:', error); alert('Failed to vote'); }
 }
@@ -1254,8 +1274,8 @@ async function closePollById(pollId) {
     var result = await response.json();
     if (result.success) {
       loadMessages();
-    } else { 
-      alert(result.message || 'Failed to close poll'); 
+    } else {
+      alert(result.message || 'Failed to close poll');
     }
   } catch (error) { console.error('Close poll error:', error); alert('Failed to close poll'); }
 }
@@ -1266,7 +1286,7 @@ async function viewPollVotes(pollId) {
     var result = await response.json();
     if (result.success) {
       var r = result.results;
-      var voterInfo = r.options.map(function(opt) {
+      var voterInfo = r.options.map(function (opt) {
         return opt.text + ': ' + opt.voteCount + ' votes' + (opt.voters && opt.voters.length > 0 ? ' (' + opt.voters.join(', ') + ')' : '');
       }).join('\n');
       alert('Poll Results:\n\n' + voterInfo + '\n\nTotal: ' + r.totalVotes + ' votes');
@@ -1278,39 +1298,39 @@ async function viewPollVotes(pollId) {
 function renderPollHTML(message) {
   var poll = message.poll;
   if (!poll) return '';
-  var totalVotes = poll.totalVotes || poll.options.reduce(function(sum, opt) { return sum + (opt.voteCount || opt.votes?.length || 0); }, 0);
-  var hasVoted = poll.options.some(function(opt) { return opt.hasVoted; });
+  var totalVotes = poll.totalVotes || poll.options.reduce(function (sum, opt) { return sum + (opt.voteCount || opt.votes?.length || 0); }, 0);
+  var hasVoted = poll.options.some(function (opt) { return opt.hasVoted; });
   var isClosed = poll.isClosed;
   var isLecturer = currentUser && currentUser.role === 'lecturer';
   var msgId = message.id || message._id;
-  
+
   // WhatsApp style header
   var headerHTML = '<div style="margin-bottom:12px;"><div style="font-size:16px;font-weight:600;color:white;margin-bottom:4px;">' + escapeHtml(poll.question) + '</div><div style="display:flex;align-items:center;gap:6px;color:#00a884;font-size:13px;"><span>📊</span><span>' + (poll.allowMultiple ? 'Select one or more' : 'Select one option') + '</span></div></div>';
-  
+
   // WhatsApp style options
-  var optionsHTML = poll.options.map(function(opt) {
+  var optionsHTML = poll.options.map(function (opt) {
     var voteCount = opt.voteCount || opt.votes?.length || 0;
     var percentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
     var voted = opt.hasVoted;
-    
+
     // Radio circle style (like WhatsApp)
-    var circleHTML = voted ? 
+    var circleHTML = voted ?
       '<div style="width:24px;height:24px;border-radius:50%;border:2px solid #00a884;background:#00a884;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>' :
       '<div style="width:24px;height:24px;border-radius:50%;border:2px solid #4a5568;flex-shrink:0;"></div>';
-    
+
     // Progress bar (shown after voting or if closed)
-    var progressHTML = (hasVoted || isClosed) ? 
+    var progressHTML = (hasVoted || isClosed) ?
       '<div style="height:4px;background:#2d3748;border-radius:2px;margin-top:8px;overflow:hidden;"><div style="height:100%;width:' + percentage + '%;background:' + (voted ? '#00a884' : '#4a5568') + ';border-radius:2px;transition:width 0.3s;"></div></div>' : '';
-    
+
     var clickHandler = (!hasVoted && !isClosed) ? ' onclick="votePoll(\'' + msgId + '\', \'' + opt.id + '\')" style="cursor:pointer;"' : '';
-    
+
     return '<div' + clickHandler + ' style="padding:12px 0;border-bottom:1px solid #2d3748;' + (!hasVoted && !isClosed ? 'cursor:pointer;' : '') + '"><div style="display:flex;align-items:center;justify-content:space-between;"><div style="display:flex;align-items:center;gap:12px;">' + circleHTML + '<span style="color:white;font-size:15px;">' + escapeHtml(opt.text) + '</span></div><span style="color:#94a3b8;font-size:14px;">' + voteCount + '</span></div>' + progressHTML + '</div>';
   }).join('');
-  
+
   // Footer with timestamp and view votes (lecturer only)
   var footerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:8px;">';
   footerHTML += '<span style="color:#8b9caa;font-size:12px;">' + formatTime(message.timestamp || message.createdAt || new Date()) + ' ✓✓</span>';
-  
+
   if (isLecturer) {
     if (!isClosed) {
       footerHTML += '<div style="display:flex;gap:8px;"><button onclick="viewPollVotes(\'' + msgId + '\')" style="background:#2d3748;border:none;color:#00a884;padding:8px 16px;border-radius:20px;font-size:13px;cursor:pointer;">View votes</button><button onclick="closePollById(\'' + msgId + '\')" style="background:none;border:none;color:#ef4444;font-size:12px;cursor:pointer;">Close</button></div>';
@@ -1321,7 +1341,7 @@ function renderPollHTML(message) {
     footerHTML += '<span style="color:#f59e0b;font-size:12px;">Poll closed</span>';
   }
   footerHTML += '</div>';
-  
+
   return '<div class="poll-container" data-poll-id="' + msgId + '" style="background:#1a2e35;border-radius:12px;padding:16px;margin-top:8px;max-width:320px;">' + headerHTML + '<div class="poll-options">' + optionsHTML + '</div>' + footerHTML + '</div>';
 }
 
