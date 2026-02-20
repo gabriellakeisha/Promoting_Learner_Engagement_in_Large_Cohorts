@@ -686,6 +686,22 @@ body.dark-mode .chat-input {
   color: var(--text-color);
 }
 
+body.dark-mode .form-group label {
+  color: #e2e8f0;
+}
+
+body.dark-mode .auth-header h1 {
+  color: #e2e8f0;
+}
+
+body.dark-mode .auth-header p {
+  color: #94a3b8;
+}
+
+body.dark-mode .form-input::placeholder,
+body.dark-mode .form-select::placeholder {
+  color: #94a3b8;
+}
 body.dark-mode .form-input:focus,
 body.dark-mode .form-select:focus,
 body.dark-mode .chat-input:focus {
