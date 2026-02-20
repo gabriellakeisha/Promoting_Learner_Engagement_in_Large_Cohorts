@@ -42,41 +42,65 @@ async function loadSessions() {
 
 function displaySessions(sessions) {
   const container = document.getElementById('sessions-list');
-  container.innerHTML = sessions.map(session => `
-    <div class="session-card">
-      <div class="session-title">${session.title}</div>
-      <div class="session-meta">
-        <div class="session-meta-item">
-          📚 ${session.moduleCode || 'No module'}
-        </div>
-        <div class="session-meta-item">
-          🔑 Join Code: <span class="session-code">${session.joinCode}</span>
-        </div>
-        <div class="session-meta-item">
-          <span class="session-status status-${session.status}">${session.status}</span>
-        </div>
-      </div>
-      <div style="margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap;">
-        <button class="btn btn-primary btn-small" onclick="viewSessionChat('${session._id || session.id}', '${session.title}')">
-          💬 Join Chat
-        </button>
-        <button class="btn btn-secondary btn-small" onclick="openManageStudentsModal('${session._id || session.id}', '${session.title.replace(/'/g, "\\'")}', '${session.joinCode}')">
-        👥 Manage Students
-        </button>
-        <button class="btn btn-secondary btn-small" onclick="viewAnalytics('${session._id || session.id}', '${session.title}')">
-          📊 Analytics
-        </button>
-        ${session.status === 'active' ?
-          `
-          <button class="btn btn-danger btn-small" onclick="endSession('${session._id || session.id}')">
-            End Session
-          </button>
-        ` : ''}
-      </div>
-    </div>
-  `).join('');
-}
+  container.innerHTML = sessions.map(session => {
+    var scheduleInfo = '';
+    if (session.status === 'scheduled' && session.startTime) {
+      var startDate = new Date(session.startTime);
+      var now = new Date();
+      var diff = startDate - now;
+      var days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      var hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      var mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      var countdown = '';
+      if (diff > 0) {
+        if (days > 0) countdown = days + 'd ' + hours + 'h';
+        else if (hours > 0) countdown = hours + 'h ' + mins + 'm';
+        else countdown = mins + 'm';
+        countdown = ' (in ' + countdown + ')';
+      } else {
+        countdown = ' (ready to start)';
+      }
+      scheduleInfo = '<div class="session-meta-item">📅 ' +
+        startDate.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) +
+        ' at ' + startDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) +
+        '<span style="color:#f59e0b;font-weight:500;">' + countdown + '</span></div>';
+      if (session.endTime) {
+        var endDate = new Date(session.endTime);
+        scheduleInfo += '<div class="session-meta-item">⏰ Ends: ' +
+          endDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + '</div>';
+      }
+    }
 
+    var statusLabel = session.status;
+    if (session.status === 'scheduled') statusLabel = '🗓️ scheduled';
+
+    var actionButtons = '';
+    actionButtons += '<button class="btn btn-primary btn-small" onclick="viewSessionChat(\'' + (session._id || session.id) + '\', \'' + session.title + '\')">💬 Join Chat</button>';
+    actionButtons += '<button class="btn btn-secondary btn-small" onclick="openManageStudentsModal(\'' + (session._id || session.id) + '\', \'' + session.title.replace(/'/g, "\\'") + '\', \'' + session.joinCode + '\')">👥 Manage Students</button>';
+    actionButtons += '<button class="btn btn-secondary btn-small" onclick="viewAnalytics(\'' + (session._id || session.id) + '\', \'' + session.title + '\')">📊 Analytics</button>';
+
+    if (session.status === 'scheduled') {
+      var canStart = new Date(session.startTime) <= new Date();
+      actionButtons += '<button class="btn btn-primary btn-small" style="background:#10b981;" onclick="activateSession(\'' + (session._id || session.id) + '\')">' + (canStart ? '▶️ Start Now' : '▶️ Start Early') + '</button>';
+    }
+    if (session.status === 'active') {
+      actionButtons += '<button class="btn btn-danger btn-small" onclick="endSession(\'' + (session._id || session.id) + '\')">End Session</button>';
+    }
+
+    return '<div class="session-card">' +
+      '<div class="session-title">' + session.title + '</div>' +
+      '<div class="session-meta">' +
+        '<div class="session-meta-item">📚 ' + (session.moduleCode || 'No module') + '</div>' +
+        '<div class="session-meta-item">🔑 Join Code: <span class="session-code">' + session.joinCode + '</span></div>' +
+        '<div class="session-meta-item"><span class="session-status status-' + session.status + '">' + statusLabel + '</span></div>' +
+        scheduleInfo +
+      '</div>' +
+      '<div style="margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap;">' +
+        actionButtons +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
 function viewSessionChat(sessionId, title) {
   window.location.href = `/chat-room.html?sessionId=${sessionId}`;
 }
@@ -88,15 +112,66 @@ document.getElementById('create-session-btn').addEventListener('click', () => {
 document.getElementById('cancel-btn').addEventListener('click', () => {
   document.getElementById('create-modal').classList.remove('show');
   document.getElementById('create-session-form').reset();
+  var sf = document.getElementById('schedule-fields');
+  var st = document.getElementById('schedule-toggle');
+  var sb = document.getElementById('create-submit-btn');
+  if (sf) sf.style.display = 'none';
+  if (st) st.checked = false;
+  if (sb) sb.textContent = 'Create';
 });
+
+var scheduleToggle = document.getElementById('schedule-toggle');
+if (scheduleToggle) {
+  scheduleToggle.addEventListener('change', function() {
+    var fields = document.getElementById('schedule-fields');
+    var btn = document.getElementById('create-submit-btn');
+    if (this.checked) {
+      fields.style.display = 'block';
+      if (btn) btn.textContent = 'Schedule Session';
+      var now = new Date();
+      now.setMinutes(now.getMinutes() + 30);
+      var defaultStart = now.toISOString().slice(0, 16);
+      var startInput = document.getElementById('scheduledStart');
+      if (startInput && !startInput.value) startInput.value = defaultStart;
+    } else {
+      if (fields) fields.style.display = 'none';
+      if (btn) btn.textContent = 'Create';
+    }
+  });
+}
 
 document.getElementById('create-session-form').addEventListener('submit', async (e) => {
   e.preventDefault();
 
+  var schedToggle = document.getElementById('schedule-toggle');
+  var isScheduled = schedToggle ? schedToggle.checked : false;
+  var startEl = document.getElementById('scheduledStart');
+  var endEl = document.getElementById('scheduledEnd');
+  var scheduledStart = startEl ? startEl.value : '';
+  var scheduledEnd = endEl ? endEl.value : '';
+
+  if (isScheduled && !scheduledStart) {
+    showAlert('Please select a start date and time', 'error');
+    return;
+  }
+
+  if (isScheduled && scheduledStart && new Date(scheduledStart) < new Date()) {
+    showAlert('Start time must be in the future', 'error');
+    return;
+  }
+
+  if (isScheduled && scheduledEnd && scheduledStart && new Date(scheduledEnd) <= new Date(scheduledStart)) {
+    showAlert('End time must be after start time', 'error');
+    return;
+  }
+
   const data = {
     title: document.getElementById('title').value,
     moduleCode: document.getElementById('moduleCode').value,
-    description: document.getElementById('description').value
+    description: document.getElementById('description').value,
+    isScheduled: isScheduled,
+    scheduledStart: isScheduled ? scheduledStart : null,
+    scheduledEnd: isScheduled && scheduledEnd ? scheduledEnd : null
   };
 
   try {
@@ -458,6 +533,25 @@ async function endSession(sessionId) {
     }
   } catch (error) {
     showAlert('Error ending session', 'error');
+  }
+}
+
+async function activateSession(sessionId) {
+  if (!confirm('Start this session now? Students will be able to join and chat.')) return;
+  try {
+    const response = await fetch('/api/sessions/' + sessionId + '/activate', {
+      method: 'POST',
+      credentials: 'include'
+    });
+    const result = await response.json();
+    if (result.success) {
+      showAlert('Session is now active!', 'success');
+      loadSessions();
+    } else {
+      showAlert(result.message || 'Failed to activate session', 'error');
+    }
+  } catch (error) {
+    showAlert('Error activating session', 'error');
   }
 }
 

@@ -29,13 +29,27 @@ router.post('/create', isAuthenticated, isLecturer, async (req, res) => {
     }
 
     // Create session
+    const { isScheduled, scheduledStart, scheduledEnd } = req.body;
+
+    let status = 'active';
+    let startTime = new Date();
+    let endTime = null;
+
+    if (isScheduled && scheduledStart) {
+      status = 'scheduled';
+      startTime = new Date(scheduledStart);
+      endTime = scheduledEnd ? new Date(scheduledEnd) : null;
+    }
+
     const session = new Session({
       title,
       joinCode,
       lecturer: req.session.userId,
       moduleCode: moduleCode || '',
       description: description || '',
-      status: 'active',
+      status: status,
+      startTime: startTime,
+      endTime: endTime,
     });
 
     await session.save();
@@ -79,7 +93,7 @@ router.post('/join', isAuthenticated, async (req, res) => {
     // Find session
     const session = await Session.findOne({ 
       joinCode: joinCode.toUpperCase(),
-      status: 'active',
+      status: { $in: ['active', 'scheduled'] },
     }).populate('lecturer', 'displayName email');
 
     if (!session) {
@@ -250,7 +264,43 @@ router.get('/:sessionId', isAuthenticated, async (req, res) => {
   }
 });
 
-// End session (lecturer only)
+router.post('/:sessionId/activate', isAuthenticated, isLecturer, async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const session = await Session.findById(sessionId);
+
+    if (!session) {
+      return res.status(404).json({ success: false, message: 'Session not found' });
+    }
+
+    if (session.lecturer.toString() !== req.session.userId) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    if (session.status !== 'scheduled') {
+      return res.status(400).json({ success: false, message: 'Only scheduled sessions can be activated' });
+    }
+
+    session.status = 'active';
+    session.startTime = new Date();
+    await session.save();
+
+    res.json({
+      success: true,
+      message: 'Session activated',
+      session: {
+        id: session._id,
+        status: session.status,
+        startTime: session.startTime,
+      },
+    });
+  } catch (error) {
+    console.error('Activate session error:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// End session
 router.post('/:sessionId/end', isAuthenticated, isLecturer, async (req, res) => {
   try {
     const { sessionId } = req.params;
