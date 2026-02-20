@@ -45,7 +45,7 @@ router.get('/student/:sessionId', isAuthenticated, async (req, res) => {
       : null;
 
     const session = await Session.findById(sessionId);
-    const sessionStart = session?.createdAt || new Date(Math.min(...myMessages.map(m => m.timestamp)));
+    const sessionStart = session?.startTime || new Date(Math.min(...myMessages.map(m => m.timestamp)));
 
     const timelineBuckets = {};
     myMessages.forEach(msg => {

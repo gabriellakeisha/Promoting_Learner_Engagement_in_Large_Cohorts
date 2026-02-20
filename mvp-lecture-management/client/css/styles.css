@@ -3164,12 +3164,15 @@ body:not(.dark-mode) .alias-preview {
 }
 
 .analytics-stat-card .stat-label {
-  font-size: 12px;
-  opacity: 0.9;
-  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 1;
+  margin-bottom: 6px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  letter-spacing: 0.3px;
 }
 
 .analytics-stat-card .stat-value {
@@ -3180,9 +3183,10 @@ body:not(.dark-mode) .alias-preview {
 }
 
 .analytics-stat-card .stat-sub {
-  font-size: 11px;
-  opacity: 0.8;
+  font-size: 12px;
+  opacity: 0.9;
   margin-top: 4px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.15);
 }
 
 .stat-purple {

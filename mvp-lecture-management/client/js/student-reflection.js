@@ -314,7 +314,7 @@ async function loadSessionHistory() {
                 <th style="padding:10px;">Class Avg</th>
                 <th style="padding:10px;">Rank</th>
                 <th style="padding:10px;">vs Avg</th>
-                <th style="padding:10px;">Rating</th>
+                <th style="padding:10px;min-width:75px;">Rating</th>
               </tr>
             </thead>
             <tbody>
