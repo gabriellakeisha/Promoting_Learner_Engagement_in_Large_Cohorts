@@ -1,4 +1,11 @@
-/* RESET & BASE STYLES */
+/* ============================================
+   MVP LIVECHAT - Standalone Chat Styles
+   Login, chat interface, and responsive layout
+   ============================================ */
+
+/* ============================================
+   RESET & BASE STYLES
+   ============================================ */
 * {
     margin: 0;
     padding: 0;
@@ -97,7 +104,7 @@ body {
 }
 
 /* ============================================
-   CHAT PAGE STYLES
+   CHAT CONTAINER & HEADER
    ============================================ */
 .chat-container {
     background: white;
@@ -156,7 +163,9 @@ body {
     background: rgba(255, 152, 0, 0.3);
 }
 
-/* Messages Container */
+/* ============================================
+   MESSAGES CONTAINER & STYLING
+   ============================================ */
 .messages-container {
     flex: 1;
     overflow-y: auto;
@@ -227,7 +236,9 @@ body {
     color: #856404;
 }
 
-/* Message Input */
+/* ============================================
+   MESSAGE INPUT & CONTROLS
+   ============================================ */
 .message-input-container {
     display: flex;
     padding: 20px;
@@ -250,7 +261,6 @@ body {
     border-color: #667eea;
 }
 
-/* Controls */
 .controls {
     display: flex;
     gap: 10px;
@@ -260,7 +270,7 @@ body {
 }
 
 /* ============================================
-   BUTTONS
+   BUTTONS & ERROR STATES
    ============================================ */
 .btn-primary,
 .btn-send,
@@ -310,7 +320,6 @@ body {
     background: #d0d0d0;
 }
 
-/* Error Message */
 .error-message {
     display: none;
     background: #ffebee;
