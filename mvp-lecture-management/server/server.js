@@ -8,6 +8,7 @@ const cors = require('cors');
 require('dotenv').config();
 
 const { connectDB } = require('./config/database');
+const { apiLimiter, authLimiter, messageLimiter, sanitiseBody, securityHeaders, sanitiseText } = require('./middleware/security');
 const User = require('./models/User');
 const Session = require('./models/Session');
 const Message = require('./models/Message');
@@ -46,8 +47,11 @@ app.use(cors({
   credentials: true,
 }));
 
+// Security middleware
+app.use(securityHeaders);
 app.use(express.json({ limit: '16mb' }));
 app.use(express.urlencoded({ extended: true, limit: '16mb' }));
+app.use(sanitiseBody);
 
 // Session configuration
 const sessionMiddleware = session({
@@ -73,14 +77,14 @@ app.use(sessionMiddleware);
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use(express.static(path.join(__dirname, '../client')));
 
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/profile', profileRoutes);
-app.use('/api/bulk', bulkUploadRoutes);
-app.use('/api/sessions', sessionsRoutes);
-app.use('/api/messages', messagesRoutes);
-app.use('/api/analytics', analyticsRoutes);
-app.use('/api/reflection', reflectionRoutes);
+// API Routes with rate limiting
+app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/profile', apiLimiter, profileRoutes);
+app.use('/api/bulk', apiLimiter, bulkUploadRoutes);
+app.use('/api/sessions', apiLimiter, sessionsRoutes);
+app.use('/api/messages', messageLimiter, messagesRoutes);
+app.use('/api/analytics', apiLimiter, analyticsRoutes);
+app.use('/api/reflection', apiLimiter, reflectionRoutes);
 
 
 // Health check endpoint
@@ -238,11 +242,11 @@ io.on('connection', async (socket) => {
         return;
       }
 
-      // Create message with optional reply
+      // Create message with optional reply (sanitise text for XSS)
       const message = new Message({
         sessionId,
         userId: effectiveUserId,
-        text: text.trim(),
+        text: sanitiseText(text),
         type,
         replyTo: replyTo || null
       });
@@ -336,7 +340,7 @@ io.on('connection', async (socket) => {
         return;
       }
 
-      await message.editMessage(text.trim());
+      await message.editMessage(sanitiseText(text));
       await message.populate('userId', 'displayName role');
 
       const messageData = {
