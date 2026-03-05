@@ -5,6 +5,7 @@ const Membership = require('../models/Membership');
 const Session = require('../models/Session');
 const User = require('../models/User');
 const { isAuthenticated, isLecturer } = require('../middleware/auth');
+const aiSummaryService = require('../services/ai-summary');
 
 router.get('/lecturer/:sessionId', isAuthenticated, isLecturer, async (req, res) => {
   try {
@@ -583,6 +584,25 @@ router.get('/ai-summary/:sessionId', isAuthenticated, isLecturer, async (req, re
       });
     }
 
+    // Generate AI summary if service is available
+    let aiNarrativeSummary = null;
+    if (aiSummaryService.isAvailable()) {
+      aiNarrativeSummary = await aiSummaryService.generateAISummary(messages, {
+        title: session.title,
+        totalMessages: totalMessages,
+        uniqueContributors: uniqueContributors
+      });
+
+      // If AI summary was generated, add it as the first section
+      if (aiNarrativeSummary) {
+        sections.unshift({
+          title: 'AI-Generated Summary',
+          content: aiNarrativeSummary,
+          isAIGenerated: true
+        });
+      }
+    }
+
     res.json({
       success: true,
       summary: {
@@ -590,6 +610,8 @@ router.get('/ai-summary/:sessionId', isAuthenticated, isLecturer, async (req, re
         sessionTitle: session.title,
         moduleCode: session.moduleCode,
         generatedAt: new Date().toISOString(),
+        aiEnabled: aiSummaryService.isAvailable(),
+        aiSummaryGenerated: !!aiNarrativeSummary,
         stats: {
           totalMessages: totalMessages,
           uniqueContributors: uniqueContributors,

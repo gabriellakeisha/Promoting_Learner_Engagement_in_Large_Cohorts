@@ -631,7 +631,13 @@ async function generateAISummary() {
     modalHtml += '<div style="padding:24px 28px;border-bottom:1px solid var(--border-color,#e5e7eb);display:flex;justify-content:space-between;align-items:center;">';
     modalHtml += '<div>';
     modalHtml += '<h2 style="margin:0;font-size:20px;color:var(--text-color);">Session Summary</h2>';
-    modalHtml += '<p style="margin:4px 0 0;font-size:12px;color:var(--text-secondary);">Generated: ' + new Date(summary.generatedAt).toLocaleString() + '</p>';
+    modalHtml += '<p style="margin:4px 0 0;font-size:12px;color:var(--text-secondary);">Generated: ' + new Date(summary.generatedAt).toLocaleString();
+    if (summary.aiSummaryGenerated) {
+      modalHtml += ' <span style="background:#8b5cf6;color:white;padding:2px 8px;border-radius:10px;font-size:10px;margin-left:8px;">AI Enhanced</span>';
+    } else if (summary.aiEnabled === false) {
+      modalHtml += ' <span style="background:#6b7280;color:white;padding:2px 8px;border-radius:10px;font-size:10px;margin-left:8px;">Statistical Analysis</span>';
+    }
+    modalHtml += '</p>';
     modalHtml += '</div>';
     modalHtml += '<button onclick="document.getElementById(\'ai-summary-overlay\').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--text-secondary);padding:4px 8px;">×</button>';
     modalHtml += '</div>';
@@ -664,19 +670,23 @@ async function generateAISummary() {
     if (summary.sections && summary.sections.length > 0) {
       summary.sections.forEach(function(section) {
         var isRecommendation = section.title === 'Recommendations';
-        var borderColor = isRecommendation ? '#f59e0b' : (section.title === 'Areas of Confusion' ? '#ef4444' : 'var(--border-color,#e5e7eb)');
-        var bgColor = isRecommendation ? 'rgba(245,158,11,0.06)' : (section.title === 'Areas of Confusion' ? 'rgba(239,68,68,0.06)' : 'transparent');
+        var isAI = section.isAIGenerated;
+        var borderColor = isAI ? '#8b5cf6' : (isRecommendation ? '#f59e0b' : (section.title === 'Areas of Confusion' ? '#ef4444' : 'var(--border-color,#e5e7eb)'));
+        var bgColor = isAI ? 'rgba(139,92,246,0.08)' : (isRecommendation ? 'rgba(245,158,11,0.06)' : (section.title === 'Areas of Confusion' ? 'rgba(239,68,68,0.06)' : 'transparent'));
 
         modalHtml += '<div style="margin-bottom:16px;padding:14px 16px;border:1px solid ' + borderColor + ';border-radius:10px;background:' + bgColor + ';">';
         modalHtml += '<h4 style="margin:0 0 8px;font-size:14px;font-weight:600;color:var(--text-color);">';
-        if (section.title === 'Engagement Pattern') modalHtml += '📊 ';
+        if (isAI) modalHtml += '🤖 ';
+        else if (section.title === 'Engagement Pattern') modalHtml += '📊 ';
         else if (section.title === 'Message Classification Breakdown') modalHtml += '💬 ';
         else if (section.title === 'Areas of Confusion') modalHtml += '😕 ';
         else if (section.title === 'Key Questions Raised') modalHtml += '❓ ';
         else if (section.title === 'Discussion Topics') modalHtml += '🏷️ ';
         else if (section.title === 'Identity Mode Usage') modalHtml += '🔒 ';
         else if (section.title === 'Recommendations') modalHtml += '💡 ';
-        modalHtml += section.title + '</h4>';
+        modalHtml += section.title;
+        if (isAI) modalHtml += ' <span style="font-size:10px;background:#8b5cf6;color:white;padding:2px 6px;border-radius:4px;margin-left:6px;">AI</span>';
+        modalHtml += '</h4>';
         modalHtml += '<p style="margin:0;font-size:13px;line-height:1.7;color:var(--text-color);">' + section.content + '</p>';
         modalHtml += '</div>';
       });
