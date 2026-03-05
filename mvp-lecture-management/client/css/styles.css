@@ -3142,6 +3142,102 @@ body:not(.dark-mode) .alias-preview {
   background: var(--bg-secondary, #374151);
 }
 
+/* Achievement Badges */
+.achievements-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.achievement-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--bg-secondary, #f3f4f6);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.achievement-badge.earned {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.achievement-badge.locked {
+  opacity: 0.5;
+  filter: grayscale(0.8);
+}
+
+.achievement-badge.earned:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.badge-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.badge-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.badge-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-color, #1f2937);
+}
+
+.badge-desc {
+  font-size: 10px;
+  color: var(--text-secondary, #6b7280);
+}
+
+/* Personalised Tips */
+.tips-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tip-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  background: rgba(59, 130, 246, 0.06);
+  border-left: 3px solid #3b82f6;
+  border-radius: 0 10px 10px 0;
+}
+
+.tip-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.tip-text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-color, #1f2937);
+}
+
+/* Dark mode for achievements and tips */
+[data-theme="dark"] .achievement-badge {
+  background: var(--bg-secondary, #374151);
+}
+
+[data-theme="dark"] .achievement-badge.earned {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%);
+}
+
+[data-theme="dark"] .tip-item {
+  background: rgba(59, 130, 246, 0.1);
+}
+
 [data-theme="dark"] .reflection-input,
 [data-theme="dark"] .goal-input-group select {
   background: var(--bg-secondary, #374151);

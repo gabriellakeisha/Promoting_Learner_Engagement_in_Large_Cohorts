@@ -253,6 +253,20 @@ function displayReflectionContent(analytics) {
         </div>
       `}
     </div>
+
+    <div class="reflection-section">
+      <h3>🏆 Achievements</h3>
+      <div class="achievements-grid">
+        ${getAchievementBadges(personal, comparison, timeline, goal, goalProgress)}
+      </div>
+    </div>
+
+    <div class="reflection-section">
+      <h3>💡 Personalised Tips</h3>
+      <div class="tips-container">
+        ${getPersonalisedTips(personal, comparison, timeline)}
+      </div>
+    </div>
   `;
 }
 
@@ -527,6 +541,165 @@ async function saveReflection() {
   } catch (error) {
     alert('Error saving reflection: ' + error.message);
   }
+}
+
+function getAchievementBadges(personal, comparison, timeline, goal, goalProgress) {
+  const badges = [];
+
+  // Active Participant badge
+  if (personal.messageCount >= 5) {
+    badges.push({
+      icon: '💬',
+      title: 'Active Participant',
+      desc: '5+ messages sent',
+      earned: true
+    });
+  } else {
+    badges.push({
+      icon: '💬',
+      title: 'Active Participant',
+      desc: `${personal.messageCount}/5 messages`,
+      earned: false
+    });
+  }
+
+  // Above Average badge
+  if (comparison.aboveAverage) {
+    badges.push({
+      icon: '📈',
+      title: 'Above Average',
+      desc: 'More than class average',
+      earned: true
+    });
+  }
+
+  // Question Asker badge
+  if (personal.messagesByType.QUESTION >= 2) {
+    badges.push({
+      icon: '❓',
+      title: 'Curious Mind',
+      desc: '2+ questions asked',
+      earned: true
+    });
+  } else {
+    badges.push({
+      icon: '❓',
+      title: 'Curious Mind',
+      desc: `${personal.messagesByType.QUESTION}/2 questions`,
+      earned: false
+    });
+  }
+
+  // Goal Achiever badge
+  if (goalProgress?.completed) {
+    badges.push({
+      icon: '🎯',
+      title: 'Goal Achiever',
+      desc: 'Session goal completed',
+      earned: true
+    });
+  }
+
+  // Early Bird badge
+  if (timeline.length > 0 && parseInt(timeline[0].time) <= 5) {
+    badges.push({
+      icon: '🐦',
+      title: 'Early Bird',
+      desc: 'Engaged in first 5 mins',
+      earned: true
+    });
+  }
+
+  // Top 10 badge
+  if (personal.percentile && personal.percentile >= 90) {
+    badges.push({
+      icon: '🏆',
+      title: 'Top 10%',
+      desc: 'Among most active',
+      earned: true
+    });
+  }
+
+  return badges.map(b => `
+    <div class="achievement-badge ${b.earned ? 'earned' : 'locked'}">
+      <span class="badge-icon">${b.icon}</span>
+      <div class="badge-info">
+        <span class="badge-title">${b.title}</span>
+        <span class="badge-desc">${b.desc}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function getPersonalisedTips(personal, comparison, timeline) {
+  const tips = [];
+
+  // Tip based on message count
+  if (personal.messageCount === 0) {
+    tips.push({
+      icon: '👋',
+      text: "You haven't sent any messages yet. Try starting with a simple comment or question!"
+    });
+  } else if (personal.messageCount < 3) {
+    tips.push({
+      icon: '💪',
+      text: "You're getting started! Research shows active participants retain 20% more information."
+    });
+  }
+
+  // Tip based on comparison
+  if (!comparison.aboveAverage && personal.messageCount > 0) {
+    tips.push({
+      icon: '📊',
+      text: `You're ${Math.abs(comparison.difference)} messages below average. Try asking one more question before the session ends!`
+    });
+  }
+
+  // Tip based on question count
+  if (personal.messagesByType.QUESTION === 0 && personal.messageCount > 0) {
+    tips.push({
+      icon: '❓',
+      text: "Try asking a question! Even simple clarifications help reinforce your understanding."
+    });
+  }
+
+  // Tip based on timeline
+  if (timeline.length > 0) {
+    const firstHalf = timeline.slice(0, Math.ceil(timeline.length / 2));
+    const secondHalf = timeline.slice(Math.ceil(timeline.length / 2));
+    const firstHalfCount = firstHalf.reduce((s, t) => s + t.count, 0);
+    const secondHalfCount = secondHalf.reduce((s, t) => s + t.count, 0);
+
+    if (firstHalfCount === 0 && secondHalfCount > 0) {
+      tips.push({
+        icon: '⏰',
+        text: "You engaged later in the session. Try participating earlier next time to build momentum!"
+      });
+    }
+  }
+
+  // Confusion tip
+  if (personal.messagesByType.CONFUSION > personal.messagesByType.QUESTION) {
+    tips.push({
+      icon: '💡',
+      text: "When confused, try formulating it as a question. This helps you think through the problem!"
+    });
+  }
+
+  // Default positive tip if doing well
+  if (tips.length === 0) {
+    tips.push({
+      icon: '⭐',
+      text: "Great job staying engaged! Keep up the active participation."
+    });
+  }
+
+  return tips.map(t => `
+    <div class="tip-item">
+      <span class="tip-icon">${t.icon}</span>
+      <span class="tip-text">${t.text}</span>
+    </div>
+  `).join('');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
