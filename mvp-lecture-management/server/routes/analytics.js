@@ -6,6 +6,8 @@ const Session = require('../models/Session');
 const User = require('../models/User');
 const { isAuthenticated, isLecturer } = require('../middleware/auth');
 const aiSummaryService = require('../services/ai-summary');
+const aiKeywordsService = require('../services/ai-keywords');
+const aiComparisonService = require('../services/ai-comparison');
 
 router.get('/lecturer/:sessionId', isAuthenticated, isLecturer, async (req, res) => {
   try {
@@ -87,28 +89,10 @@ router.get('/lecturer/:sessionId', isAuthenticated, isLecturer, async (req, res)
     identityModeBreakdown.forEach(item => { identityModes[item._id] = item.count; });
 
     const allMessages = await Message.find({ sessionId, isDeleted: false }).select('text');
-    const stopWords = new Set([
-      'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had',
-      'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'shall',
-      'can', 'need', 'dare', 'ought', 'used', 'to', 'of', 'in', 'for', 'on', 'with', 'at', 'by',
-      'from', 'as', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'between',
-      'under', 'again', 'further', 'then', 'once', 'here', 'there', 'when', 'where', 'why', 'how',
-      'all', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only',
-      'own', 'same', 'so', 'than', 'too', 'very', 'just', 'and', 'but', 'if', 'or', 'because',
-      'until', 'while', 'this', 'that', 'these', 'those', 'what', 'which', 'who', 'whom', 'i',
-      'me', 'my', 'we', 'our', 'you', 'your', 'he', 'him', 'his', 'she', 'her', 'it', 'its',
-      'they', 'them', 'their', 'am', 'get', 'got', 'also', 'like', 'know', 'think', 'dont',
-      "don't", 'im', "i'm", 'about', 'yes', 'yeah', 'ok', 'okay'
-    ]);
-    const wordCounts = {};
-    allMessages.forEach(msg => {
-      if (!msg.text) return;
-      const words = msg.text.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/)
-        .filter(word => word.length > 2 && !stopWords.has(word));
-      words.forEach(word => { wordCounts[word] = (wordCounts[word] || 0) + 1; });
-    });
-    const keywords = Object.entries(wordCounts).sort((a, b) => b[1] - a[1]).slice(0, 15)
-      .map(([word, count]) => ({ word, count }));
+
+    // Extract keywords using AI (Hugging Face) with RAKE fallback
+    const allText = allMessages.map(msg => msg.text || '').join(' ');
+    const keywords = await aiKeywordsService.extractKeywordsAI(allText, 15);
 
     const peakActivity = timeline.reduce((max, current) => current.count > (max?.count || 0) ? current : max, null);
     const confusionRate = totalMessages > 0 ? ((typeCounts.CONFUSION / totalMessages) * 100).toFixed(1) : 0;
@@ -277,22 +261,6 @@ router.get('/macro', isAuthenticated, isLecturer, async (req, res) => {
       filteredSessions = filteredSessions.filter(s => new Date(s.createdAt) <= toDate);
     }
 
-    const stopWords = new Set([
-      'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had',
-      'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'shall',
-      'can', 'need', 'dare', 'ought', 'used', 'to', 'of', 'in', 'for', 'on', 'with', 'at', 'by',
-      'from', 'as', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'between',
-      'under', 'again', 'further', 'then', 'once', 'here', 'there', 'when', 'where', 'why', 'how',
-      'all', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only',
-      'own', 'same', 'so', 'than', 'too', 'very', 'just', 'and', 'but', 'if', 'or', 'because',
-      'until', 'while', 'this', 'that', 'these', 'those', 'what', 'which', 'who', 'whom', 'i',
-      'me', 'my', 'we', 'our', 'you', 'your', 'he', 'him', 'his', 'she', 'her', 'it', 'its',
-      'they', 'them', 'their', 'am', 'get', 'got', 'also', 'like', 'know', 'think', 'dont',
-      "don't", 'im', "i'm", 'about', 'yes', 'yeah', 'ok', 'okay', 'really', 'much', 'thing',
-      'things', 'something', 'anything', 'everything', 'nothing', 'way', 'well', 'still',
-      'even', 'back', 'going', 'come', 'make', 'made', 'take', 'want', 'see', 'look', 'find'
-    ]);
-
     const confusionTopicMap = {};
     const identityTrends = [];
 
@@ -320,17 +288,16 @@ router.get('/macro', isAuthenticated, isLecturer, async (req, res) => {
           sessionId, isDeleted: false, type: 'CONFUSION'
         }).select('text');
 
-        confusionMessages.forEach(msg => {
-          if (!msg.text) return;
-          const words = msg.text.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/)
-            .filter(word => word.length > 2 && !stopWords.has(word));
-          words.forEach(word => {
-            if (!confusionTopicMap[word]) {
-              confusionTopicMap[word] = { word: word, count: 0, sessions: new Set() };
-            }
-            confusionTopicMap[word].count++;
-            confusionTopicMap[word].sessions.add(session.title);
-          });
+        // Extract keywords from confusion messages using AI service
+        const confusionText = confusionMessages.map(msg => msg.text || '').join(' ');
+        const confusionKeywords = await aiKeywordsService.extractKeywordsAI(confusionText, 20);
+
+        confusionKeywords.forEach(({ word }) => {
+          if (!confusionTopicMap[word]) {
+            confusionTopicMap[word] = { word: word, count: 0, sessions: new Set() };
+          }
+          confusionTopicMap[word].count++;
+          confusionTopicMap[word].sessions.add(session.title);
         });
 
         const identityBreakdown = await Message.aggregate([
@@ -457,8 +424,7 @@ router.get('/ai-summary/:sessionId', isAuthenticated, isLecturer, async (req, re
     if (secondHalfMsgs > firstHalfMsgs * 1.4) engagementTrend = 'increasing';
     else if (firstHalfMsgs > secondHalfMsgs * 1.4) engagementTrend = 'decreasing';
 
-    var stopWords = new Set(['the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'shall', 'should', 'may', 'might', 'must', 'can', 'could', 'i', 'me', 'my', 'we', 'our', 'you', 'your', 'he', 'him', 'his', 'she', 'her', 'it', 'its', 'they', 'them', 'their', 'this', 'that', 'these', 'those', 'what', 'which', 'who', 'whom', 'how', 'when', 'where', 'why', 'am', 'not', 'no', 'yes', 'so', 'if', 'or', 'and', 'but', 'for', 'nor', 'on', 'at', 'to', 'from', 'by', 'up', 'about', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'between', 'out', 'off', 'over', 'under', 'again', 'further', 'then', 'once', 'here', 'there', 'all', 'each', 'every', 'both', 'few', 'more', 'most', 'other', 'some', 'such', 'only', 'own', 'same', 'than', 'too', 'very', 'just', 'because', 'as', 'until', 'while', 'of', 'with', 'in', 'also', 'im', 'dont', 'cant', 'thats', 'its', 'ive', 'like', 'get', 'got', 'really', 'think', 'know', 'going', 'want', 'need', 'one', 'much', 'well', 'even', 'still', 'thing', 'right', 'back', 'way', 'make', 'say', 'said', 'see', 'go', 'come', 'take', 'give', 'tell', 'ask', 'try', 'use', 'find', 'let', 'put', 'keep', 'work', 'look', 'thanks', 'thank', 'good', 'great', 'nice', 'okay', 'ok', 'yeah', 'yep', 'sure', 'agree', 'lol', 'haha', 'wow', 'cool', 'interesting', 'helpful', 'clear', 'clearer', 'clarification', 'clarify', 'explanation', 'explain', 'example', 'similar', 'found', 'slides', 'textbook', 'lecture', 'class', 'professor', 'question', 'comment', 'please', 'sorry', 'maybe', 'actually', 'basically', 'definitely', 'probably', 'exactly', 'pretty', 'quite', 'anyway', 'though', 'seems', 'feel', 'lot', 'bit', 'now']);
-
+    // Preserve acronyms like AI/ML
     var preserveTerms = {};
     messages.forEach(function (m) {
       if (!m.text) return;
@@ -471,36 +437,16 @@ router.get('/ai-summary/:sessionId', isAuthenticated, isLecturer, async (req, re
       }
     });
 
-    var wordCounts = {};
-    messages.forEach(function (m) {
-      if (!m.text) return;
-      var words = m.text.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/);
-      words.forEach(function (w) {
-        if (w.length > 2 && !stopWords.has(w)) {
-          wordCounts[w] = (wordCounts[w] || 0) + 1;
-        }
-      });
-    });
-    var topKeywords = Object.entries(wordCounts)
-      .sort(function (a, b) { return b[1] - a[1]; })
-      .slice(0, 10)
-      .map(function (e) { return preserveTerms[e[0]] || e[0]; });
+    // Extract keywords using AI service (Hugging Face with RAKE fallback)
+    var allMessageText = messages.map(function (m) { return m.text || ''; }).join(' ');
+    var aiKeywords = await aiKeywordsService.extractKeywordsAI(allMessageText, 10);
+    var topKeywords = aiKeywords.map(function (k) { return preserveTerms[k.word] || k.word; });
 
+    // Extract confusion keywords using AI service
     var confusionMessages = messages.filter(function (m) { return m.type === 'CONFUSION'; });
-    var confusionKeywords = {};
-    confusionMessages.forEach(function (m) {
-      if (!m.text) return;
-      var words = m.text.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/);
-      words.forEach(function (w) {
-        if (w.length > 2 && !stopWords.has(w)) {
-          confusionKeywords[w] = (confusionKeywords[w] || 0) + 1;
-        }
-      });
-    });
-    var topConfusionTopics = Object.entries(confusionKeywords)
-      .sort(function (a, b) { return b[1] - a[1]; })
-      .slice(0, 5)
-      .map(function (e) { return preserveTerms[e[0]] || e[0]; });
+    var confusionText = confusionMessages.map(function (m) { return m.text || ''; }).join(' ');
+    var confusionAiKeywords = await aiKeywordsService.extractKeywordsAI(confusionText, 5);
+    var topConfusionTopics = confusionAiKeywords.map(function (k) { return preserveTerms[k.word] || k.word; });
 
     var questionMessages = messages.filter(function (m) { return m.type === 'QUESTION'; });
     var questionSamples = questionMessages.slice(0, 5).map(function (m) { return m.text.substring(0, 120); });
@@ -626,6 +572,38 @@ router.get('/ai-summary/:sessionId', isAuthenticated, isLecturer, async (req, re
   } catch (error) {
     console.error('Generate summary error:', error);
     res.status(500).json({ success: false, message: 'Server error generating summary', error: error.message });
+  }
+});
+
+// AI Keyword Extraction Comparison Endpoint (for dissertation study)
+router.get('/ai-comparison/:sessionId', isAuthenticated, isLecturer, async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const session = await Session.findById(sessionId);
+    if (!session) return res.status(404).json({ success: false, message: 'Session not found' });
+
+    const messages = await Message.find({ sessionId, isDeleted: false }).select('text');
+    const allText = messages.map(m => m.text || '').join(' ');
+
+    if (allText.length < 100) {
+      return res.json({
+        success: false,
+        message: 'Not enough message content for comparison (need at least 100 characters)'
+      });
+    }
+
+    const comparison = await aiComparisonService.runComparison(allText, 10);
+
+    res.json({
+      success: true,
+      sessionId,
+      sessionTitle: session.title,
+      messageCount: messages.length,
+      comparison
+    });
+  } catch (error) {
+    console.error('AI comparison error:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 
