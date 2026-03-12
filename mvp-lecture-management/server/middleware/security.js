@@ -1,12 +1,9 @@
-/**
- * Security Middleware
- * Rate limiting, XSS sanitisation, and security headers
- */
+// security middleware - rate limiting, xss sanitisation, security headers
 
 const rateLimit = require('express-rate-limit');
 const validator = require('validator');
 
-// General API rate limiter
+// general API rate limiter
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per window
@@ -21,7 +18,7 @@ const apiLimiter = rateLimit({
 // Stricter limiter for auth endpoints (login/register)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // 10 attempts per window
+  max: 50, // 50 attempts per window
   message: {
     success: false,
     message: 'Too many authentication attempts, please try again later.'
@@ -42,22 +39,14 @@ const messageLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-/**
- * Sanitise text input to prevent XSS
- * @param {string} text - Input text
- * @returns {string} Sanitised text
- */
+// sanitise text input to prevent xss
 function sanitiseText(text) {
   if (!text || typeof text !== 'string') return '';
   // Escape HTML entities
   return validator.escape(text.trim());
 }
 
-/**
- * Sanitise user input object (recursive for nested objects)
- * @param {object} obj - Input object
- * @returns {object} Sanitised object
- */
+// sanitise user input object (works recursively for nested stuff)
 function sanitiseInput(obj) {
   if (!obj || typeof obj !== 'object') return obj;
 
@@ -80,9 +69,7 @@ function sanitiseInput(obj) {
   return sanitised;
 }
 
-/**
- * Middleware to sanitise request body
- */
+// middleware to sanitise request body
 function sanitiseBody(req, res, next) {
   if (req.body && typeof req.body === 'object') {
     req.body = sanitiseInput(req.body);
@@ -90,9 +77,7 @@ function sanitiseBody(req, res, next) {
   next();
 }
 
-/**
- * Security headers middleware
- */
+// security headers middleware
 function securityHeaders(req, res, next) {
   // Prevent clickjacking
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');

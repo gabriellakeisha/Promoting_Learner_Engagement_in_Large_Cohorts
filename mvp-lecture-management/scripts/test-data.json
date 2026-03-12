@@ -6,124 +6,124 @@
     "messageCount": 15,
     "messages": [
       {
-        "text": "The comparison between sigmoid and ReLU was useful",
+        "text": "Not understanding weight initialization strategies",
+        "type": "CONFUSION",
+        "identityMode": "identified",
+        "pseudonym": null,
+        "timestamp": "2026-03-11T21:44:42.159Z",
+        "upvotes": 2
+      },
+      {
+        "text": "The backpropagation explanation was really clear",
         "type": "COMMENT",
         "identityMode": "identified",
         "pseudonym": null,
-        "timestamp": "2026-03-05T08:46:16.175Z",
+        "timestamp": "2026-03-11T21:53:14.955Z",
         "upvotes": 1
-      },
-      {
-        "text": "Not sure how activation functions affect learning",
-        "type": "CONFUSION",
-        "identityMode": "pseudonymous",
-        "pseudonym": "DigitalOwl",
-        "timestamp": "2026-03-05T08:48:49.986Z",
-        "upvotes": 4
       },
       {
         "text": "Still unclear on how dropout prevents overfitting",
         "type": "CONFUSION",
         "identityMode": "pseudonymous",
-        "pseudonym": "DataWizard",
-        "timestamp": "2026-03-05T08:51:05.135Z",
-        "upvotes": 1
+        "pseudonym": "BluePhoenix",
+        "timestamp": "2026-03-11T21:54:59.254Z",
+        "upvotes": 4
       },
       {
         "text": "How do we decide the number of hidden layers?",
         "type": "QUESTION",
         "identityMode": "identified",
         "pseudonym": null,
-        "timestamp": "2026-03-05T08:53:23.941Z",
+        "timestamp": "2026-03-11T22:03:39.831Z",
+        "upvotes": 3
+      },
+      {
+        "text": "The comparison between sigmoid and ReLU was useful",
+        "type": "COMMENT",
+        "identityMode": "identified",
+        "pseudonym": null,
+        "timestamp": "2026-03-11T22:05:47.707Z",
+        "upvotes": 0
+      },
+      {
+        "text": "The visual diagram of feed-forward networks helped a lot",
+        "type": "COMMENT",
+        "identityMode": "pseudonymous",
+        "pseudonym": "TechExplorer",
+        "timestamp": "2026-03-11T22:14:20.762Z",
+        "upvotes": 0
+      },
+      {
+        "text": "How many layers does a typical deep neural network have?",
+        "type": "QUESTION",
+        "identityMode": "pseudonymous",
+        "pseudonym": "BluePhoenix",
+        "timestamp": "2026-03-11T22:14:45.388Z",
         "upvotes": 4
       },
       {
-        "text": "The backpropagation explanation was really clear",
-        "type": "COMMENT",
-        "identityMode": "pseudonymous",
-        "pseudonym": "DataWizard",
-        "timestamp": "2026-03-05T08:57:10.986Z",
-        "upvotes": 2
-      },
-      {
-        "text": "What is transfer learning in neural networks?",
+        "text": "Can neural networks be used for time series prediction?",
         "type": "QUESTION",
         "identityMode": "identified",
         "pseudonym": null,
-        "timestamp": "2026-03-05T08:59:02.079Z",
-        "upvotes": 3
+        "timestamp": "2026-03-11T22:15:18.003Z",
+        "upvotes": 4
+      },
+      {
+        "text": "Not sure how activation functions affect learning",
+        "type": "CONFUSION",
+        "identityMode": "identified",
+        "pseudonym": null,
+        "timestamp": "2026-03-11T22:19:23.941Z",
+        "upvotes": 4
+      },
+      {
+        "text": "What optimizers work best for training deep networks?",
+        "type": "QUESTION",
+        "identityMode": "pseudonymous",
+        "pseudonym": "CodeNinja",
+        "timestamp": "2026-03-11T22:19:27.759Z",
+        "upvotes": 4
+      },
+      {
+        "text": "What is the vanishing gradient problem?",
+        "type": "QUESTION",
+        "identityMode": "identified",
+        "pseudonym": null,
+        "timestamp": "2026-03-11T22:21:15.985Z",
+        "upvotes": 4
       },
       {
         "text": "Confused about batch normalization purpose",
         "type": "CONFUSION",
-        "identityMode": "identified",
+        "identityMode": "pseudonymous",
+        "pseudonym": "LogicLion",
+        "timestamp": "2026-03-11T22:26:07.790Z",
+        "upvotes": 4
+      },
+      {
+        "text": "What is transfer learning in neural networks?",
+        "type": "QUESTION",
+        "identityMode": "anonymous",
         "pseudonym": null,
-        "timestamp": "2026-03-05T09:02:13.823Z",
-        "upvotes": 2
+        "timestamp": "2026-03-11T22:31:52.842Z",
+        "upvotes": 1
       },
       {
         "text": "I'm confused about the difference between CNN and RNN architectures",
         "type": "CONFUSION",
         "identityMode": "identified",
         "pseudonym": null,
-        "timestamp": "2026-03-05T09:09:54.274Z",
-        "upvotes": 1
-      },
-      {
-        "text": "The visual diagram of feed-forward networks helped a lot",
-        "type": "COMMENT",
-        "identityMode": "anonymous",
-        "pseudonym": null,
-        "timestamp": "2026-03-05T09:11:08.367Z",
-        "upvotes": 2
-      },
-      {
-        "text": "Not understanding weight initialization strategies",
-        "type": "CONFUSION",
-        "identityMode": "anonymous",
-        "pseudonym": null,
-        "timestamp": "2026-03-05T09:19:33.830Z",
-        "upvotes": 4
-      },
-      {
-        "text": "How many layers does a typical deep neural network have?",
-        "type": "QUESTION",
-        "identityMode": "identified",
-        "pseudonym": null,
-        "timestamp": "2026-03-05T09:22:22.417Z",
-        "upvotes": 0
-      },
-      {
-        "text": "What is the vanishing gradient problem?",
-        "type": "QUESTION",
-        "identityMode": "pseudonymous",
-        "pseudonym": "ByteHunter",
-        "timestamp": "2026-03-05T09:24:23.703Z",
-        "upvotes": 4
-      },
-      {
-        "text": "Can neural networks be used for time series prediction?",
-        "type": "QUESTION",
-        "identityMode": "anonymous",
-        "pseudonym": null,
-        "timestamp": "2026-03-05T09:26:00.999Z",
-        "upvotes": 1
+        "timestamp": "2026-03-11T22:33:15.597Z",
+        "upvotes": 3
       },
       {
         "text": "The MNIST example made the concept concrete",
         "type": "COMMENT",
-        "identityMode": "pseudonymous",
-        "pseudonym": "DataWizard",
-        "timestamp": "2026-03-05T09:30:56.313Z",
+        "identityMode": "identified",
+        "pseudonym": null,
+        "timestamp": "2026-03-11T22:43:00.502Z",
         "upvotes": 0
-      },
-      {
-        "text": "What optimizers work best for training deep networks?",
-        "type": "QUESTION",
-        "identityMode": "pseudonymous",
-        "pseudonym": "TechExplorer",
-        "timestamp": "2026-03-05T09:32:55.555Z",
-        "upvotes": 1
       }
     ],
     "expectedKeywords": [
@@ -148,73 +148,73 @@
       {
         "text": "Confused about BCNF vs 3NF differences",
         "type": "CONFUSION",
-        "identityMode": "anonymous",
-        "pseudonym": null,
-        "timestamp": "2026-03-05T08:39:48.506Z",
-        "upvotes": 3
-      },
-      {
-        "text": "What is referential integrity?",
-        "type": "QUESTION",
-        "identityMode": "pseudonymous",
-        "pseudonym": "DigitalOwl",
-        "timestamp": "2026-03-05T08:40:46.461Z",
-        "upvotes": 3
-      },
-      {
-        "text": "The normalization step-by-step process was clear",
-        "type": "COMMENT",
         "identityMode": "pseudonymous",
         "pseudonym": "CuriousMind",
-        "timestamp": "2026-03-05T08:53:16.936Z",
+        "timestamp": "2026-03-11T21:45:19.757Z",
         "upvotes": 3
       },
       {
-        "text": "How does indexing improve query performance?",
-        "type": "QUESTION",
-        "identityMode": "anonymous",
+        "text": "Good explanation of primary vs foreign keys",
+        "type": "COMMENT",
+        "identityMode": "identified",
         "pseudonym": null,
-        "timestamp": "2026-03-05T08:54:55.095Z",
-        "upvotes": 2
+        "timestamp": "2026-03-11T21:45:48.453Z",
+        "upvotes": 1
       },
       {
-        "text": "The ER diagram example was helpful",
-        "type": "COMMENT",
-        "identityMode": "pseudonymous",
-        "pseudonym": "LogicLion",
-        "timestamp": "2026-03-05T08:55:32.802Z",
+        "text": "Unclear when to use composite keys",
+        "type": "CONFUSION",
+        "identityMode": "identified",
+        "pseudonym": null,
+        "timestamp": "2026-03-11T21:54:58.510Z",
         "upvotes": 1
       },
       {
         "text": "When should we denormalize a database?",
         "type": "QUESTION",
+        "identityMode": "pseudonymous",
+        "pseudonym": "TechExplorer",
+        "timestamp": "2026-03-11T22:01:46.646Z",
+        "upvotes": 0
+      },
+      {
+        "text": "Not sure about ACID properties in practice",
+        "type": "CONFUSION",
+        "identityMode": "identified",
+        "pseudonym": null,
+        "timestamp": "2026-03-11T22:06:05.791Z",
+        "upvotes": 1
+      },
+      {
+        "text": "What is referential integrity?",
+        "type": "QUESTION",
         "identityMode": "anonymous",
         "pseudonym": null,
-        "timestamp": "2026-03-05T09:05:11.685Z",
-        "upvotes": 4
+        "timestamp": "2026-03-11T22:19:06.671Z",
+        "upvotes": 2
+      },
+      {
+        "text": "Should we always use surrogate keys?",
+        "type": "QUESTION",
+        "identityMode": "anonymous",
+        "pseudonym": null,
+        "timestamp": "2026-03-11T22:19:15.111Z",
+        "upvotes": 2
       },
       {
         "text": "I'm confused about transitive dependencies",
         "type": "CONFUSION",
-        "identityMode": "anonymous",
-        "pseudonym": null,
-        "timestamp": "2026-03-05T09:06:40.399Z",
-        "upvotes": 2
-      },
-      {
-        "text": "Good explanation of primary vs foreign keys",
-        "type": "COMMENT",
-        "identityMode": "pseudonymous",
-        "pseudonym": "ByteHunter",
-        "timestamp": "2026-03-05T09:10:38.696Z",
-        "upvotes": 2
-      },
-      {
-        "text": "The SQL examples clarified JOIN operations",
-        "type": "COMMENT",
         "identityMode": "identified",
         "pseudonym": null,
-        "timestamp": "2026-03-05T09:17:33.294Z",
+        "timestamp": "2026-03-11T22:20:06.454Z",
+        "upvotes": 0
+      },
+      {
+        "text": "The normalization step-by-step process was clear",
+        "type": "COMMENT",
+        "identityMode": "pseudonymous",
+        "pseudonym": "TechExplorer",
+        "timestamp": "2026-03-11T22:24:48.869Z",
         "upvotes": 3
       },
       {
@@ -222,48 +222,48 @@
         "type": "QUESTION",
         "identityMode": "anonymous",
         "pseudonym": null,
-        "timestamp": "2026-03-05T09:18:47.883Z",
+        "timestamp": "2026-03-11T22:27:47.201Z",
         "upvotes": 1
       },
       {
-        "text": "Not sure about ACID properties in practice",
-        "type": "CONFUSION",
+        "text": "The SQL examples clarified JOIN operations",
+        "type": "COMMENT",
         "identityMode": "pseudonymous",
-        "pseudonym": "QueryQueen",
-        "timestamp": "2026-03-05T09:21:47.233Z",
-        "upvotes": 1
+        "pseudonym": "BluePhoenix",
+        "timestamp": "2026-03-11T22:31:01.889Z",
+        "upvotes": 4
+      },
+      {
+        "text": "How does indexing improve query performance?",
+        "type": "QUESTION",
+        "identityMode": "identified",
+        "pseudonym": null,
+        "timestamp": "2026-03-11T22:36:43.516Z",
+        "upvotes": 4
       },
       {
         "text": "Not clear on functional dependencies",
         "type": "CONFUSION",
         "identityMode": "pseudonymous",
-        "pseudonym": "TechExplorer",
-        "timestamp": "2026-03-05T09:29:18.107Z",
-        "upvotes": 4
+        "pseudonym": "CuriousMind",
+        "timestamp": "2026-03-11T22:41:06.069Z",
+        "upvotes": 0
+      },
+      {
+        "text": "The ER diagram example was helpful",
+        "type": "COMMENT",
+        "identityMode": "pseudonymous",
+        "pseudonym": "DataWizard",
+        "timestamp": "2026-03-11T22:41:11.364Z",
+        "upvotes": 0
       },
       {
         "text": "What is the difference between 2NF and 3NF?",
         "type": "QUESTION",
-        "identityMode": "pseudonymous",
-        "pseudonym": "CodeNinja",
-        "timestamp": "2026-03-05T09:29:27.702Z",
-        "upvotes": 3
-      },
-      {
-        "text": "Unclear when to use composite keys",
-        "type": "CONFUSION",
-        "identityMode": "pseudonymous",
-        "pseudonym": "BluePhoenix",
-        "timestamp": "2026-03-05T09:29:38.646Z",
-        "upvotes": 2
-      },
-      {
-        "text": "Should we always use surrogate keys?",
-        "type": "QUESTION",
-        "identityMode": "pseudonymous",
-        "pseudonym": "DigitalOwl",
-        "timestamp": "2026-03-05T09:35:12.143Z",
-        "upvotes": 4
+        "identityMode": "anonymous",
+        "pseudonym": null,
+        "timestamp": "2026-03-11T22:43:58.628Z",
+        "upvotes": 1
       }
     ],
     "expectedKeywords": [
@@ -286,123 +286,123 @@
     "messageCount": 15,
     "messages": [
       {
-        "text": "Confused about the difference between authentication and authorization",
-        "type": "CONFUSION",
-        "identityMode": "identified",
-        "pseudonym": null,
-        "timestamp": "2026-03-05T08:39:20.727Z",
-        "upvotes": 4
-      },
-      {
-        "text": "How do rate limiters protect against brute force?",
+        "text": "What is CSRF and how to prevent it?",
         "type": "QUESTION",
         "identityMode": "pseudonymous",
-        "pseudonym": "CuriousMind",
-        "timestamp": "2026-03-05T08:42:16.758Z",
+        "pseudonym": "BluePhoenix",
+        "timestamp": "2026-03-11T21:44:14.653Z",
         "upvotes": 4
-      },
-      {
-        "text": "Confused about session vs token-based auth",
-        "type": "CONFUSION",
-        "identityMode": "identified",
-        "pseudonym": null,
-        "timestamp": "2026-03-05T08:43:53.718Z",
-        "upvotes": 4
-      },
-      {
-        "text": "How does JWT authentication work?",
-        "type": "QUESTION",
-        "identityMode": "anonymous",
-        "pseudonym": null,
-        "timestamp": "2026-03-05T08:47:58.519Z",
-        "upvotes": 4
-      },
-      {
-        "text": "The security headers explanation was practical",
-        "type": "COMMENT",
-        "identityMode": "pseudonymous",
-        "pseudonym": "ByteHunter",
-        "timestamp": "2026-03-05T08:51:51.562Z",
-        "upvotes": 2
-      },
-      {
-        "text": "The OAuth flow diagram helped understand the process",
-        "type": "COMMENT",
-        "identityMode": "pseudonymous",
-        "pseudonym": "CodeNinja",
-        "timestamp": "2026-03-05T08:56:40.512Z",
-        "upvotes": 1
       },
       {
         "text": "Why do we need HTTPS for authentication?",
         "type": "QUESTION",
         "identityMode": "anonymous",
         "pseudonym": null,
-        "timestamp": "2026-03-05T09:00:04.318Z",
-        "upvotes": 2
-      },
-      {
-        "text": "What is cross-site scripting (XSS)?",
-        "type": "QUESTION",
-        "identityMode": "anonymous",
-        "pseudonym": null,
-        "timestamp": "2026-03-05T09:01:49.324Z",
-        "upvotes": 0
+        "timestamp": "2026-03-11T21:47:27.164Z",
+        "upvotes": 1
       },
       {
         "text": "What is two-factor authentication?",
         "type": "QUESTION",
         "identityMode": "pseudonymous",
-        "pseudonym": "QueryQueen",
-        "timestamp": "2026-03-05T09:03:12.451Z",
-        "upvotes": 2
+        "pseudonym": "AlgoAce",
+        "timestamp": "2026-03-11T21:47:30.518Z",
+        "upvotes": 3
+      },
+      {
+        "text": "How do rate limiters protect against brute force?",
+        "type": "QUESTION",
+        "identityMode": "identified",
+        "pseudonym": null,
+        "timestamp": "2026-03-11T21:49:40.407Z",
+        "upvotes": 3
+      },
+      {
+        "text": "Confused about session vs token-based auth",
+        "type": "CONFUSION",
+        "identityMode": "identified",
+        "pseudonym": null,
+        "timestamp": "2026-03-11T21:51:05.033Z",
+        "upvotes": 0
+      },
+      {
+        "text": "Not understanding certificate pinning",
+        "type": "CONFUSION",
+        "identityMode": "anonymous",
+        "pseudonym": null,
+        "timestamp": "2026-03-11T21:56:05.779Z",
+        "upvotes": 0
+      },
+      {
+        "text": "The security headers explanation was practical",
+        "type": "COMMENT",
+        "identityMode": "identified",
+        "pseudonym": null,
+        "timestamp": "2026-03-11T22:02:47.515Z",
+        "upvotes": 0
+      },
+      {
+        "text": "Unclear on how to store API keys securely",
+        "type": "CONFUSION",
+        "identityMode": "identified",
+        "pseudonym": null,
+        "timestamp": "2026-03-11T22:07:16.205Z",
+        "upvotes": 1
+      },
+      {
+        "text": "Good demonstration of password hashing with bcrypt",
+        "type": "COMMENT",
+        "identityMode": "identified",
+        "pseudonym": null,
+        "timestamp": "2026-03-11T22:08:11.963Z",
+        "upvotes": 4
+      },
+      {
+        "text": "The OAuth flow diagram helped understand the process",
+        "type": "COMMENT",
+        "identityMode": "identified",
+        "pseudonym": null,
+        "timestamp": "2026-03-11T22:18:55.946Z",
+        "upvotes": 1
+      },
+      {
+        "text": "The OWASP top 10 overview was informative",
+        "type": "COMMENT",
+        "identityMode": "anonymous",
+        "pseudonym": null,
+        "timestamp": "2026-03-11T22:23:24.891Z",
+        "upvotes": 1
+      },
+      {
+        "text": "Confused about the difference between authentication and authorization",
+        "type": "CONFUSION",
+        "identityMode": "pseudonymous",
+        "pseudonym": "DataWizard",
+        "timestamp": "2026-03-11T22:23:25.454Z",
+        "upvotes": 0
+      },
+      {
+        "text": "How does JWT authentication work?",
+        "type": "QUESTION",
+        "identityMode": "anonymous",
+        "pseudonym": null,
+        "timestamp": "2026-03-11T22:26:29.491Z",
+        "upvotes": 3
       },
       {
         "text": "Not clear on how SQL injection attacks work",
         "type": "CONFUSION",
         "identityMode": "identified",
         "pseudonym": null,
-        "timestamp": "2026-03-05T09:04:07.382Z",
+        "timestamp": "2026-03-11T22:27:02.428Z",
         "upvotes": 3
       },
       {
-        "text": "Not understanding certificate pinning",
-        "type": "CONFUSION",
-        "identityMode": "identified",
-        "pseudonym": null,
-        "timestamp": "2026-03-05T09:04:13.460Z",
-        "upvotes": 2
-      },
-      {
-        "text": "The OWASP top 10 overview was informative",
-        "type": "COMMENT",
-        "identityMode": "pseudonymous",
-        "pseudonym": "CuriousMind",
-        "timestamp": "2026-03-05T09:04:49.038Z",
-        "upvotes": 2
-      },
-      {
-        "text": "Good demonstration of password hashing with bcrypt",
-        "type": "COMMENT",
-        "identityMode": "anonymous",
-        "pseudonym": null,
-        "timestamp": "2026-03-05T09:13:42.206Z",
-        "upvotes": 4
-      },
-      {
-        "text": "What is CSRF and how to prevent it?",
+        "text": "What is cross-site scripting (XSS)?",
         "type": "QUESTION",
-        "identityMode": "pseudonymous",
-        "pseudonym": "LogicLion",
-        "timestamp": "2026-03-05T09:22:35.427Z",
-        "upvotes": 1
-      },
-      {
-        "text": "Unclear on how to store API keys securely",
-        "type": "CONFUSION",
         "identityMode": "anonymous",
         "pseudonym": null,
-        "timestamp": "2026-03-05T09:29:26.736Z",
+        "timestamp": "2026-03-11T22:36:49.532Z",
         "upvotes": 4
       }
     ],
@@ -426,124 +426,124 @@
     "messageCount": 15,
     "messages": [
       {
-        "text": "Unclear on graph representation methods",
-        "type": "CONFUSION",
-        "identityMode": "anonymous",
+        "text": "What is the time complexity of quicksort?",
+        "type": "QUESTION",
+        "identityMode": "identified",
         "pseudonym": null,
-        "timestamp": "2026-03-05T08:37:05.961Z",
-        "upvotes": 2
-      },
-      {
-        "text": "Confused about dynamic programming approach",
-        "type": "CONFUSION",
-        "identityMode": "anonymous",
-        "pseudonym": null,
-        "timestamp": "2026-03-05T08:38:34.628Z",
-        "upvotes": 4
+        "timestamp": "2026-03-11T21:59:49.420Z",
+        "upvotes": 1
       },
       {
         "text": "What is the difference between stack and queue?",
         "type": "QUESTION",
+        "identityMode": "identified",
+        "pseudonym": null,
+        "timestamp": "2026-03-11T22:02:39.300Z",
+        "upvotes": 1
+      },
+      {
+        "text": "Confused about when to use BFS vs DFS",
+        "type": "CONFUSION",
         "identityMode": "anonymous",
         "pseudonym": null,
-        "timestamp": "2026-03-05T08:51:56.198Z",
-        "upvotes": 2
+        "timestamp": "2026-03-11T22:04:27.414Z",
+        "upvotes": 3
+      },
+      {
+        "text": "What is memoization in dynamic programming?",
+        "type": "QUESTION",
+        "identityMode": "anonymous",
+        "pseudonym": null,
+        "timestamp": "2026-03-11T22:05:27.574Z",
+        "upvotes": 4
+      },
+      {
+        "text": "Not understanding amortized analysis",
+        "type": "CONFUSION",
+        "identityMode": "anonymous",
+        "pseudonym": null,
+        "timestamp": "2026-03-11T22:07:10.657Z",
+        "upvotes": 3
+      },
+      {
+        "text": "Not clear on recursion vs iteration trade-offs",
+        "type": "CONFUSION",
+        "identityMode": "pseudonymous",
+        "pseudonym": "DigitalOwl",
+        "timestamp": "2026-03-11T22:10:19.294Z",
+        "upvotes": 3
+      },
+      {
+        "text": "How does a hash table handle collisions?",
+        "type": "QUESTION",
+        "identityMode": "pseudonymous",
+        "pseudonym": "TechExplorer",
+        "timestamp": "2026-03-11T22:10:24.488Z",
+        "upvotes": 1
+      },
+      {
+        "text": "Unclear on graph representation methods",
+        "type": "CONFUSION",
+        "identityMode": "identified",
+        "pseudonym": null,
+        "timestamp": "2026-03-11T22:10:50.896Z",
+        "upvotes": 0
       },
       {
         "text": "How does Dijkstra's algorithm find shortest path?",
         "type": "QUESTION",
         "identityMode": "anonymous",
         "pseudonym": null,
-        "timestamp": "2026-03-05T08:53:27.066Z",
-        "upvotes": 3
-      },
-      {
-        "text": "The linked list implementation example was clear",
-        "type": "COMMENT",
-        "identityMode": "anonymous",
-        "pseudonym": null,
-        "timestamp": "2026-03-05T08:53:35.734Z",
-        "upvotes": 2
+        "timestamp": "2026-03-11T22:15:06.913Z",
+        "upvotes": 0
       },
       {
         "text": "When should we use a heap data structure?",
         "type": "QUESTION",
-        "identityMode": "identified",
-        "pseudonym": null,
-        "timestamp": "2026-03-05T09:02:31.679Z",
-        "upvotes": 0
-      },
-      {
-        "text": "Confused about when to use BFS vs DFS",
-        "type": "CONFUSION",
-        "identityMode": "identified",
-        "pseudonym": null,
-        "timestamp": "2026-03-05T09:04:50.739Z",
-        "upvotes": 2
-      },
-      {
-        "text": "Not clear on recursion vs iteration trade-offs",
-        "type": "CONFUSION",
         "identityMode": "anonymous",
         "pseudonym": null,
-        "timestamp": "2026-03-05T09:09:47.240Z",
+        "timestamp": "2026-03-11T22:15:18.484Z",
         "upvotes": 3
       },
       {
-        "text": "Good visualization of binary search tree operations",
-        "type": "COMMENT",
-        "identityMode": "pseudonymous",
-        "pseudonym": "AlgoAce",
-        "timestamp": "2026-03-05T09:10:22.938Z",
-        "upvotes": 4
-      },
-      {
-        "text": "Not understanding amortized analysis",
+        "text": "Confused about dynamic programming approach",
         "type": "CONFUSION",
         "identityMode": "identified",
         "pseudonym": null,
-        "timestamp": "2026-03-05T09:11:32.199Z",
-        "upvotes": 4
-      },
-      {
-        "text": "What is memoization in dynamic programming?",
-        "type": "QUESTION",
-        "identityMode": "identified",
-        "pseudonym": null,
-        "timestamp": "2026-03-05T09:18:41.784Z",
-        "upvotes": 0
+        "timestamp": "2026-03-11T22:22:33.804Z",
+        "upvotes": 1
       },
       {
         "text": "The sorting algorithm comparison table was useful",
         "type": "COMMENT",
-        "identityMode": "pseudonymous",
-        "pseudonym": "BluePhoenix",
-        "timestamp": "2026-03-05T09:19:06.850Z",
-        "upvotes": 2
+        "identityMode": "anonymous",
+        "pseudonym": null,
+        "timestamp": "2026-03-11T22:29:27.055Z",
+        "upvotes": 4
       },
       {
         "text": "The Big O notation examples were helpful",
         "type": "COMMENT",
+        "identityMode": "pseudonymous",
+        "pseudonym": "LogicLion",
+        "timestamp": "2026-03-11T22:30:41.988Z",
+        "upvotes": 0
+      },
+      {
+        "text": "The linked list implementation example was clear",
+        "type": "COMMENT",
+        "identityMode": "identified",
+        "pseudonym": null,
+        "timestamp": "2026-03-11T22:37:06.432Z",
+        "upvotes": 4
+      },
+      {
+        "text": "Good visualization of binary search tree operations",
+        "type": "COMMENT",
         "identityMode": "anonymous",
         "pseudonym": null,
-        "timestamp": "2026-03-05T09:27:02.590Z",
+        "timestamp": "2026-03-11T22:39:19.751Z",
         "upvotes": 1
-      },
-      {
-        "text": "What is the time complexity of quicksort?",
-        "type": "QUESTION",
-        "identityMode": "identified",
-        "pseudonym": null,
-        "timestamp": "2026-03-05T09:31:45.787Z",
-        "upvotes": 3
-      },
-      {
-        "text": "How does a hash table handle collisions?",
-        "type": "QUESTION",
-        "identityMode": "identified",
-        "pseudonym": null,
-        "timestamp": "2026-03-05T09:36:19.885Z",
-        "upvotes": 3
       }
     ],
     "expectedKeywords": [
@@ -566,124 +566,124 @@
     "messageCount": 15,
     "messages": [
       {
-        "text": "How do we write effective unit tests?",
-        "type": "QUESTION",
-        "identityMode": "identified",
-        "pseudonym": null,
-        "timestamp": "2026-03-05T08:42:39.027Z",
-        "upvotes": 4
-      },
-      {
-        "text": "Not clear on dependency injection benefits",
-        "type": "CONFUSION",
-        "identityMode": "pseudonymous",
-        "pseudonym": "ByteHunter",
-        "timestamp": "2026-03-05T08:52:34.829Z",
-        "upvotes": 2
-      },
-      {
-        "text": "What is continuous integration/deployment?",
-        "type": "QUESTION",
-        "identityMode": "pseudonymous",
-        "pseudonym": "BluePhoenix",
-        "timestamp": "2026-03-05T08:53:34.308Z",
-        "upvotes": 2
-      },
-      {
-        "text": "Confused about SOLID principles application",
-        "type": "CONFUSION",
-        "identityMode": "anonymous",
-        "pseudonym": null,
-        "timestamp": "2026-03-05T08:58:36.702Z",
-        "upvotes": 3
-      },
-      {
-        "text": "The design patterns overview was comprehensive",
-        "type": "COMMENT",
-        "identityMode": "anonymous",
-        "pseudonym": null,
-        "timestamp": "2026-03-05T09:00:14.510Z",
-        "upvotes": 1
-      },
-      {
-        "text": "The refactoring examples were practical",
-        "type": "COMMENT",
-        "identityMode": "pseudonymous",
-        "pseudonym": "AlgoAce",
-        "timestamp": "2026-03-05T09:05:26.042Z",
-        "upvotes": 1
-      },
-      {
-        "text": "Not understanding the observer pattern",
-        "type": "CONFUSION",
-        "identityMode": "pseudonymous",
-        "pseudonym": "CodeNinja",
-        "timestamp": "2026-03-05T09:08:38.510Z",
-        "upvotes": 2
-      },
-      {
         "text": "What is technical debt?",
         "type": "QUESTION",
-        "identityMode": "pseudonymous",
-        "pseudonym": "AlgoAce",
-        "timestamp": "2026-03-05T09:11:40.119Z",
-        "upvotes": 3
-      },
-      {
-        "text": "What is the difference between Agile and Waterfall?",
-        "type": "QUESTION",
         "identityMode": "anonymous",
         "pseudonym": null,
-        "timestamp": "2026-03-05T09:12:39.716Z",
-        "upvotes": 3
+        "timestamp": "2026-03-11T21:45:15.605Z",
+        "upvotes": 1
       },
       {
         "text": "Good explanation of version control workflows",
         "type": "COMMENT",
         "identityMode": "anonymous",
         "pseudonym": null,
-        "timestamp": "2026-03-05T09:13:32.130Z",
+        "timestamp": "2026-03-11T21:52:23.904Z",
+        "upvotes": 1
+      },
+      {
+        "text": "Not clear on dependency injection benefits",
+        "type": "CONFUSION",
+        "identityMode": "pseudonymous",
+        "pseudonym": "CuriousMind",
+        "timestamp": "2026-03-11T22:00:23.681Z",
+        "upvotes": 4
+      },
+      {
+        "text": "The UML diagram conventions were helpful",
+        "type": "COMMENT",
+        "identityMode": "identified",
+        "pseudonym": null,
+        "timestamp": "2026-03-11T22:00:49.107Z",
         "upvotes": 2
       },
       {
-        "text": "How do code reviews improve quality?",
+        "text": "Confused about microservices vs monolith",
+        "type": "CONFUSION",
+        "identityMode": "pseudonymous",
+        "pseudonym": "LogicLion",
+        "timestamp": "2026-03-11T22:03:39.416Z",
+        "upvotes": 2
+      },
+      {
+        "text": "The refactoring examples were practical",
+        "type": "COMMENT",
+        "identityMode": "identified",
+        "pseudonym": null,
+        "timestamp": "2026-03-11T22:07:22.124Z",
+        "upvotes": 1
+      },
+      {
+        "text": "What is continuous integration/deployment?",
         "type": "QUESTION",
         "identityMode": "identified",
         "pseudonym": null,
-        "timestamp": "2026-03-05T09:14:40.456Z",
-        "upvotes": 2
+        "timestamp": "2026-03-11T22:10:06.295Z",
+        "upvotes": 1
+      },
+      {
+        "text": "Confused about SOLID principles application",
+        "type": "CONFUSION",
+        "identityMode": "anonymous",
+        "pseudonym": null,
+        "timestamp": "2026-03-11T22:16:00.491Z",
+        "upvotes": 3
       },
       {
         "text": "How do we estimate software project timelines?",
         "type": "QUESTION",
         "identityMode": "identified",
         "pseudonym": null,
-        "timestamp": "2026-03-05T09:16:30.965Z",
-        "upvotes": 0
+        "timestamp": "2026-03-11T22:19:45.463Z",
+        "upvotes": 4
       },
       {
-        "text": "Confused about microservices vs monolith",
-        "type": "CONFUSION",
-        "identityMode": "pseudonymous",
-        "pseudonym": "TechExplorer",
-        "timestamp": "2026-03-05T09:19:29.103Z",
-        "upvotes": 1
-      },
-      {
-        "text": "The UML diagram conventions were helpful",
+        "text": "The design patterns overview was comprehensive",
         "type": "COMMENT",
         "identityMode": "pseudonymous",
-        "pseudonym": "BluePhoenix",
-        "timestamp": "2026-03-05T09:34:27.481Z",
+        "pseudonym": "LogicLion",
+        "timestamp": "2026-03-11T22:22:57.827Z",
         "upvotes": 3
+      },
+      {
+        "text": "How do code reviews improve quality?",
+        "type": "QUESTION",
+        "identityMode": "pseudonymous",
+        "pseudonym": "CodeNinja",
+        "timestamp": "2026-03-11T22:27:52.014Z",
+        "upvotes": 2
+      },
+      {
+        "text": "What is the difference between Agile and Waterfall?",
+        "type": "QUESTION",
+        "identityMode": "anonymous",
+        "pseudonym": null,
+        "timestamp": "2026-03-11T22:29:19.993Z",
+        "upvotes": 0
       },
       {
         "text": "Unclear on when to use inheritance vs composition",
         "type": "CONFUSION",
+        "identityMode": "pseudonymous",
+        "pseudonym": "QueryQueen",
+        "timestamp": "2026-03-11T22:34:09.510Z",
+        "upvotes": 4
+      },
+      {
+        "text": "How do we write effective unit tests?",
+        "type": "QUESTION",
         "identityMode": "anonymous",
         "pseudonym": null,
-        "timestamp": "2026-03-05T09:34:48.659Z",
+        "timestamp": "2026-03-11T22:40:27.331Z",
         "upvotes": 2
+      },
+      {
+        "text": "Not understanding the observer pattern",
+        "type": "CONFUSION",
+        "identityMode": "identified",
+        "pseudonym": null,
+        "timestamp": "2026-03-11T22:40:49.100Z",
+        "upvotes": 0
       }
     ],
     "expectedKeywords": [

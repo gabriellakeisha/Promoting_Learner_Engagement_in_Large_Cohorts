@@ -1,9 +1,5 @@
-/**
- * Simulated Test Data Generator
- * Generates realistic lecture chat data for testing and evaluation
- *
- * Usage: node scripts/generate-test-data.js
- */
+// test data generator - creates fake lecture chat data for testing
+// run with: node scripts/generate-test-data.js
 
 require('dotenv').config();
 const mongoose = require('mongoose');
@@ -126,16 +122,12 @@ const PSEUDONYMS = [
   'DigitalOwl', 'LogicLion', 'ByteHunter', 'QueryQueen', 'AlgoAce'
 ];
 
-/**
- * Generate a random date within session duration
- */
+// random date within session duration
 function randomDate(start, end) {
   return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
 }
 
-/**
- * Generate simulated session data
- */
+// generate session data for one scenario
 function generateSessionData(scenario, sessionDurationMinutes = 60) {
   const sessionStart = new Date();
   sessionStart.setHours(sessionStart.getHours() - 2); // Started 2 hours ago
@@ -169,9 +161,7 @@ function generateSessionData(scenario, sessionDurationMinutes = 60) {
   };
 }
 
-/**
- * Get expected keywords for ground truth comparison
- */
+// expected keywords for each topic (ground truth to compare against)
 function getExpectedKeywords(topic) {
   const keywords = {
     neural_networks: ['neural network', 'backpropagation', 'activation function', 'gradient', 'layers', 'CNN', 'RNN', 'dropout', 'optimizer', 'overfitting'],
@@ -183,9 +173,7 @@ function getExpectedKeywords(topic) {
   return keywords[topic] || [];
 }
 
-/**
- * Main function to generate all test data
- */
+// main - generate all test data and save to json
 async function generateAllTestData() {
   console.log('========================================');
   console.log('SIMULATED TEST DATA GENERATOR');

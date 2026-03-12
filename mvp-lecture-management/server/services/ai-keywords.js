@@ -1,9 +1,5 @@
-/**
- * AI Keyword Extraction Service
- * Uses Hugging Face Inference API for intelligent keyword extraction
- * Trained on academic/scientific text - perfect for lecture contexts
- * Fallback to RAKE algorithm if API unavailable
- */
+// ai keyword extraction - uses hugging face keyphrase model
+// falls back to RAKE algorithm if the api isnt available
 
 const { HfInference } = require('@huggingface/inference');
 const keywordExtractor = require('keyword-extractor');
@@ -37,12 +33,8 @@ const fallbackStopWords = new Set([
   'one', 'two', 'first', 'second', 'last', 'next', 'new', 'confused', 'clarification', 'clarify'
 ]);
 
-/**
- * Extract keywords using Hugging Face AI model
- * @param {string} text - Combined text from messages
- * @param {number} maxKeywords - Maximum number of keywords to return
- * @returns {Promise<Array>} Array of {word, count} objects
- */
+// extract keywords using hugging face model
+// returns array of {word, count} objects
 async function extractKeywordsAI(text, maxKeywords = 15) {
   if (!hf || !text || text.trim().length < 50) {
     return extractKeywordsFallback(text, maxKeywords);
@@ -99,12 +91,7 @@ async function extractKeywordsAI(text, maxKeywords = 15) {
   }
 }
 
-/**
- * Fallback keyword extraction using RAKE algorithm
- * @param {string} text - Combined text from messages
- * @param {number} maxKeywords - Maximum number of keywords to return
- * @returns {Array} Array of {word, count} objects
- */
+// fallback keyword extraction using RAKE algorithm (no api needed)
 function extractKeywordsFallback(text, maxKeywords = 15) {
   if (!text || text.trim().length === 0) {
     return [];
@@ -132,10 +119,7 @@ function extractKeywordsFallback(text, maxKeywords = 15) {
     .map(([word, count]) => ({ word, count }));
 }
 
-/**
- * Check if AI keyword service is available
- * @returns {boolean}
- */
+// check if hugging face api key is configured
 function isAvailable() {
   return hf !== null;
 }

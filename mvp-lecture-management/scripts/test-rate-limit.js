@@ -1,15 +1,13 @@
-/**
- * Rate Limiting Test Script
- * Tests the security middleware rate limiters
- */
+// tests rate limiting - sends a bunch of requests to check if they get blocked
+// make sure the server is running before you run this
 
 const BASE_URL = 'http://localhost:3000';
 
 async function testAuthRateLimit() {
-  console.log('\n=== Testing Auth Rate Limit (10 req/15min) ===\n');
+  console.log('\n=== Testing Auth Rate Limit (50 req/15min) ===\n');
 
   let blocked = false;
-  for (let i = 1; i <= 15; i++) {
+  for (let i = 1; i <= 55; i++) {
     try {
       const res = await fetch(`${BASE_URL}/api/auth/login`, {
         method: 'POST',
@@ -32,7 +30,7 @@ async function testAuthRateLimit() {
   if (blocked) {
     console.log('\n✅ Auth rate limiting is WORKING');
   } else {
-    console.log('\n❌ Auth rate limiting NOT working (should block after 10)');
+    console.log('\n❌ Auth rate limiting NOT working (should block after 50)');
   }
 }
 

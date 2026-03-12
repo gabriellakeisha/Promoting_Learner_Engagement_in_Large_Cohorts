@@ -326,7 +326,7 @@ function initializeSocket() {
     }
   });
 
-  // Updated message-pinned handler with pin bar 
+  // handle pin toggle and update pin bar
   socket.on('message-pinned', function (data) {
     var msgId = data.messageId || data.id;
     var el = document.querySelector('[data-message-id="' + msgId + '"]');

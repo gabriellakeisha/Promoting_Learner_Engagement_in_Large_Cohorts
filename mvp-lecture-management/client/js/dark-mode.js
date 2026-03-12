@@ -1,4 +1,4 @@
-// Dark mode toggle functionality — Settings-based (no floating button)
+// dark mode toggle - reads from localStorage, toggled via settings
 (function() {
   const darkModeEnabled = localStorage.getItem('darkMode') === 'true';
 

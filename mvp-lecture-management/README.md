@@ -1,180 +1,214 @@
-# Promoting Learner Engagement in Large Cohorts
+# EchoClass — Real-Time Student Engagement Platform
 
-**Student:** Gabriella Keisha Andini (40392749)  
-**Module:** CSC3002 – Computer Science Project  
-**Supervisor:** Andrew McDowell  
-**University:** Queen's University Belfast  
+**Student:** Gabriella Keisha Andini (40392749)
+**Module:** CSC3002 – Computer Science Project
+**Supervisor:** Andrew McDowell
+**University:** Queen's University Belfast
 
 ---
 
 ## Overview
 
-A real-time backchannel web application designed to promote student engagement in large university lecture cohorts (100–500 students). The system addresses well-documented barriers to participation — social anxiety, fear of peer judgement, and the "feedback vacuum" that forms when lecturers cannot gauge comprehension in real time (Barr, 2017; Harunasari & Halim, 2019).
+A real-time backchannel web app for large university lectures (100–500 students). Students can ask questions, flag confusion, and participate through configurable identity modes — all while lecturers monitor engagement through live analytics.
 
-Unlike existing tools (Vevox, Padlet, Slido, Mentimeter) which offer partial solutions, this platform provides three novel contributions:
+The platform addresses common barriers to participation: social anxiety, fear of judgement, and the lack of real-time feedback in large cohorts (Auerbach & Andrews, 2018; Sun et al., 2022).
 
-1. **Configurable identity modes** (anonymous, pseudonymous, identified) switchable per-message within a single session — enabling within-platform comparison of how each affects engagement.
-2. **Dual-dashboard analytics** — lecturer-facing dashboards for real-time pedagogical adaptation and student-facing dashboards for self-reflection aligned with Zimmerman's (2002) Self-Regulated Learning (SRL) framework.
-3. **Integrated micro/macro analytics** — combining per-session confusion detection with semester-wide engagement trends, addressing Wise and Jung's (2019) call for "situated inquiry."
+Three things set it apart from tools like Vevox, Slido, or Mentimeter:
+
+1. **Switchable identity modes** — anonymous, pseudonymous, or identified, changeable per-message within a session.
+2. **Dual dashboards** — lecturer-facing analytics for live adaptation, student-facing stats for self-reflection (Zimmerman's SRL framework).
+3. **Micro + macro analytics** — per-session confusion detection and semester-wide engagement trends.
 
 ---
 
-## Key Features
+## Features
 
-### Real-Time Backchannel Chat Interface
-- **Message Classification:** Students tag messages as Question, Comment, Confusion, or None — prompting metacognitive reflection and enabling lecturer-side filtering.
-- **Configurable Identity Modes:** Anonymous (no identifier), Pseudonymous (consistent alias per session), Identified (real display name). Switchable per-message via the `+` menu.
-- **Message Threading & Replies:** Visual reply chains for peer-to-peer support and lecturer responses.
-- **Announcements & Pinned Messages:** Lecturer-only message types with distinct styling and filter support.
-- **Polls:** Polls for quick comprehension checks with real-time anonymous voting.
-- **Emoji Reactions:** Low-barrier participation without adding to message volume.
-- **Edit & Delete:** Students edit/delete own messages; lecturers can moderate any message.
-- **Report Messages:** Lecturer can flag inappropriate content.
-- **Message Type Filtering:** Lecturer can filter chat by Question/Comment/Confusion via the ⋮ header menu with real-time badge counts.
-- **Responsive Design:** Functional on mobile (320px) and desktop.
+### Chat Interface
+- Message tagging: Question, Comment, Confusion, or None
+- Identity modes: Anonymous / Pseudonymous / Identified (switchable per message)
+- Reply threads, emoji reactions, edit/delete (5-min window)
+- Lecturer announcements, polls, pinned messages
+- Message filtering by type with badge counts
+- Report system for inappropriate content
+- Responsive layout (320px mobile to desktop)
 
-### Analytics Dashboards 
+### Analytics
 
-**Lecturer Dashboard (Micro-level — per session):**
-- Message frequency over 5-minute intervals (engagement timeline)
-- Message type distribution (Question/Comment/Confusion breakdown)
-- Active contributors vs total participants (lurker ratio)
+**Lecturer — per session:**
+- Message frequency over 5-min intervals
+- Type distribution (Question / Comment / Confusion)
+- Active contributors vs total (lurker ratio)
 - Identity mode usage breakdown
-- Top keywords cloud
+- Top keywords (AI-extracted or RAKE fallback)
 - Peak activity detection
-- Confusion and question rate indicators with alerts
-- CSV export for research analysis
+- Confusion/question rate alerts
+- AI-generated session summary
+- CSV export
 
-**Lecturer Dashboard (Macro-level — cross-session):**
-- Engagement trends over a 12-week semester
-- Cross-session comparison of participation rates
-- Recurring confusion topic identification
+**Lecturer — cross session (macro):**
+- 12-week engagement trend
+- Cross-session participation comparison
+- Recurring confusion topics
 
-**Student Self-Reflection Dashboard (SRL-aligned):**
-- Personal message count and type distribution
-- Comparison to class average via percentile ranking
+**Student self-reflection (SRL-aligned):**
+- Personal message count and type breakdown
+- Percentile ranking vs class average
 - Engagement trend over time
-- Session-by-session history
+- Session history
+- Achievement badges (6 types)
+- Personalised tips (5 categories)
 
-### Session & User Management (~20% of project focus)
-- Email/password registration with role-based access (Student/Lecturer)
-- Secure authentication with bcrypt password hashing
-- Lecturer creates sessions and adds students via email (closed enrolment)
-- Bulk student upload (CSV/email list)
-- Student profile editing (avatar, display name, password)
-- Session status control (active/ended)
-- Dark mode support
+### AI Services
+- **Hugging Face DistilBART** — session text summarisation
+- **Hugging Face KBIR-Inspec** — keyword extraction
+- **RAKE algorithm** — local fallback (no API needed)
+- **AI comparison endpoint** — runs both providers, calculates Jaccard similarity overlap
+
+### Security
+- 3-tier rate limiting: auth (50/15min), API (100/15min), messages (30/min)
+- XSS input sanitisation via `validator.escape()`
+- 5 security headers (X-Frame-Options, X-XSS-Protection, X-Content-Type-Options, Referrer-Policy, X-Powered-By disabled)
+- bcrypt password hashing (10 salt rounds)
+- Server-side sessions with MongoDB store
+
+### Session & User Management
+- Email/password registration with role selection (Student / Lecturer)
+- Lecturer access code for registration
+- Session creation with join codes
+- Bulk student upload (CSV / email list)
+- Profile editing (avatar, display name, password)
+- Session status control (active / ended)
+- Dark mode
 
 ---
 
 ## Research Questions
 
-- **RQ1:** How does anonymous versus pseudonymous versus identified participation affect student engagement behaviour?
-- **RQ2:** What real-time analytics — both micro (per-session patterns) and macro (semester-wide trends) — are most valuable for lecturers?
-- **RQ3:** How can student dashboards support self-reflection aligned with Zimmerman's (2002) SRL theory?
+- **RQ1:** How do anonymous vs pseudonymous vs identified modes affect engagement?
+- **RQ2:** What micro and macro analytics are most useful for lecturers?
+- **RQ3:** How can student dashboards support self-reflection (Zimmerman's SRL)?
 
 ---
 
-## Technology Stack
+## Tech Stack
 
-| Layer | Technology | Justification |
-|-------|-----------|---------------|
-| Frontend | HTML5, CSS3, JavaScript (ES6+) | Universal browser support, no installation |
-| Visualisation | Chart.js | Lightweight responsive charting |
-| Backend | Node.js + Express.js | Event-driven I/O for real-time applications |
-| Real-time | Socket.IO v4 | WebSocket with HTTP long-polling fallback |
-| Database | MongoDB + Mongoose | Flexible schema, aggregation pipelines |
-| Authentication | bcrypt.js | Industry-standard password hashing |
-| Session Store | connect-mongo | Server-side session persistence |
-| Version Control | Git (QUB GitLab) | Source control with supervisor repository access |
+| Layer | Technology |
+|-------|-----------|
+| Frontend | HTML5, CSS3, vanilla JavaScript |
+| Charts | Chart.js |
+| Backend | Node.js + Express.js |
+| Real-time | Socket.IO v4 |
+| Database | MongoDB + Mongoose |
+| Auth | bcrypt.js + express-session |
+| Session store | connect-mongo |
+| AI | Hugging Face API, RAKE |
+| Security | express-rate-limit, validator |
+| Testing | Jest + Supertest |
 
 ---
 
 ## Prerequisites
 
-- **Node.js** v18+ ([Download](https://nodejs.org/))
-- **MongoDB** installed and running ([Download](https://www.mongodb.com/try/download/community))
-- **Git** (for cloning)
+- Node.js v18+
+- MongoDB running locally or via Atlas
+- Git
 
 ---
 
-## Installation & Setup
+## Setup
 
 ```bash
-# 1. Clone the repository
+# clone and install
 git clone <repository-url>
 cd mvp-lecture-management
-
-# 2. Install dependencies
 npm install
 
-# 3. Configure environment
-# The .env file is pre-configured for local MongoDB:
+# configure .env (already set up for local dev)
 # MONGODB_URI=mongodb://localhost:27017/lecture_engagement_mvp
+# PORT=3000
 
-# 4. Start MongoDB can be locally or via app -- MongoDB
-# 5. Start the server
+# start MongoDB, then start the server
 npm start
-
-# 6. To run the performance test, install socket.io-client
-npm install socket.io-client
-
 ```
 
-The application will be available at: **http://localhost:3000**
+App runs at **http://localhost:3000**
 
 ---
 
-## Application Routes
+## Running Tests
 
-| URL | Description |
-|-----|-------------|
-| `/` | Login page |
-| `/register` | Registration page |
-| `/lecturer-dashboard.html` | Lecturer session management + analytics |
-| `/student-dashboard.html` | Student session list |
-| `/chat-room.html?sessionId=<id>` | Real-time chat interface |
+```bash
+# run all 51 tests (no DB or API keys needed)
+npm test
+```
+
+Four test suites:
+- `security.test.js` — XSS sanitisation, input escaping, security headers (18 tests)
+- `auth-middleware.test.js` — role-based access checks (10 tests)
+- `auth-routes.test.js` — registration/login validation with Supertest (12 tests)
+- `ai-services.test.js` — RAKE extraction, AI comparison structure (8 tests)
+
+All tests run offline with mocked models.
+
+---
+
+## Routes
+
+| URL | Page |
+|-----|------|
+| `/` | Login |
+| `/register` | Registration |
+| `/lecturer-dashboard` | Lecturer sessions + analytics |
+| `/student-dashboard` | Student sessions + self-reflection |
+| `/chat/:sessionId` | Chat room |
 
 ---
 
 ## API Endpoints
 
-### Authentication
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/auth/register` | POST | Create new user |
-| `/api/auth/login` | POST | Login |
-| `/api/auth/logout` | POST | Logout |
-| `/api/auth/me` | GET | Current user info |
+### Auth (`/api/auth`) — rate limited: 50 req / 15 min
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/register` | Create account |
+| POST | `/login` | Log in |
+| POST | `/logout` | Log out |
+| GET | `/me` | Current user |
 
-### Sessions
-| Endpoint | Method | Auth | Description |
-|----------|--------|------|-------------|
-| `/api/sessions/create` | POST | Lecturer | Create session |
-| `/api/sessions/join` | POST | Any | Join by code |
-| `/api/sessions/my-sessions` | GET | Any | List user's sessions |
-| `/api/sessions/:id` | GET | Member | Session details |
-| `/api/sessions/:id/end` | POST | Lecturer | End session |
-| `/api/sessions/:id/members` | GET | Lecturer | List members |
+### Sessions (`/api/sessions`) — rate limited: 100 req / 15 min
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/create` | Lecturer | Create session |
+| POST | `/join` | Any | Join by code |
+| GET | `/my-sessions` | Any | List sessions |
+| GET | `/:id` | Member | Session details |
+| POST | `/:id/end` | Lecturer | End session |
+| GET | `/:id/members` | Lecturer | List members |
 
-### Messages
-| Endpoint | Method | Auth | Description |
-|----------|--------|------|-------------|
-| `/api/messages/send` | POST | Member | Send message |
-| `/api/messages/:sessionId` | GET | Member | Get messages |
-| `/api/messages/:id` | PUT | Owner | Edit message |
-| `/api/messages/:id` | DELETE | Owner/Lecturer | Delete message |
-| `/api/messages/:id/pin` | POST | Lecturer | Toggle pin |
-| `/api/messages/:id/reaction` | POST | Member | Add/remove reaction |
-| `/api/messages/poll/create` | POST | Lecturer | Create poll |
+### Messages (`/api/messages`) — rate limited: 30 req / min
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/send` | Member | Send message |
+| GET | `/:sessionId` | Member | Get messages |
+| PUT | `/:id` | Owner | Edit message |
+| DELETE | `/:id` | Owner/Lecturer | Delete message |
+| POST | `/:id/pin` | Lecturer | Toggle pin |
+| POST | `/:id/reaction` | Member | Add/remove reaction |
+| POST | `/poll/create` | Lecturer | Create poll |
 
-### Analytics
-| Endpoint | Method | Auth | Description |
-|----------|--------|------|-------------|
-| `/api/analytics/lecturer/:sessionId` | GET | Lecturer | Full dashboard data |
-| `/api/analytics/student/:sessionId` | GET | Student | Personal stats |
-| `/api/analytics/live/:sessionId` | GET | Member | Real-time stats |
-| `/api/analytics/export-csv/:sessionId` | GET | Lecturer | CSV export |
+### Analytics (`/api/analytics`) — rate limited: 100 req / 15 min
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/lecturer/:sessionId` | Lecturer | Full dashboard data |
+| GET | `/student/:sessionId` | Student | Personal stats + achievements |
+| GET | `/macro/:sessionId` | Lecturer | Cross-session trends |
+| GET | `/ai-summary/:sessionId` | Lecturer | AI session summary |
+| GET | `/ai-comparison/:sessionId` | Lecturer | Multi-provider keyword comparison |
+| GET | `/export-csv/:sessionId` | Lecturer | CSV download |
+
+### Reflection (`/api/reflection`) — rate limited: 100 req / 15 min
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/stats` | Student | Overall reflection stats |
 
 ### WebSocket Events
 
@@ -186,44 +220,57 @@ The application will be available at: **http://localhost:3000**
 
 ---
 
-
-## Key Success Criteria
-
-| RQ | Success Criterion | Acceptance Test |
-|----|-------------------|-----------------|
-| RQ1 | Anonymous mode hides all user identity | No identifier shown when anonymous selected |
-| RQ1 | Pseudonymous mode shows consistent alias | Same alias across all messages within session |
-| RQ1 | Identified mode shows real display name | Registered name visible on messages |
-| RQ2 | Micro: per-session engagement timeline | Chart.js renders messages per 5-min interval |
-| RQ2 | Macro: cross-session trend analysis | Chart compares engagement across sessions |
-| RQ2 | Message type filter for lecturers | Filter by Question/Comment/Confusion with badge counts |
-| RQ2 | Confusion and Question detection highlighted | CONFUSION/QUESTION messages flagged for lecturer |
-| RQ3 | Student sees participation statistics | Personal count, type breakdown, class average |
-| Core | Real-time messaging <1s latency | Message Device A to B within 1 second |
-| Core | Lecturer-controlled session access | Only lecturer-added students can join |
-
----
-
-## Functional Requirements (MoSCoW)
+## Functional Requirements
 
 | Priority | ID | Requirement | Status |
 |----------|-----|-------------|--------|
-| Must | FR-01 | User registration with role selection | ✅ Done |
-| Must | FR-02 | Secure authentication with bcrypt | ✅ Done |
-| Must | FR-03 | Lecturer creates sessions, adds students via email | ✅ Done |
-| Must | FR-04 | Real-time WebSocket messaging <1s latency | ✅ Done |
-| Must | FR-05 | Student message classification (Question/Comment/Confusion/None) | ✅ Done |
-| Must | FR-06 | Lecturer-only: Announcements, Polls, Pinned messages | ✅ Done |
-| Must | FR-07 | Configurable identity modes (anon/pseudo/identified) | ✅ Done |
-| Must | FR-08 | Lecturer analytics dashboard | ✅ Done |
-| Should | FR-09 | Message threading and replies | ✅ Done |
-| Should | FR-10 | Edit and delete own messages | ✅ Done |
-| Should | FR-11 | Emoji reactions on messages | ✅ Done |
-| Should | FR-12 | Report inappropriate messages | ✅ Done |
-| Should | FR-13 | Message type filtering (Question/Confusion/Pinned) | ✅ Done |
-| Should | FR-14 | Micro/macro analytics | 🔄 In Progress |
-| Should | FR-15 | Student self-reflection dashboard | 🔄 In Progress |
-| Could | FR-16 | AI-generated session summary | Planned |
-| Could | FR-17 | CSV export of analytics data | ✅ Done |
+| Must | FR-01 | User registration with role selection | Done |
+| Must | FR-02 | Secure authentication with bcrypt | Done |
+| Must | FR-03 | Lecturer creates sessions, adds students | Done |
+| Must | FR-04 | Real-time WebSocket messaging | Done |
+| Must | FR-05 | Message classification (Question/Comment/Confusion) | Done |
+| Must | FR-06 | Announcements, Polls, Pinned messages | Done |
+| Must | FR-07 | Configurable identity modes | Done |
+| Must | FR-08 | Lecturer analytics dashboard | Done |
+| Should | FR-09 | Message threading and replies | Done |
+| Should | FR-10 | Edit and delete messages | Done |
+| Should | FR-11 | Emoji reactions | Done |
+| Should | FR-12 | Report messages | Done |
+| Should | FR-13 | Message type filtering | Done |
+| Should | FR-14 | Micro/macro analytics | Done |
+| Should | FR-15 | Student self-reflection dashboard | Done |
+| Could | FR-16 | AI-generated session summary | Done |
+| Could | FR-17 | CSV export | Done |
+| Could | FR-18 | Achievement badges | Done |
+| Could | FR-19 | AI keyword comparison | Done |
+
+---
+
+## Project Structure
+
+```
+mvp-lecture-management/
+├── client/                  # frontend
+│   ├── css/                 # stylesheets
+│   ├── js/                  # page scripts
+│   ├── login.html
+│   ├── register.html
+│   ├── student-dashboard.html
+│   ├── lecturer-dashboard.html
+│   └── chat-room.html
+├── server/
+│   ├── config/database.js   # MongoDB connection
+│   ├── middleware/
+│   │   ├── auth.js          # session auth checks
+│   │   └── security.js      # rate limiting, XSS, headers
+│   ├── models/              # Mongoose schemas
+│   ├── routes/              # Express route handlers
+│   ├── services/            # AI services (summary, keywords, comparison)
+│   └── server.js            # app entry point
+├── tests/                   # Jest test suites
+├── scripts/                 # test data generators
+├── uploads/                 # user avatars
+└── package.json
+```
 
 ---

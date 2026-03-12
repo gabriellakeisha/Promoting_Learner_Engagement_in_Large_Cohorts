@@ -1,8 +1,5 @@
-/**
- * AI Summary Service
- * Uses Hugging Face Inference API for text summarization
- * Fallback to null if API unavailable (caller handles gracefully)
- */
+// ai summary service - uses hugging face for text summarisation
+// returns null if api is unavailable so the caller can handle it
 
 const { HfInference } = require('@huggingface/inference');
 
@@ -15,12 +12,8 @@ if (process.env.HUGGINGFACE_API_KEY) {
 // Model for summarization - DistilBART is fast and good quality
 const SUMMARIZATION_MODEL = 'sshleifer/distilbart-cnn-12-6';
 
-/**
- * Generate AI summary from session messages
- * @param {Array} messages - Array of message objects with text property
- * @param {Object} context - Session context (title, stats)
- * @returns {Promise<string|null>} AI-generated summary or null if unavailable
- */
+// generate ai summary from session messages
+// takes messages array and session context (title, stats etc)
 async function generateAISummary(messages, context) {
   // Check if API is configured
   if (!hf) {
@@ -84,10 +77,7 @@ async function generateAISummary(messages, context) {
   }
 }
 
-/**
- * Check if AI summary service is available
- * @returns {boolean}
- */
+// check if the api key is set up
 function isAvailable() {
   return hf !== null;
 }

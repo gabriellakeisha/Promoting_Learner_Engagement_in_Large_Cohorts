@@ -1977,7 +1977,7 @@ body.dark-mode .report-btn:hover::after {
   color: #667eea;
 }
 
-/* LECTURER BADGE - As requested by supervisor! */
+/* LECTURER BADGE */
 .lecturer-badge-inline {
   display: inline-flex;
   align-items: center;
