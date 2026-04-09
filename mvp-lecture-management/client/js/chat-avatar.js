@@ -1,4 +1,4 @@
-// RENDER MESSAGE WITH AVATAR
+// Render message with avatar
 
 function renderMessageWithAvatar(message, currentUserId, isLecturerView = false) {
   const isOwn = message.userId === currentUserId || message.sender?._id === currentUserId;
@@ -81,7 +81,7 @@ function renderMessageWithAvatar(message, currentUserId, isLecturerView = false)
 }
 
 
-// RENDER CHAT AVATAR
+// Render chat avatar
 
 function renderChatAvatar(avatar, displayName, size = 36) {
   const initials = getAvatarInitials(displayName);
@@ -115,7 +115,7 @@ function renderChatAvatar(avatar, displayName, size = 36) {
 }
 
 
-// GET INITIALS FROM NAME
+// Get initials from name
 
 function getAvatarInitials(name) {
   if (!name) return '??';
@@ -127,7 +127,7 @@ function getAvatarInitials(name) {
 }
 
 
-// GENERATE COLOR FROM NAME (consistent)
+// Generate colour from name
 
 function generateColorFromName(name) {
   const colors = [
@@ -146,7 +146,7 @@ function generateColorFromName(name) {
 }
 
 
-// RENDER MESSAGE ACTIONS
+// Render message actions
 
 function renderMessageActions(message, currentUserId, isLecturerView) {
   const isOwn = message.userId === currentUserId || message.sender?._id === currentUserId;
@@ -183,7 +183,7 @@ function renderMessageActions(message, currentUserId, isLecturerView) {
 }
 
 
-// FORMAT MESSAGE TIME
+// Format message time
 
 function formatMessageTime(dateString) {
   if (!dateString) return '';
@@ -207,7 +207,7 @@ function formatMessageTime(dateString) {
 }
 
 
-// ESCAPE HTML
+// Escape HTML
 
 function escapeHTML(str) {
   if (!str) return '';
@@ -217,7 +217,7 @@ function escapeHTML(str) {
 }
 
 
-// CHAT MESSAGE STYLES
+// Chat message styles
 
 function addChatAvatarStyles() {
   if (document.getElementById('chat-avatar-styles')) return;

@@ -1,12 +1,6 @@
-/* ============================================
-   ANNOUNCEMENT & PIN CSS
-   Styles for announcement banners, header menus,
-   filter dropdowns, and modal overlays
-   ============================================ */
+/* Announcement and Pin Styles */
 
-/* ============================================
-   ANNOUNCEMENT BANNER
-   ============================================ */
+/* Announcement Banner */
 .announcement-banner {
   display: none;
   background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
@@ -70,9 +64,7 @@
   flex-shrink: 0;
 }
 
-/* ============================================
-   HEADER MENU & DROPDOWN
-   ============================================ */
+/* Header Menu and Dropdown */
 .header-menu-container {
   position: relative;
   display: inline-block;
@@ -188,16 +180,12 @@
   margin: 4px 0;
 }
 
-/* ============================================
-   FILTER COUNT BADGES
-   ============================================ */
+/* Filter Count Badges */
 #clear-all-filters-btn:hover {
   background: rgba(239, 68, 68, 0.15);
 }
 
-/* ============================================
-   FILTER ACTIVE BANNER
-   ============================================ */
+/* Filter Active Banner */
 .filter-active-banner {
   display: none;
   background: linear-gradient(135deg, #00a884 0%, #00876a 100%);
@@ -235,9 +223,7 @@
   background: rgba(255,255,255,0.3);
 }
 
-/* ============================================
-   MODAL OVERLAYS & CONTAINERS
-   ============================================ */
+/* Modal Overlays and Containers */
 .announcement-modal-overlay,
 .pinned-modal-overlay {
   position: fixed;
@@ -376,9 +362,7 @@
   opacity: 0.5;
 }
 
-/* ============================================
-   FILTERED CHAT STATES
-   ============================================ */
+/* Filtered Chat States */
 .chat-messages.filtered .chat-message {
   display: none !important;
 }
@@ -400,9 +384,7 @@
   display: none !important;
 }
 
-/* ============================================
-   RESPONSIVE - MOBILE (480px-)
-   ============================================ */
+/* Responsive - Mobile (480px and below) */
 @media (max-width: 480px) {
   .announcement-banner {
     padding: 8px 12px;

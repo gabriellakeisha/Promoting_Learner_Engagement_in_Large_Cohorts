@@ -77,7 +77,7 @@ async function generateAISummary(messages, context) {
   }
 }
 
-// check if the api key is set up
+// Check if the API key is configured
 function isAvailable() {
   return hf !== null;
 }

@@ -50,7 +50,7 @@ function sanitiseText(text) {
   return validator.escape(text.trim());
 }
 
-// sanitise user input object (works recursively for nested stuff)
+// Recursively sanitise user input objects
 function sanitiseInput(obj) {
   if (!obj || typeof obj !== 'object') return obj;
 

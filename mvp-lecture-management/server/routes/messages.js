@@ -134,7 +134,7 @@ router.post('/send', isAuthenticated, async (req, res) => {
           }
         });
 
-      console.log('📤 Broadcasting message to session:', sessionId);
+      console.log('Broadcasting message to session:', sessionId);
 
       const io = req.app.get('io');
 
@@ -181,14 +181,14 @@ router.post('/send', isAuthenticated, async (req, res) => {
         };
 
         const roomName = `session-${sessionId.toString()}`;
-        console.log('📡 Broadcasting to room:', roomName);
+        console.log('Broadcasting to room:', roomName);
         io.to(roomName).emit('new-message', messageData);
-        console.log('✅ Message broadcasted via Socket.IO to room:', roomName);
+        console.log('Message broadcasted via Socket.IO to room:', roomName);
       } else {
-        console.error('❌ Socket.IO instance not found!');
+        console.error('Socket.IO instance not found!');
       }
     } catch (broadcastError) {
-      console.error('❌ Broadcast error:', broadcastError);
+      console.error('Broadcast error:', broadcastError);
     }
 
     res.status(201).json({
@@ -338,7 +338,7 @@ router.delete('/:messageId', isAuthenticated, async (req, res) => {
 
     await message.softDelete(userId);
 
-    console.log(`✅ Message ${messageId} SOFT DELETED by ${userId}`);
+    console.log(`Message ${messageId} soft deleted by ${userId}`);
 
     const io = req.app.get('io');
     if (io) {

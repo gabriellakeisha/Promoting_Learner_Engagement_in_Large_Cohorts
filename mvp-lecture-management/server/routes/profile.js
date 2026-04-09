@@ -3,7 +3,7 @@ const router = express.Router();
 const User = require('../models/User');
 const { isAuthenticated } = require('../middleware/auth');
 
-// UPDATE DISPLAY NAME
+// Update display name
 router.put('/display-name', isAuthenticated, async (req, res) => {
   try {
     const { displayName } = req.body;
@@ -44,7 +44,7 @@ router.put('/display-name', isAuthenticated, async (req, res) => {
   }
 });
 
-// CHANGE PASSWORD
+// Change password
 router.put('/password', isAuthenticated, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
@@ -98,7 +98,7 @@ router.put('/password', isAuthenticated, async (req, res) => {
   }
 });
 
-// PUT /api/profile/avatar - Save avatar to database
+// Save avatar
 router.put('/avatar', isAuthenticated, async (req, res) => {
   try {
     const { avatarUrl } = req.body;
@@ -138,7 +138,7 @@ router.put('/avatar', isAuthenticated, async (req, res) => {
   }
 });
 
-// DELETE /api/profile/avatar - Remove avatar (use initials)
+// Remove avatar
 router.delete('/avatar', isAuthenticated, async (req, res) => {
   try {
     const user = await User.findById(req.session.userId);

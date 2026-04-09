@@ -27,10 +27,10 @@ const clearOldDatabase = async (dbName) => {
     });
     
     await conn.connection.dropDatabase();
-    console.log(`✅ Database '${dbName}' cleared successfully`);
+    console.log(`Database '${dbName}' cleared successfully`);
     await conn.connection.close();
   } catch (error) {
-    console.error(`❌ Error clearing database: ${error.message}`);
+    console.error(`Error clearing database: ${error.message}`);
   }
 };
 

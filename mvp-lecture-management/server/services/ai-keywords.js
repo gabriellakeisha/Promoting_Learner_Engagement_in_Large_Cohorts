@@ -1,5 +1,5 @@
 // ai keyword extraction - uses hugging face keyphrase model
-// falls back to RAKE algorithm if the api isnt available
+// Falls back to RAKE algorithm if the API is not available
 
 const { HfInference } = require('@huggingface/inference');
 const keywordExtractor = require('keyword-extractor');
@@ -91,7 +91,7 @@ async function extractKeywordsAI(text, maxKeywords = 15) {
   }
 }
 
-// fallback keyword extraction using RAKE algorithm (no api needed)
+// Fallback keyword extraction using RAKE algorithm (no API dependency)
 function extractKeywordsFallback(text, maxKeywords = 15) {
   if (!text || text.trim().length === 0) {
     return [];
@@ -119,7 +119,7 @@ function extractKeywordsFallback(text, maxKeywords = 15) {
     .map(([word, count]) => ({ word, count }));
 }
 
-// check if hugging face api key is configured
+// Check if the Hugging Face API key is configured
 function isAvailable() {
   return hf !== null;
 }

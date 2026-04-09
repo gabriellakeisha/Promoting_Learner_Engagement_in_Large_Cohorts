@@ -1,9 +1,7 @@
 let userProfile = null;
 let cropper = null;
 
-// ========================================
-// GENERATE COLOR FROM NAME (Unique per user)
-// ========================================
+// Generate colour from name
 function generateColorFromName(name) {
     const colors = [
         '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
@@ -21,9 +19,7 @@ function generateColorFromName(name) {
     return colors[Math.abs(hash) % colors.length];
 }
 
-// ========================================
-// GET INITIALS FROM NAME
-// ========================================
+// Get initials from name
 function getInitials(name) {
     if (!name) return '??';
     const parts = name.trim().split(' ').filter(p => p.length > 0);
@@ -33,39 +29,34 @@ function getInitials(name) {
     return name.substring(0, 2).toUpperCase();
 }
 
-// ========================================
-// LOAD PROFILE (uses /api/auth/me)
-// ========================================
+// Load user profile
 async function loadProfile() {
     try {
-        console.log('📷 Loading profile from /api/auth/me...');
+        console.log('Loading profile from /api/auth/me...');
 
         const response = await fetch('/api/auth/me', {
             credentials: 'include'
         });
 
         const result = await response.json();
-        console.log('📷 Auth/me response:', result);
+        console.log('Auth/me response:', result);
 
         if (result.success && result.user) {
             userProfile = result.user;
-            // CHANGED: Get avatarUrl from server response (database)
-            // No more localStorage check needed
+            // Retrieve avatar URL from database
             userProfile.avatarUrl = result.user.avatarUrl || null;
 
-            console.log('✅ Profile loaded:', userProfile);
+            console.log('Profile loaded:', userProfile);
             updateNavbarAvatar();
             return userProfile;
         }
     } catch (error) {
-        console.error('❌ Failed to load profile:', error);
+        console.error('Failed to load profile:', error);
     }
     return null;
 }
 
-// ========================================
-// UPDATE NAVBAR AVATAR
-// ========================================
+// Update navbar avatar
 function updateNavbarAvatar() {
     if (!userProfile) return;
 
@@ -91,9 +82,7 @@ function updateNavbarAvatar() {
     }
 }
 
-// ========================================
-// CREATE PROFILE MODAL
-// ========================================
+// Create profile modal
 function createProfileModal() {
     if (document.getElementById('profile-modal')) return;
 
@@ -184,9 +173,7 @@ function createProfileModal() {
     loadCropperLibrary();
 }
 
-// ========================================
-// LOAD CROPPER.JS
-// ========================================
+// Load Cropper.js
 function loadCropperLibrary() {
     if (!document.getElementById('cropper-css')) {
         const link = document.createElement('link');
@@ -204,9 +191,7 @@ function loadCropperLibrary() {
     }
 }
 
-// ========================================
-// ADD STYLES
-// ========================================
+// Add styles
 function addProfileStyles() {
     if (document.getElementById('profile-styles')) return;
 
@@ -527,9 +512,7 @@ function addProfileStyles() {
     document.head.appendChild(styles);
 }
 
-// ========================================
-// OPEN PROFILE MODAL
-// ========================================
+// Open profile modal
 async function openProfileModal() {
     createProfileModal();
     await loadProfile();
@@ -537,24 +520,20 @@ async function openProfileModal() {
     document.getElementById('profile-modal').classList.add('show');
 }
 
-// ========================================
-// CLOSE PROFILE MODAL
-// ========================================
+// Close profile modal
 function closeProfileModal() {
     const modal = document.getElementById('profile-modal');
     if (modal) modal.classList.remove('show');
 }
 
-// ========================================
-// UPDATE PROFILE DISPLAY
-// ========================================
+// Update profile display
 function updateProfileDisplay() {
     if (!userProfile) {
-        console.warn('⚠️ No userProfile');
+        console.warn('No userProfile');
         return;
     }
 
-    console.log('📷 Displaying profile:', userProfile);
+    console.log('Displaying profile:', userProfile);
 
     // Avatar
     const avatarPreview = document.getElementById('profile-avatar-preview');
@@ -591,9 +570,7 @@ function updateProfileDisplay() {
     }
 }
 
-// ========================================
-// UPDATE DISPLAY NAME
-// ========================================
+// Update display name
 async function updateDisplayName() {
     const input = document.getElementById('profile-display-name');
     const displayName = input ? input.value.trim() : '';
@@ -631,9 +608,7 @@ async function updateDisplayName() {
     }
 }
 
-// ========================================
-// CHANGE PASSWORD
-// ========================================
+// Change password
 async function changePassword() {
     const currentPassword = document.getElementById('current-password').value;
     const newPassword = document.getElementById('new-password').value;
@@ -671,9 +646,7 @@ async function changePassword() {
     }
 }
 
-// ========================================
-// IMAGE CROPPER
-// ========================================
+// Image cropper
 function openImageCropper(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -755,7 +728,6 @@ async function saveCroppedImage() {
 
         const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
 
-        // CHANGED: Save to database instead of localStorage
         showProfileStatus('Saving...', 'success');
         
         const response = await fetch('/api/profile/avatar', {
@@ -784,13 +756,10 @@ async function saveCroppedImage() {
 }
 
 
-// ========================================
-// REMOVE AVATAR (back to initials)
-// ========================================
+// Remove avatar
 async function removeAvatar() {
     if (userProfile && userProfile.id) {
         try {
-            // CHANGED: Call API instead of just localStorage
             const response = await fetch('/api/profile/avatar', {
                 method: 'DELETE',
                 credentials: 'include'
@@ -813,9 +782,7 @@ async function removeAvatar() {
     }
 }
 
-// ========================================
-// STATUS MESSAGE
-// ========================================
+// Status message
 function showProfileStatus(message, type) {
     const statusEl = document.getElementById('profile-status');
     if (!statusEl) return;
@@ -828,9 +795,7 @@ function showProfileStatus(message, type) {
     }, 4000);
 }
 
-// ========================================
-// INIT
-// ========================================
+// Initialisation
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(loadProfile, 300);
 });

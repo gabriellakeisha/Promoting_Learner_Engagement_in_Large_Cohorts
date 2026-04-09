@@ -1,7 +1,4 @@
-/* ============================================
-   COMPACT CSS - Responsive Overrides
-   Purpose: Mobile-optimized layouts for chat
-   ============================================ */
+/* Compact Styles - Responsive Overrides for Mobile Chat Layouts */
 
 /* Navigation */
 .navbar {
@@ -422,9 +419,7 @@ body:not(.dark-mode) .other-message-input {
   text-align: center !important;
 }
 
-/* ============================================
-   TABLET BREAKPOINT (768px+)
-   ============================================ */
+/* Tablet Breakpoint (768px and above) */
 
 @media (min-width: 768px) {
   .container {
@@ -458,9 +453,7 @@ body:not(.dark-mode) .other-message-input {
   }
 }
 
-/* ============================================
-   DESKTOP BREAKPOINT (1200px+)
-   ============================================ */
+/* Desktop Breakpoint (1200px and above) */
 
 @media (min-width: 1200px) {
   .container {
@@ -477,9 +470,7 @@ body:not(.dark-mode) .other-message-input {
   }
 }
 
-/* ============================================
-   MOBILE BREAKPOINT (480px-)
-   ============================================ */
+/* Mobile Breakpoint (480px and below) */
 
 @media (max-width: 480px) {
   .container {

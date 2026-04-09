@@ -124,36 +124,36 @@ io.engine.use(sessionMiddleware);
 
 // Socket.IO connection handling
 io.on('connection', async (socket) => {
-  console.log('🔌 New socket connection:', socket.id);
+  console.log('New socket connection:', socket.id);
 
   // Get user from session
   const sessionData = socket.request.session;
 
-  // DON'T disconnect - let join-session handle authentication
+  // Allow connection without session; authentication occurs on join-session
   let userId = sessionData?.userId;
   let userRole = sessionData?.userRole;
   let displayName = sessionData?.displayName || 'Unknown';
 
   if (userId) {
-    console.log(`✅ User connected: ${displayName} (${userRole})`);
+    console.log(`User connected: ${displayName} (${userRole})`);
     try {
       await User.findByIdAndUpdate(userId, { isOnline: true });
     } catch (error) {
       console.error('Error setting user online:', error);
     }
   } else {
-    console.log('⚠️ Socket connected without session - will authenticate on join-session');
+    console.log('Socket connected without session - will authenticate on join-session');
   }
 
   // Join session room
   socket.on('join-session', async (data) => {
-    console.log('📥 join-session received:', JSON.stringify(data));
+    console.log('join-session received:', JSON.stringify(data));
     
     try {
       const { sessionId, userId: clientUserId, displayName: clientDisplayName, role: clientRole } = data;
 
       if (!sessionId) {
-        console.log('❌ No sessionId provided');
+        console.log('No sessionId provided');
         socket.emit('error', { message: 'Session ID required' });
         return;
       }
@@ -163,16 +163,16 @@ io.on('connection', async (socket) => {
       const effectiveDisplayName = displayName !== 'Unknown' ? displayName : clientDisplayName;
       const effectiveRole = userRole || clientRole;
 
-      console.log(`🔍 User ${effectiveUserId} joining session ${sessionId}`);
+      console.log(`User ${effectiveUserId} joining session ${sessionId}`);
 
       // Verify session exists
       const sessionDoc = await Session.findById(sessionId);
       if (!sessionDoc) {
-        console.log('❌ Session not found:', sessionId);
+        console.log('Session not found:', sessionId);
         socket.emit('error', { message: 'Session not found' });
         return;
       }
-      console.log('✅ Session found:', sessionDoc.title);
+      console.log('Session found:', sessionDoc.title);
 
       // Verify membership or lecturer
       let hasAccess = false;
@@ -180,11 +180,11 @@ io.on('connection', async (socket) => {
         const membership = await Membership.findOne({ userId: effectiveUserId, sessionId });
         const isLecturer = sessionDoc.lecturer.toString() === effectiveUserId;
         hasAccess = isLecturer || !!membership;
-        console.log(`🔐 Access: isLecturer=${isLecturer}, hasMembership=${!!membership}`);
+        console.log(`Access: isLecturer=${isLecturer}, hasMembership=${!!membership}`);
       }
 
       if (!hasAccess) {
-        console.log('⚠️ No membership, allowing for development');
+        console.log('No membership, allowing for development');
         hasAccess = true;
       }
 
@@ -195,7 +195,7 @@ io.on('connection', async (socket) => {
       socket.odaUserId = effectiveUserId;
       socket.odaDisplayName = effectiveDisplayName;
 
-      console.log(`✅ ${effectiveDisplayName} joined room: ${roomName}`);
+      console.log(`${effectiveDisplayName} joined room: ${roomName}`);
 
       // Notify other-s
       socket.to(roomName).emit('user-joined', {
@@ -209,10 +209,10 @@ io.on('connection', async (socket) => {
         sessionId,
         message: 'Successfully joined session',
       });
-      console.log('📤 Sent joined-session confirmation');
+      console.log('Sent joined-session confirmation');
 
     } catch (error) {
-      console.error('❌ Join session error:', error);
+      console.error('Join session error:', error);
       socket.emit('error', { message: 'Failed to join session' });
     }
   });
@@ -259,7 +259,7 @@ io.on('connection', async (socket) => {
         await membership.incrementMessageCount();
       }
 
-      // Populate user info INCLUDING AVATAR and reply data
+      // Populate user info including avatar and reply data
       await message.populate('userId', 'displayName role avatar');
       await message.populate({
         path: 'replyTo',
@@ -307,7 +307,7 @@ io.on('connection', async (socket) => {
       const roomName = `session-${sessionId.toString()}`;
       io.to(roomName).emit('new-message', messageData);
 
-      console.log(`📤 Message sent in ${roomName} by ${socket.odaDisplayName || displayName}`);
+      console.log(`Message sent in ${roomName} by ${socket.odaDisplayName || displayName}`);
 
     } catch (error) {
       console.error('Send message error:', error);
@@ -454,7 +454,7 @@ io.on('connection', async (socket) => {
 
   // Handle disconnect
   socket.on('disconnect', async (reason) => {
-    console.log(`🔌 Disconnected: ${socket.odaDisplayName || displayName} - ${reason}`);
+    console.log(`Disconnected: ${socket.odaDisplayName || displayName} - ${reason}`);
 
     // Set user offline
     const effectiveUserId = socket.odaUserId || userId;

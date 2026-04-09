@@ -1,0 +1,310 @@
+/* Analytics */
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.stat-card {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+  color: white;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.stat-label {
+  font-size: 14px;
+  opacity: 0.9;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: 700;
+}
+
+/* Analytics card styling */
+.analytics-chart-card {
+  background: var(--card-bg, white);
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: background-color 0.3s ease;
+}
+
+.analytics-table-card {
+  background: var(--card-bg, white);
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin-top: 24px;
+  transition: background-color 0.3s ease;
+}
+
+/* Analytics Stats Row - Top metrics cards */
+.analytics-stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.analytics-stat-card {
+  border-radius: 12px;
+  padding: 20px;
+  color: white;
+  min-width: 0;
+}
+
+.analytics-stat-card .stat-label {
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 1;
+  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  letter-spacing: 0.3px;
+}
+
+.analytics-stat-card .stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+.analytics-stat-card .stat-sub {
+  font-size: 12px;
+  opacity: 0.9;
+  margin-top: 4px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+}
+
+.stat-purple {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+.stat-green {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.stat-orange {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.stat-blue {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+}
+
+/* Indicators Row - Confusion & Question Rate */
+.analytics-indicators-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.indicator-card {
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  padding: 20px;
+  min-width: 0;
+}
+
+.indicator-confusion {
+  border-left: 4px solid #ef4444;
+}
+
+.indicator-question {
+  border-left: 4px solid #3b82f6;
+}
+
+.indicator-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.indicator-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.indicator-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.indicator-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.indicator-value.text-danger {
+  color: #ef4444;
+}
+
+.indicator-emoji {
+  font-size: 40px;
+  flex-shrink: 0;
+}
+
+.indicator-footer {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+}
+
+/* Charts Row - Engagement Over Time & Message Types */
+.analytics-charts-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.analytics-chart-card {
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  padding: 20px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.chart-title {
+  margin: 0 0 16px 0;
+  color: var(--text-color);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.chart-container {
+  height: 200px;
+  position: relative;
+}
+
+.chart-container-small {
+  height: 150px;
+  position: relative;
+}
+
+.peak-activity {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 12px;
+}
+
+/* Bottom Row - Identity Mode & Keywords */
+.analytics-bottom-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.identity-legend {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.identity-item {
+  text-align: center;
+  min-width: 60px;
+}
+
+.identity-icon {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+.identity-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.identity-count {
+  font-weight: 700;
+  color: var(--text-color);
+  font-size: 14px;
+}
+
+/* Keyword Cloud */
+.keyword-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.keyword-tag {
+  padding: 6px 14px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.85), rgba(118, 75, 162, 0.85));
+  color: #ffffff;
+  border-radius: 16px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.no-keywords {
+  color: var(--text-secondary);
+  font-size: 14px;
+  text-align: center;
+  width: 100%;
+  padding: 20px;
+}
+
+/* Contributors Section */
+.analytics-contributors {
+  margin-bottom: 24px;
+}
+
+.contributors-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.contributor-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg-color);
+  border-radius: 8px;
+}
+
+.contributor-rank {
+  font-weight: 700;
+  color: var(--primary-color);
+  min-width: 30px;
+}
+
+.contributor-name {
+  flex: 1;
+  color: var(--text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contributor-count {
+  color: var(--text-secondary);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* Analytics Modal/Overlay */
+.analytics-overlay {
+  padding: 10px;
+}

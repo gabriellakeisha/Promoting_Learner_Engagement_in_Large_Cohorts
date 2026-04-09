@@ -114,6 +114,16 @@ router.post('/goal/:sessionId', isAuthenticated, async (req, res) => {
     const userId = req.session.userId;
     const { text, targetCount } = req.body;
 
+    // Validate goal target
+    const target = parseInt(targetCount);
+    
+    if (!target || target < 1 || target > 50) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Goal target must be between 1 and 50' 
+      });
+    }
+
     const membership = await Membership.findOne({ userId, sessionId });
     if (!membership) {
       return res.status(403).json({ success: false, message: 'Not a member' });

@@ -8,7 +8,7 @@ let optionsMenuOpen = false;
 let activeReactionPicker = null;
 let pollCreatorOpen = false;
 
-console.log('🚀 student-chat.js loaded');
+console.log('student-chat.js loaded');
 
 // Inject reaction styles
 (function injectReactionStyles() {
@@ -145,7 +145,7 @@ function getSessionIdFromURL() {
 }
 
 async function checkAuth() {
-  console.log('🔐 Checking auth...');
+  console.log('Checking auth...');
   try {
     const authResponse = await fetch('/api/auth/me', { credentials: 'include' });
     if (!authResponse.ok) { window.location.href = '/login.html'; return false; }
@@ -153,36 +153,36 @@ async function checkAuth() {
     if (!authResult.success) { window.location.href = '/login.html'; return false; }
     currentUser = authResult.user;
     currentUser._id = currentUser._id || currentUser.id;
-    console.log('✅ Auth OK, user:', currentUser._id, 'Role:', currentUser.role);
+    console.log('Auth OK, user:', currentUser._id, 'Role:', currentUser.role);
     document.getElementById('user-name').textContent = currentUser.displayName;
     return true;
   } catch (error) {
-    console.error('❌ Auth error:', error);
+    console.error('Auth error:', error);
     window.location.href = '/login.html';
     return false;
   }
 }
 
 async function init() {
-  console.log('🎬 Init starting...');
+  console.log('Init starting...');
   try {
     sessionId = getSessionIdFromURL();
-    console.log('📍 Session ID:', sessionId);
+    console.log('Session ID:', sessionId);
     if (!sessionId || sessionId.length !== 24) { alert('Invalid session ID'); redirectToDashboard(); return; }
 
     const authOk = await checkAuth();
     if (!authOk) return;
 
-    console.log('📚 Loading session...');
+    console.log('Loading session...');
     await loadSession();
 
-    console.log('🔌 Initializing socket...');
+    console.log('Initializing socket...');
     initializeSocket();
 
-    console.log('📥 About to load messages...');
+    console.log('About to load messages...');
     await loadMessages();
 
-    console.log('⌨️ Setting up input...');
+    console.log('Setting up input...');
     setupInputArea();
 
     // Close reaction picker when clicking outside
@@ -192,9 +192,9 @@ async function init() {
       }
     });
 
-    console.log('✅ Init complete!');
+    console.log('Init complete!');
   } catch (error) {
-    console.error('❌ Init error:', error);
+    console.error('Init error:', error);
     removeLoadingSpinner();
     showError('Failed to load chat: ' + error.message);
     setTimeout(function () { redirectToDashboard(); }, 3000);
@@ -226,38 +226,38 @@ function initializeSocket() {
   socket = io({ transports: ['websocket', 'polling'], reconnection: true, reconnectionDelay: 1000, reconnectionAttempts: Infinity, forceNew: false, timeout: 20000 });
 
   socket.on('connect', function () {
-    console.log('🔌 Socket connected, id:', socket.id);
+    console.log('Socket connected, id:', socket.id);
     socketJoined = false;
     if (!sessionId || !currentUser) {
-      console.log('⚠️ Missing sessionId or currentUser, cannot join room');
+      console.log('Missing sessionId or currentUser, cannot join room');
       return;
     }
     var roomToJoin = sessionId.toString();
-    console.log('📤 Emitting join-session for room: session-' + roomToJoin);
+    console.log('Emitting join-session for room: session-' + roomToJoin);
     socket.emit('join-session', { sessionId: roomToJoin, userId: currentUser._id, displayName: currentUser.displayName, role: currentUser.role });
   });
 
   socket.on('joined-session', function (data) {
     socketJoined = true;
-    console.log('✅ Joined session room:', data);
+    console.log('Joined session room:', data);
     processPendingMessages();
   });
 
   socket.on('disconnect', function (reason) {
-    console.log('🔌 Socket disconnected:', reason);
+    console.log('Socket disconnected:', reason);
     socketJoined = false;
   });
 
   socket.on('reconnect', function (attemptNumber) {
-    console.log('🔄 Socket reconnected after', attemptNumber, 'attempts');
+    console.log('Socket reconnected after', attemptNumber, 'attempts');
   });
 
   socket.on('connect_error', function (error) {
-    console.log('❌ Socket connection error:', error.message);
+    console.log('Socket connection error:', error.message);
   });
 
   socket.on('new-message', function (message) {
-    console.log('📨 New message received via socket:', message.id || message._id);
+    console.log('New message received via socket:', message.id || message._id);
     var visOwner = String(message.user?.id || message.userId?._id || message.userId || '');
     appendMessage({
       id: message.id || message._id,
@@ -361,27 +361,27 @@ function initializeSocket() {
 
   socket.on('disconnect', function (reason) {
     socketJoined = false;
-    console.log('🔌 Socket disconnected, reason:', reason);
+    console.log('Socket disconnected, reason:', reason);
   });
 
   socket.on('reconnect', function (attemptNumber) {
-    console.log('🔄 Socket reconnected after', attemptNumber, 'attempts');
+    console.log('Socket reconnected after', attemptNumber, 'attempts');
     if (sessionId && currentUser) {
       socket.emit('join-session', { sessionId: sessionId, userId: currentUser._id, displayName: currentUser.displayName, role: currentUser.role });
     }
   });
 
   socket.on('connect_error', function (error) {
-    console.error('❌ Socket connect error:', error.message);
+    console.error('Socket connect error:', error.message);
   });
 
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'visible' && socket) {
       if (!socket.connected) {
-        console.log('🔄 Page visible, socket disconnected, reconnecting...');
+        console.log('Page visible, socket disconnected, reconnecting...');
         socket.connect();
       } else if (!socketJoined) {
-        console.log('🔄 Page visible, re-joining room...');
+        console.log('Page visible, re-joining room...');
         socket.emit('join-session', { sessionId: sessionId.toString(), userId: currentUser._id, displayName: currentUser.displayName, role: currentUser.role });
       }
     }
@@ -389,27 +389,27 @@ function initializeSocket() {
 }
 
 async function loadMessages() {
-  console.log('📥 loadMessages() called');
+  console.log('loadMessages() called');
   try {
     showLoadingSpinner();
-    console.log('📥 Fetching from /api/messages/session/' + sessionId);
+    console.log('Fetching from /api/messages/session/' + sessionId);
     const response = await fetch('/api/messages/session/' + sessionId + '?limit=200', { credentials: 'include' });
-    console.log('📥 Response status:', response.status);
+    console.log('Response status:', response.status);
 
     const text = await response.text();
-    console.log('📥 Raw response length:', text.length);
+    console.log('Raw response length:', text.length);
 
     let result;
     try {
       result = JSON.parse(text);
     } catch (parseError) {
-      console.error('❌ JSON parse error:', parseError);
-      console.log('📥 First 500 chars:', text.substring(0, 500));
+      console.error('JSON parse error:', parseError);
+      console.log('First 500 chars:', text.substring(0, 500));
       throw new Error('Invalid JSON response');
     }
 
     removeLoadingSpinner();
-    console.log('📥 Parsed result, messages:', result.messages?.length || 0);
+    console.log('Parsed result, messages:', result.messages?.length || 0);
 
     if (result.success && result.messages && result.messages.length > 0) {
       var container = document.getElementById('messages-container');
@@ -422,10 +422,10 @@ async function loadMessages() {
       existingMessages.forEach(function (el) { el.remove(); });
       lastDateKey = null;
 
-      console.log('📥 Appending', result.messages.length, 'messages');
+      console.log('Appending', result.messages.length, 'messages');
       result.messages.forEach(function (msg, index) {
         var visOwner = String(msg.user?.id || msg.userId?._id || msg.userId || '');
-        if (index < 3) console.log('📥 Msg', index, '- id:', msg.id, 'owner:', visOwner);
+        if (index < 3) console.log('Msg', index, '- id:', msg.id, 'owner:', visOwner);
         appendMessage({
           id: msg.id || msg._id,
           username: msg.user?.displayName || msg.username || 'Anonymous',
@@ -450,7 +450,7 @@ async function loadMessages() {
         });
       });
       scrollToBottom();
-      console.log('📥 All messages appended');
+      console.log('All messages appended');
 
       // Initialize announcement and pinned messages feature
       var formattedForFeature = result.messages.map(function (msg) {
@@ -471,11 +471,11 @@ async function loadMessages() {
       }
 
     } else {
-      console.log('📥 No messages found');
+      console.log('No messages found');
       showEmptyState();
     }
   } catch (error) {
-    console.error('❌ loadMessages error:', error);
+    console.error('loadMessages error:', error);
     removeLoadingSpinner();
     showError('Failed to load messages: ' + error.message);
   }
@@ -578,7 +578,7 @@ var pendingMessages = [];
 
 function processPendingMessages() {
   if (pendingMessages.length > 0 && socketJoined) {
-    console.log('📤 Processing', pendingMessages.length, 'pending messages');
+    console.log('Processing', pendingMessages.length, 'pending messages');
     pendingMessages.forEach(function (fn) { fn(); });
     pendingMessages = [];
   }
@@ -633,11 +633,11 @@ async function sendMessage() {
 }
 
 function appendMessage(message) {
-  console.log('📝 appendMessage called with:', message.id || message._id, message.text?.substring(0, 30));
+  console.log('appendMessage called with:', message.id || message._id, message.text?.substring(0, 30));
 
   var container = document.getElementById('messages-container');
   if (!container) {
-    console.error('❌ messages-container not found!');
+    console.error('messages-container not found!');
     return;
   }
 
@@ -647,7 +647,7 @@ function appendMessage(message) {
   var msgId = message.id || message._id;
   var existingMsg = document.querySelector('[data-message-id="' + msgId + '"]');
   if (existingMsg) {
-    console.log('⚠️ Duplicate message, skipping:', msgId);
+    console.log('Duplicate message, skipping:', msgId);
     return;
   }
 
@@ -660,7 +660,7 @@ function appendMessage(message) {
     lastDateKey = msgDateKey;
   }
 
-  console.log('✅ Creating new message element for:', msgId);
+  console.log('Creating new message element for:', msgId);
 
   if (message.isDeleted) {
     var deletedDiv = document.createElement('div');
@@ -779,12 +779,10 @@ function appendMessage(message) {
   messageDiv.innerHTML = '<div class="message-avatar-wrapper">' + avatarHTML + '</div><div class="message-content-wrapper"><div class="message-header"><span class="message-username ' + (isLecturer ? 'lecturer' : 'student') + '">' + escapeHtml(displayName) + '</span>' + lecturerBadge + identityBadge + '<span class="message-time">' + formatTime(message.timestamp || message.createdAt || new Date()) + '</span></div>' + replyHTML + messageBodyHTML + pollHTML + reactionsHTML + '<div class="message-footer">' + badgeHTML + '<div class="message-actions">' + actionButtonsHTML + '</div></div></div>';
 
   container.appendChild(messageDiv);
-  console.log('✅ Message appended to DOM:', msgId, '- Total messages now:', container.querySelectorAll('.chat-message').length);
+  console.log('Message appended to DOM:', msgId, '- Total messages now:', container.querySelectorAll('.chat-message').length);
 }
 
-// ========================================
-// EMOJI REACTION SYSTEM (Using emoji-picker-element)
-// ========================================
+// Emoji reaction system
 
 // Quick reactions - the main 6 that appear first
 const QUICK_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
@@ -937,9 +935,7 @@ window.showReactionPicker = showReactionPicker;
 window.toggleReaction = toggleReaction;
 window.showFullEmojiPicker = showFullEmojiPicker;
 
-// ========================================
-// AVATAR & UTILITY FUNCTIONS
-// ========================================
+// Avatar and utility functions
 
 function generateAvatarHTML(displayName, isLecturer, avatarUrl) {
   if (avatarUrl) {
@@ -1181,9 +1177,7 @@ window.cancelReply = cancelReply;
 window.scrollToMessage = scrollToMessage;
 window.toggleOptionsMenu = toggleOptionsMenu;
 
-// ========================================
-// POLL SYSTEM 
-// ========================================
+// Poll system
 
 function openPollCreator() {
   var menu = document.getElementById('options-menu');
@@ -1379,11 +1373,11 @@ window.closePollById = closePollById;
 window.viewPollVotes = viewPollVotes;
 
 document.addEventListener('DOMContentLoaded', function () {
-  console.log('📄 DOM ready, calling init()');
+  console.log('DOM ready, calling init()');
   init();
 });
 
-// ATTACHMENT PREVIEW 
+// Attachment preview
 
 function formatFileSize(bytes) {
   if (!bytes || bytes === 0) return '';

@@ -4,7 +4,7 @@ var isFilteringPinned = false;
 var activeTypeFilter = null;
 
 function initializeAnnouncementAndPinFeature(messages) {
-  console.log('📢 Initializing announcement & pin feature');
+  console.log('Initializing announcement & pin feature');
   updateAnnouncementsFromMessages(messages);
   updatePinnedFromMessages(messages);
   initializeAnnouncementBanner();
