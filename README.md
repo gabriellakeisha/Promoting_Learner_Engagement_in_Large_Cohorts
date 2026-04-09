@@ -7,9 +7,9 @@ Real-Time Student Engagement Platform for Large-Scale Lectures
 ```
 final-year-project/
 │
-├── mvp-lecture-management/              # Main application (active development)
+├── mvp-lecture-management/             # Main application (active development)
 │   │
-│   ├── client/                          # Frontend (Vanilla HTML/CSS/JS)
+│   ├── client/                         # Frontend (Vanilla HTML/CSS/JS)
 │   │   ├── css/
 │   │   │   ├── analytics.css           # Analytics cards, charts, keywords
 │   │   │   ├── announcement-pin.css    # Announcement and pin feature styles
@@ -43,15 +43,15 @@ final-year-project/
 │   │   ├── register.html               # Registration page
 │   │   └── student-dashboard.html      # Student UI (chat + reflection)
 │   │
-│   ├── scripts/                         # Utility and test scripts
+│   ├── scripts/                        # Utility and test scripts
 │   │   ├── ai-experiment.js            # AI accuracy comparison experiment
-│   │   ├── demo-data.js               # Generate demo lecture data
+│   │   ├── demo-data.js                # Generate demo lecture data
 │   │   ├── generate-test-data.js       # Create test data
 │   │   ├── performance-test.js         # Load testing (5-50 concurrent users)
 │   │   ├── test-ai-comparison.js       # AI service benchmarking
 │   │   └── test-rate-limit.js          # Rate limit verification
 │   │
-│   ├── server/                          # Backend (Node.js + Express)
+│   ├── server/                         # Backend (Node.js + Express)
 │   │   ├── config/
 │   │   │   └── database.js             # MongoDB connection configuration
 │   │   ├── middleware/
@@ -77,11 +77,11 @@ final-year-project/
 │   │   │   └── ai-summary.js           # DistilBART session summarisation with fallback
 │   │   └── server.js                   # Main entry point (Express + Socket.IO setup)
 │   │
-│   ├── tests/                           # Jest automated tests (97 tests)
+│   ├── tests/                          # Jest automated tests (97 tests)
 │   │   ├── ai-services.test.js         # RAKE and AI comparison
-│   │   ├── auth-middleware.test.js      # Role-based access control
+│   │   ├── auth-middleware.test.js     # Role-based access control
 │   │   ├── auth-routes.test.js         # Registration, login, logout
-│   │   ├── models.test.js             # All 5 Mongoose model schemas
+│   │   ├── models.test.js              # All 5 Mongoose model schemas
 │   │   └── security.test.js            # XSS sanitisation and security headers
 │   │
 │   ├── .env.example                    # Environment variable template
@@ -89,14 +89,14 @@ final-year-project/
 │   ├── package.json                    # Dependencies and npm scripts
 │   └── README.md                       # MVP documentation
 │
-├── mvp_livechat/                        # Earlier live chat prototype
-├── websocket_test/                      # Initial WebSocket testing
+├── mvp_livechat/                       # Earlier live chat prototype
+├── websocket_test/                     # Initial WebSocket testing
 │
-├── docs/                                # Minutes of meetings
+├── docs/                               # Minutes of meetings
 │   ├── MinutesofProjectMeetings_Feb26-Apr26.docx
 │   └── MinutesofProjectMeetings_Oct25-Jan26.docx
 │
-└── README.md                            # This file
+└── README.md                           # This file
 ```
 
 ## Technology Stack

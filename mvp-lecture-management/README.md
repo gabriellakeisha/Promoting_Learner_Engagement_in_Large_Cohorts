@@ -3,7 +3,6 @@
 **Student:** Gabriella Keisha Andini (40392749)  
 **Module:** CSC3002 – Computer Science Project  
 **Supervisor:** Andrew McDowell  
-**University:** Queen's University Belfast  
 
 ---
 
@@ -144,7 +143,7 @@ node scripts/test-rate-limit.js
 ```
 mvp-lecture-management/
 │
-├── client/                              # Frontend (Vanilla HTML/CSS/JS)
+├── client/                             # Frontend (Vanilla HTML/CSS/JS)
 │   ├── css/
 │   │   ├── analytics.css               # Analytics cards, charts, keywords
 │   │   ├── announcement-pin.css        # Announcement and pin feature styles
@@ -186,7 +185,7 @@ mvp-lecture-management/
 │   ├── test-ai-comparison.js           # AI service benchmarking
 │   └── test-rate-limit.js              # Rate limit verification
 │
-├── server/                              # Backend (Node.js + Express)
+├── server/                             # Backend (Node.js + Express)
 │   ├── config/
 │   │   └── database.js                 # MongoDB connection configuration
 │   ├── middleware/
@@ -212,9 +211,9 @@ mvp-lecture-management/
 │   │   └── ai-summary.js               # DistilBART session summarisation with fallback
 │   └── server.js                       # Main entry point (Express + Socket.IO setup)
 │
-├── tests/                               # Jest automated tests (97 tests)
+├── tests/                              # Jest automated tests (97 tests)
 │   ├── ai-services.test.js             # RAKE and AI comparison
-│   ├── auth-middleware.test.js          # Role-based access control
+│   ├── auth-middleware.test.js         # Role-based access control
 │   ├── auth-routes.test.js             # Registration, login, logout
 │   ├── models.test.js                  # All 5 Mongoose model schemas
 │   └── security.test.js                # XSS sanitisation and security headers
