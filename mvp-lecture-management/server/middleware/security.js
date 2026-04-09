@@ -35,6 +35,8 @@ const authLimiter = rateLimit({
 const messageLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 30, // 30 messages per minute
+  // Note: raised to 300 during performance testing (scripts/performance-test.js)
+  // to allow bulk operations from a single test machine IP
   message: {
     success: false,
     message: 'You are sending messages too quickly. Please slow down.'
