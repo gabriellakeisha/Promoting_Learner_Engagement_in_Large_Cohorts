@@ -2210,7 +2210,7 @@ body.dark-mode .report-btn:hover::after {
   cursor: not-allowed;
 }
 
-/* Dark mode input fix */
+/* Dark mode input */
 .dark-mode .profile-text-input {
   background: #374151 !important;
   color: #f3f4f6 !important;

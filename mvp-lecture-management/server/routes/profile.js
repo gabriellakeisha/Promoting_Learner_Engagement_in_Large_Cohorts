@@ -3,9 +3,7 @@ const router = express.Router();
 const User = require('../models/User');
 const { isAuthenticated } = require('../middleware/auth');
 
-// ========================================
 // UPDATE DISPLAY NAME
-// ========================================
 router.put('/display-name', isAuthenticated, async (req, res) => {
   try {
     const { displayName } = req.body;
@@ -46,9 +44,7 @@ router.put('/display-name', isAuthenticated, async (req, res) => {
   }
 });
 
-// ========================================
 // CHANGE PASSWORD
-// ========================================
 router.put('/password', isAuthenticated, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;

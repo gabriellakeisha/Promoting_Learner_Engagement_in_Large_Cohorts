@@ -7,6 +7,8 @@ const validator = require('validator');
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per window
+  // Note: raised to 300 during performance testing (scripts/performance-test.js)
+  // to allow bulk operations from a single test machine IP
   message: {
     success: false,
     message: 'Too many requests, please try again later.'
@@ -19,6 +21,8 @@ const apiLimiter = rateLimit({
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 50, // 50 attempts per window
+  // Note: raised to 300 during performance testing (scripts/performance-test.js)
+  // to allow bulk operations from a single test machine IP
   message: {
     success: false,
     message: 'Too many authentication attempts, please try again later.'
