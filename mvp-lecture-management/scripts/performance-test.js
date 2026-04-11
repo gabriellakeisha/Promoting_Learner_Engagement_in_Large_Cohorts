@@ -1,6 +1,5 @@
 /**
  * PERFORMANCE & LATENCY TEST SUITE
- * Location: mvp-lecture-management/scripts/performance-test.js
  * 
  * Validates:
  *   NFR-01: Message delivery latency <1 second under normal load (50 concurrent users)
@@ -10,9 +9,6 @@
  *   - Server must be running (npm start)
  *   - MongoDB must have test data (node scripts/test-data.js)
  *   - socket.io-client must be installed
- * 
- * Run from project root:
- *   node scripts/performance-test.js
  * 
  */
 
