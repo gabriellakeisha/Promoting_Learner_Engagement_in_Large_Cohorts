@@ -314,7 +314,15 @@ function initializeSocket() {
     // Remove from pinned if it was pinned
     removePinnedMessage(messageId);
     var el = document.querySelector('[data-message-id="' + messageId + '"]');
-    if (el) { el.style.transition = 'opacity 0.3s'; el.style.opacity = '0'; setTimeout(function() { el.remove(); }, 300); }
+    if (el) {
+      el.style.transition = 'opacity 0.3s';
+      el.style.opacity = '0';
+      setTimeout(function() {
+        el.className = 'chat-message deleted-message';
+        el.innerHTML = '<div class="deleted-message-content"><span class="deleted-icon">🚫</span> <em>This message was deleted</em></div>';
+        el.style.opacity = '1';
+      }, 300);
+    }
   });
   socket.on('message-reported', function (data) {
     var el = document.querySelector('[data-message-id="' + data.messageId + '"]');

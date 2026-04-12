@@ -20,9 +20,7 @@ const apiLimiter = rateLimit({
 // Stricter limiter for auth endpoints (login/register)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 50, // 50 attempts per window
-  // Note: raised to 300 during performance testing (scripts/performance-test.js)
-  // to allow bulk operations from a single test machine IP
+  max: 10, // 10 attempts per window (brute-force protection)
   message: {
     success: false,
     message: 'Too many authentication attempts, please try again later.'
@@ -45,11 +43,12 @@ const messageLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// sanitise text input to prevent xss
+// sanitise text input — strip control characters, trim whitespace.
+// HTML escaping is handled client-side at render time via escapeHtml()
+// to avoid double-encoding (server escape + client escape = &amp;lt; artifacts).
 function sanitiseText(text) {
   if (!text || typeof text !== 'string') return '';
-  // Escape HTML entities 
-  return validator.escape(text.trim()).replace(/&#x27;/g, "'");
+  return validator.stripLow(text.trim(), true);
 }
 
 // Recursively sanitise user input objects

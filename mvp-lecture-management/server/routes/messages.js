@@ -225,9 +225,9 @@ router.get('/session/:sessionId', isAuthenticated, verifySessionAccess, async (r
 
     const messages = await Message.find({
       sessionId,
-      isDeleted: { $ne: true }
+      isDeleted: { $in: [false, true, null] }
     })
-      .sort({ createdAt: 1 })
+      .sort({ timestamp: 1 })
       .skip(skip)
       .limit(limit)
       .populate('userId', 'displayName role avatar')
