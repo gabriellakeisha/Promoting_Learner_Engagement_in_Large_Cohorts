@@ -224,7 +224,8 @@ router.get('/session/:sessionId', isAuthenticated, verifySessionAccess, async (r
     console.log('Fetching messages for session:', sessionId);
 
     const messages = await Message.find({
-      sessionId
+      sessionId,
+      isDeleted: { $ne: true }
     })
       .sort({ createdAt: 1 })
       .skip(skip)

@@ -246,22 +246,29 @@
   .analytics-modal-content {
     padding: 16px;
     border-radius: 12px;
+    box-sizing: border-box;
+    max-width: 100%;
+    overflow: hidden;
   }
 
   .analytics-header {
     flex-direction: column;
     gap: 12px;
-    align-items: flex-start;
+    align-items: stretch;
   }
 
   .analytics-header-buttons {
     width: 100%;
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
   }
 
   .analytics-header-buttons .btn {
-    flex: 1;
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 8px 12px;
+    font-size: 12px;
   }
 }
 
@@ -271,7 +278,22 @@
   }
 
   #analytics-title {
-    font-size: 18px;
+    font-size: 17px;
+    line-height: 1.25;
+  }
+
+  .analytics-header-buttons {
+    gap: 6px;
+  }
+
+  .analytics-header-buttons .btn {
+    flex: 1 1 calc(50% - 3px);
+    padding: 9px 8px;
+    font-size: 12px;
+  }
+
+  .analytics-header-buttons #close-analytics-btn {
+    flex: 1 1 100%;
   }
 }
 

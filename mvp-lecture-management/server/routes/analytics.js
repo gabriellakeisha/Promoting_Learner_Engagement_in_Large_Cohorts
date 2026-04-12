@@ -382,7 +382,10 @@ router.get('/ai-summary/:sessionId', isAuthenticated, isLecturer, async (req, re
       if (identityCounts[mode] !== undefined) identityCounts[mode]++;
     });
 
-    var sessionStart = messages[0].timestamp;
+    // Use the session's scheduled start time as t=0 so "peak at 20-25 min mark"
+    // means 20 minutes into the lecture, not 20 minutes after the first message.
+    // Fall back to the first message if the session has no explicit startTime.
+    var sessionStart = session.startTime || messages[0].timestamp;
     var sessionEnd = messages[messages.length - 1].timestamp;
     var durationMs = new Date(sessionEnd) - new Date(sessionStart);
     var durationMin = Math.max(1, Math.round(durationMs / 60000));
@@ -458,15 +461,15 @@ router.get('/ai-summary/:sessionId', isAuthenticated, isLecturer, async (req, re
     var sections = [];
 
     var participationLevel = parseFloat(participationRate) >= 70 ? 'high' : (parseFloat(participationRate) >= 40 ? 'moderate' : 'low');
-    var overviewText = 'Session "' + session.title + '" lasted approximately ' + durationMin + ' minutes with ' + totalMessages + ' messages from ' + uniqueContributors + ' of ' + totalMembers + ' enrolled students (' + participationRate + '% participation rate). ';
+    var overviewText = 'Session "' + session.title + '" lasted approximately ' + durationMin + ' minutes with ' + coreMessages.length + ' messages from ' + uniqueContributors + ' of ' + totalMembers + ' enrolled members (' + participationRate + '% participation rate). ';
     overviewText += 'This represents ' + participationLevel + ' engagement. ';
-    overviewText += 'The messaging rate averaged ' + (totalMessages / durationMin).toFixed(1) + ' messages per minute.';
+    overviewText += 'The messaging rate averaged ' + (coreMessages.length / durationMin).toFixed(1) + ' messages per minute.';
 
     sections.push({
       title: 'Engagement Pattern',
       content: 'Engagement was ' + engagementTrend + ' over the session. ' +
         'Peak activity occurred at the ' + peakBucket + '-' + (peakBucket + bucketSize) + ' minute mark (' + peakCount + ' messages). ' +
-        (quietBucket !== null && quietBucket !== peakBucket ? 'The quietest period was at ' + quietBucket + '-' + (quietBucket + bucketSize) + ' minutes (' + quietCount + ' messages). ' : '') +
+        (quietBucket !== null && quietBucket !== peakBucket ? 'The lowest-activity window was at ' + quietBucket + '-' + (quietBucket + bucketSize) + ' minutes (' + quietCount + ' messages). ' : '') +
         (engagementTrend === 'decreasing' ? 'Engagement dropped in the second half, which may indicate content difficulty increased or attention waned. Consider adding interactive elements (polls, breakout questions) during the latter portion.' : '') +
         (engagementTrend === 'increasing' ? 'Students became more engaged as the session progressed, suggesting the topic generated growing interest or that students became more comfortable participating.' : '') +
         (engagementTrend === 'steady' ? 'Engagement remained consistent throughout, indicating a well-paced session.' : '')

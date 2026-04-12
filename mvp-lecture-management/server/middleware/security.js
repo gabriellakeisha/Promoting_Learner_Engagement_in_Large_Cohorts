@@ -48,8 +48,8 @@ const messageLimiter = rateLimit({
 // sanitise text input to prevent xss
 function sanitiseText(text) {
   if (!text || typeof text !== 'string') return '';
-  // Escape HTML entities
-  return validator.escape(text.trim());
+  // Escape HTML entities 
+  return validator.escape(text.trim()).replace(/&#x27;/g, "'");
 }
 
 // Recursively sanitise user input objects

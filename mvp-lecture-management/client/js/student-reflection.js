@@ -165,10 +165,12 @@ function displayReflectionContent(analytics) {
         <h3 style="margin:0;">⏱️ My Participation Timeline</h3>
         <span style="font-size:11px;color:var(--text-secondary);background:rgba(16,185,129,0.1);padding:3px 8px;border-radius:12px;">SRL: Performance Phase</span>
       </div>
-      ${timeline.length > 0 ? `
+      ${timeline.length > 0 ? (() => {
+        var maxCount = Math.max(...timeline.map(t => t.count), 1);
+        return `
         <div class="timeline-chart">
           ${timeline.map(t => `
-            <div class="timeline-bar" style="height: ${Math.min(100, t.count * 20)}px;" title="${t.time}: ${t.count} messages">
+            <div class="timeline-bar" style="height: ${Math.max(8, Math.round((t.count / maxCount) * 100))}px;" title="${t.time}: ${t.count} messages">
               <span class="timeline-count">${t.count}</span>
             </div>
           `).join('')}
@@ -178,8 +180,8 @@ function displayReflectionContent(analytics) {
         </div>
         <p class="timeline-insight">
           ${getTimelineInsight(timeline)}
-        </p>
-      ` : `
+        </p>`;
+      })() : `
         <p style="color: var(--text-secondary); text-align: center;">
           No participation data yet. Send some messages to see your timeline!
         </p>
@@ -283,18 +285,19 @@ async function loadSessionHistory() {
       return;
     }
 
+    // History is newest-first. Change indicator compares each session
+    // to its predecessor (the next row, which is the older session).
     const history = result.history;
 
-    let prevMessages = null;
-    const rows = history.map(function(h) {
+    const rows = history.map(function(h, i) {
       let changeIndicator = '';
-      if (prevMessages !== null) {
-        const diff = h.myMessages - prevMessages;
+      var olderSession = history[i + 1];
+      if (olderSession) {
+        var diff = h.myMessages - olderSession.myMessages;
         if (diff > 0) changeIndicator = '<span style="color:#10b981;font-size:11px;"> ↑' + diff + '</span>';
         else if (diff < 0) changeIndicator = '<span style="color:#ef4444;font-size:11px;"> ↓' + Math.abs(diff) + '</span>';
         else changeIndicator = '<span style="color:var(--text-secondary);font-size:11px;"> →</span>';
       }
-      prevMessages = h.myMessages;
 
       return '<tr style="border-bottom:1px solid var(--border-color,#e5e7eb);">' +
         '<td style="padding:10px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + h.title + '</td>' +
@@ -304,7 +307,7 @@ async function loadSessionHistory() {
         '<td style="padding:10px;">' + (h.myTypes ? (h.myTypes.QUESTION || 0) + 'Q / ' + (h.myTypes.COMMENT || 0) + 'C / ' + (h.myTypes.CONFUSION || 0) + 'X' : '-') + '</td>' +
         '<td style="padding:10px;">' + h.classAverage + '</td>' +
         '<td style="padding:10px;">' + (h.rank ? '#' + h.rank : '-') + '</td>' +
-        '<td style="padding:10px;">' + (h.aboveAverage ? '<span style="color:#10b981;">Above</span>' : '<span style="color:#f59e0b;">Below</span>') + '</td>' +
+        '<td style="padding:10px;">' + (h.myMessages === 0 ? '<span style="color:var(--text-secondary);">—</span>' : (h.aboveAverage ? '<span style="color:#10b981;">Above</span>' : '<span style="color:#f59e0b;">Below</span>')) + '</td>' +
         '<td style="padding:10px;">' + (h.understanding ? '⭐'.repeat(h.understanding) : '-') + '</td>' +
       '</tr>';
     }).join('');
@@ -477,7 +480,8 @@ function getTimelineInsight(timeline) {
   } else if (secondHalfCount > firstHalfCount * 1.5) {
     return "💡 You engaged more towards the end. Consider participating earlier too!";
   } else {
-    return `💡 Your peak activity was at ${maxBucket.time}. Great consistent engagement!`;
+    var peakMin = parseInt(maxBucket.time) || 0;
+    return `💡 Your peak activity was at ${peakMin}-${peakMin + 5}min. Great consistent engagement!`;
   }
 }
 
@@ -564,64 +568,48 @@ function getAchievementBadges(personal, comparison, timeline, goal, goalProgress
   }
 
   // Above Average badge
-  if (comparison.aboveAverage) {
-    badges.push({
-      icon: '📈',
-      title: 'Above Average',
-      desc: 'More than class average',
-      earned: true
-    });
-  }
+  badges.push({
+    icon: '📈',
+    title: 'Above Average',
+    desc: comparison.aboveAverage ? 'More than class average' : 'Send more than the class average',
+    earned: !!comparison.aboveAverage
+  });
 
   // Question Asker badge
-  if (personal.messagesByType.QUESTION >= 2) {
-    badges.push({
-      icon: '❓',
-      title: 'Curious Mind',
-      desc: '2+ questions asked',
-      earned: true
-    });
-  } else {
-    badges.push({
-      icon: '❓',
-      title: 'Curious Mind',
-      desc: `${personal.messagesByType.QUESTION}/2 questions`,
-      earned: false
-    });
-  }
+  badges.push({
+    icon: '❓',
+    title: 'Curious Mind',
+    desc: personal.messagesByType.QUESTION >= 2 ? '2+ questions asked' : `${personal.messagesByType.QUESTION}/2 questions`,
+    earned: personal.messagesByType.QUESTION >= 2
+  });
 
   // Goal Achiever badge
-  if (goalProgress?.completed) {
-    badges.push({
-      icon: '🎯',
-      title: 'Goal Achiever',
-      desc: 'Session goal completed',
-      earned: true
-    });
-  }
+  badges.push({
+    icon: '🎯',
+    title: 'Goal Achiever',
+    desc: goalProgress?.completed ? 'Session goal completed' : 'Set and complete a session goal',
+    earned: !!goalProgress?.completed
+  });
 
   // Early Bird badge
-  if (timeline.length > 0 && parseInt(timeline[0].time) <= 5) {
-    badges.push({
-      icon: '🐦',
-      title: 'Early Bird',
-      desc: 'Engaged in first 5 mins',
-      earned: true
-    });
-  }
+  var isEarlyBird = timeline.length > 0 && parseInt(timeline[0].time) <= 5;
+  badges.push({
+    icon: '🐦',
+    title: 'Early Bird',
+    desc: isEarlyBird ? 'Engaged in first 5 mins' : 'Send a message in the first 5 minutes',
+    earned: isEarlyBird
+  });
 
   // Top 10 badge
-  if (personal.percentile && personal.percentile >= 90) {
-    badges.push({
-      icon: '🏆',
-      title: 'Top 10%',
-      desc: 'Among most active',
-      earned: true
-    });
-  }
+  badges.push({
+    icon: '🏆',
+    title: 'Top 10%',
+    desc: personal.percentile >= 90 ? 'Among most active' : 'Reach the top 10% of contributors',
+    earned: personal.percentile && personal.percentile >= 90
+  });
 
   return badges.map(b => `
-    <div class="achievement-badge ${b.earned ? 'earned' : 'locked'}">
+    <div class="achievement-badge ${b.earned ? 'earned' : 'locked'}" title="${b.earned ? b.title + ': ' + b.desc : 'Locked — ' + b.desc}">
       <span class="badge-icon">${b.icon}</span>
       <div class="badge-info">
         <span class="badge-title">${b.title}</span>

@@ -45,7 +45,7 @@ async function generateAISummary(messages, context) {
 
     // Prepare context prompt
     const inputText = `Session: ${context.title}. ` +
-      `${context.totalMessages} messages from ${context.uniqueContributors} students. ` +
+      `${context.totalMessages} messages from ${context.uniqueContributors} contributors. ` +
       `Discussion: ${messageTexts}`;
 
     // Truncate to model limit (1024 tokens ~= 4000 chars for safety)

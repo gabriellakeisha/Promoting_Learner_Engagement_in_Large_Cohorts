@@ -5,8 +5,10 @@ body.dark-mode {
   --primary-color: #3b82f6;
   --secondary-color: #1e293b;
   --bg-color: #0f172a;
+  --bg-secondary: #1e293b;
   --card-bg: #1e293b;
   --text-color: #e2e8f0;
+  --text-secondary: #cbd5e1;
   --border-color: #334155;
   --input-bg: #1e293b;
   --input-border: #475569;

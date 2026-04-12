@@ -163,6 +163,7 @@ function getRealisticSchedule() {
       moduleCode: 'CSC1028',
       lecturerIdx: 0,
       status: 'ended',
+      topic: 'web',
       // 3 weeks ago, Monday 10:00
       startTime: new Date(today.getTime() - 21 * 24 * 60 * 60 * 1000 + 10 * 60 * 60 * 1000),
       msgCount: 55,
@@ -172,6 +173,7 @@ function getRealisticSchedule() {
       moduleCode: 'CSC2032',
       lecturerIdx: 0,
       status: 'ended',
+      topic: 'db',
       // 2 weeks ago, Wednesday 14:00
       startTime: new Date(today.getTime() - 12 * 24 * 60 * 60 * 1000 + 14 * 60 * 60 * 1000),
       msgCount: 62,
@@ -181,6 +183,7 @@ function getRealisticSchedule() {
       moduleCode: 'CSC1023',
       lecturerIdx: 1,
       status: 'ended',
+      topic: 'oop',
       // 2 weeks ago, Thursday 11:00
       startTime: new Date(today.getTime() - 11 * 24 * 60 * 60 * 1000 + 11 * 60 * 60 * 1000),
       msgCount: 48,
@@ -190,6 +193,7 @@ function getRealisticSchedule() {
       moduleCode: 'CSC3065',
       lecturerIdx: 0,
       status: 'ended',
+      topic: 'testing',
       // 1 week ago, Monday 10:00
       startTime: new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000 + 10 * 60 * 60 * 1000),
       msgCount: 70,
@@ -199,6 +203,7 @@ function getRealisticSchedule() {
       moduleCode: 'CSC3002',
       lecturerIdx: 0,
       status: 'ended',
+      topic: 'hci',
       // 1 week ago, Wednesday 14:00
       startTime: new Date(today.getTime() - 5 * 24 * 60 * 60 * 1000 + 14 * 60 * 60 * 1000),
       msgCount: 58,
@@ -208,6 +213,7 @@ function getRealisticSchedule() {
       moduleCode: 'CSC3056',
       lecturerIdx: 1,
       status: 'ended',
+      topic: 'cloud',
       // 4 days ago, Thursday 11:00
       startTime: new Date(today.getTime() - 4 * 24 * 60 * 60 * 1000 + 11 * 60 * 60 * 1000),
       msgCount: 45,
@@ -217,6 +223,7 @@ function getRealisticSchedule() {
       moduleCode: 'CSC2025',
       lecturerIdx: 0,
       status: 'active',
+      topic: 'dsa',
       // Yesterday 10:00 (active = can still chat)
       startTime: new Date(today.getTime() - 1 * 24 * 60 * 60 * 1000 + 10 * 60 * 60 * 1000),
       msgCount: 65,
@@ -226,6 +233,7 @@ function getRealisticSchedule() {
       moduleCode: 'CSC3064',
       lecturerIdx: 0,
       status: 'active',
+      topic: 'ml',
       // Today 9:00 (active = live demo session)
       startTime: new Date(today.getTime() + 9 * 60 * 60 * 1000),
       msgCount: 40,
@@ -378,6 +386,251 @@ const LECTURER_MSGS = [
   "Any other questions before we move on to the next topic?",
   "Good use of the chat for asking questions, keep it up",
 ];
+
+// Topic-specific message pools. Picker prefers these when session.topic matches,
+// then falls back to the generic pool for ~20% of messages (off-topic chatter is realistic).
+const TOPIC_MSGS = {
+  web: {
+    questions: [
+      "Can you explain how CSS flexbox differs from grid layout?",
+      "How does the browser actually render HTML into pixels on the screen?",
+      "What happens when we type a URL and hit enter, step by step?",
+      "Why do we need both client-side and server-side validation?",
+      "How does event propagation decide which handler fires first?",
+      "Is it better to use cookies or localStorage for a login token?",
+      "What's the real difference between inline, block, and inline-block?",
+      "How does CSS specificity decide which rule wins a conflict?",
+    ],
+    comments: [
+      "The flexbox cheat sheet on CSS-Tricks is genuinely lifesaving",
+      "Using semantic HTML actually improved my Lighthouse score quite a bit",
+      "That responsive navigation demo was really clean",
+      "I bookmarked the MDN reference you showed in the lecture",
+      "Good reminder about CORS headers, that was causing my fetch errors too",
+      "The DevTools network tab tip was a game changer for debugging",
+      "Media queries finally click for me after seeing the breakpoints example",
+      "I refactored my layout with grid and removed half the CSS",
+    ],
+    confusion: [
+      "I'm lost on how CSS specificity decides which rule wins",
+      "Why does my flexbox item not align the way I expect?",
+      "Can we revisit how event bubbling differs from event capturing?",
+      "Still confused about when to use relative vs absolute positioning",
+      "I don't get why my fetch call is blocked by CORS",
+      "The box model with padding and margin is still tripping me up",
+    ],
+  },
+  db: {
+    questions: [
+      "How do SQL joins actually work under the hood?",
+      "Could you clarify the difference between normalisation forms 2NF and 3NF?",
+      "What's the trade-off between normalising and denormalising a table?",
+      "When should we add an index to a column and when should we not?",
+      "What's the difference between a clustered and non-clustered index?",
+      "Is there a performance penalty for using an ORM instead of raw SQL?",
+      "Why would we use Redis for caching instead of just querying the database?",
+      "Can you explain eventual consistency with a practical example?",
+    ],
+    comments: [
+      "The ER diagram on the board clarified the table relationships perfectly",
+      "Our query went from 4 seconds to 200ms after adding that index",
+      "The comparison table between SQL and NoSQL was really useful",
+      "I implemented the normalisation steps for my coursework and it helped a lot",
+      "Transactions finally clicked after the bank-transfer example",
+      "Seeing the EXPLAIN plan in action made query tuning much less mysterious",
+      "The library-catalogue analogy for indexing really stuck with me",
+      "Postgres documentation is surprisingly readable compared to what I expected",
+    ],
+    confusion: [
+      "Not sure I understand how the foreign key relationship works",
+      "Can we revisit the normalisation steps? Still unclear on 3NF",
+      "The difference between INNER JOIN and LEFT JOIN confuses me",
+      "I'm struggling to understand why we need database transactions",
+      "Could we go through the SQL subquery example one more time?",
+      "I don't get when to use a view vs a materialised view",
+    ],
+  },
+  oop: {
+    questions: [
+      "Is polymorphism the same as method overriding or does it cover more?",
+      "When should we use composition over inheritance?",
+      "Could you explain the SOLID principles with a concrete example?",
+      "What's the practical difference between an abstract class and an interface?",
+      "Why is encapsulation considered so important in OOP?",
+      "How do access modifiers actually affect inheritance in Java?",
+      "Can you explain how method resolution works with multiple interfaces?",
+      "How does garbage collection work in Java compared to manual memory in C?",
+    ],
+    comments: [
+      "The inheritance diagram on the slide was really clean",
+      "Finally understood polymorphism after the shape-drawing example",
+      "Composition over inheritance makes so much more sense now",
+      "I refactored my assignment to use interfaces and it's way cleaner",
+      "Seeing a Liskov substitution violation in real code was eye-opening",
+      "The Strategy pattern is exactly what I needed for my project",
+      "The Gang of Four book is officially on my reading list now",
+      "That encapsulation example made the 'why private' question finally clear",
+    ],
+    confusion: [
+      "The inheritance hierarchy isn't clicking for me yet",
+      "The difference between composition and inheritance is unclear to me",
+      "The polymorphism example with shapes was confusing, can we revisit?",
+      "I'm lost on when to use an abstract class vs an interface",
+      "Private vs protected access — when do we pick which?",
+      "The dependency injection concept is hard to grasp",
+    ],
+  },
+  testing: {
+    questions: [
+      "What's the difference between unit testing and integration testing?",
+      "How do we decide what to mock and what to use the real thing?",
+      "When should we write tests — before or after the code?",
+      "Is 100% code coverage actually a good goal?",
+      "How does TDD differ from BDD in practice?",
+      "What's a good strategy for testing asynchronous code?",
+      "How do snapshot tests compare to assertion-based tests?",
+      "Can you explain what a flaky test is and how to fix one?",
+    ],
+    comments: [
+      "The Jest walkthrough made writing unit tests much less intimidating",
+      "I finally see the value of writing tests first",
+      "Mocking the database instead of hitting a real one saved our CI time",
+      "The red-green-refactor cycle is simpler than I expected",
+      "Good point about testing behaviour, not implementation details",
+      "Our flaky tests turned out to be shared state — that example was spot on",
+      "Integration tests with a real DB caught bugs our unit tests missed",
+      "I'm going to try TDD on the next assignment",
+    ],
+    confusion: [
+      "I don't get when to mock a dependency vs use the real one",
+      "The distinction between unit and integration tests is fuzzy for me",
+      "Why does my async test pass sometimes and fail other times?",
+      "Still unclear on how to test private methods",
+      "Code coverage numbers don't mean much to me yet",
+      "I'm confused about the difference between stubs and mocks",
+    ],
+  },
+  hci: {
+    questions: [
+      "How do we measure usability in a formal study?",
+      "What's the difference between a heuristic evaluation and a usability test?",
+      "When should we use a wireframe versus a high-fidelity prototype?",
+      "Could you explain Fitts's Law and where it applies in UI design?",
+      "How do we run a cognitive walkthrough in practice?",
+      "What makes an interface 'accessible' beyond just screen reader support?",
+      "Why is consistency considered a core usability principle?",
+      "How many users do we actually need for a usability test?",
+    ],
+    comments: [
+      "The Nielsen heuristics list is genuinely useful for critiquing any UI",
+      "That before-and-after redesign example was really compelling",
+      "I never considered error recovery as a design principle",
+      "Figma's prototyping features are great for quick user flows",
+      "Accessibility as a constraint made my designs better overall",
+      "The think-aloud protocol sounds simple but it's surprisingly hard",
+      "Good reminder that users rarely read anything on a screen",
+      "The persona exercise helped focus my design decisions",
+    ],
+    confusion: [
+      "The difference between formative and summative evaluation is unclear",
+      "I don't get when to use a paper prototype vs a digital one",
+      "How do you avoid leading questions in a user interview?",
+      "The terms 'usability' and 'user experience' seem to overlap a lot",
+      "I'm lost on what counts as a 'critical incident' in a usability study",
+      "Not sure how to report findings without introducing bias",
+    ],
+  },
+  cloud: {
+    questions: [
+      "How do containerised applications differ from virtual machines?",
+      "How does a load balancer distribute traffic across servers?",
+      "Can you explain the CAP theorem with a practical example?",
+      "How do microservices communicate compared to monolithic architectures?",
+      "What's the advantage of using a message queue like RabbitMQ?",
+      "What exactly does a reverse proxy do and when would we need one?",
+      "What's the difference between horizontal and vertical scaling?",
+      "How does auto-scaling decide when to add more instances?",
+    ],
+    comments: [
+      "Docker finally clicked after seeing the layered file system explanation",
+      "The CAP theorem diagram really simplified a confusing topic",
+      "Kubernetes is intimidating but the pod-service-deployment story helped",
+      "I appreciated the cost comparison between on-prem and cloud",
+      "Serverless is cool but cold starts are a real pain",
+      "That horizontal scaling diagram made the trade-offs obvious",
+      "The blue-green deployment demo was really clear",
+      "Good point that microservices are an organisational choice as much as a technical one",
+    ],
+    confusion: [
+      "I don't get how Docker networking works between containers",
+      "Still struggling with the difference between a pod and a container",
+      "The CAP theorem tradeoffs are confusing me",
+      "When should we actually use a message queue vs direct calls?",
+      "Not sure how Kubernetes schedules pods across nodes",
+      "The reverse proxy vs API gateway distinction is unclear to me",
+    ],
+  },
+  dsa: {
+    questions: [
+      "Can you explain how binary search trees maintain their ordering property?",
+      "Could you go over the time complexity of quicksort vs mergesort again?",
+      "When would we choose a hash table over a balanced BST?",
+      "How does recursion use the call stack differently from iteration?",
+      "What's the significance of Big O notation in real-world performance?",
+      "How does memoization speed up recursive algorithms?",
+      "When should we use a min-heap versus a max-heap?",
+      "Why is dynamic programming considered 'smart recursion'?",
+    ],
+    comments: [
+      "The visual representation of the quicksort partition step was really clear",
+      "That visualiser website made tree rotations make sense",
+      "Big O finally clicks after seeing the growth rate graph",
+      "I implemented a hash table for my coursework and debugging collisions was fun",
+      "Memoization cut my runtime from 10s to 40ms, wild",
+      "The stack vs heap explanation tied together a lot of earlier concepts",
+      "I finally see why we care about amortised cost",
+      "Seeing the cache locality impact on arrays vs linked lists was eye-opening",
+    ],
+    confusion: [
+      "I'm lost on how the recursion base case works here",
+      "The Big O analysis for this algorithm doesn't make sense to me",
+      "I don't understand how the linked list reversal algorithm works",
+      "Confused about why we need both a stack and a queue here",
+      "Still struggling with when a greedy algorithm actually works",
+      "The tree rotation steps are going too fast for me",
+    ],
+  },
+  ml: {
+    questions: [
+      "How does gradient descent actually update the weights step by step?",
+      "What's the difference between supervised and unsupervised learning in practice?",
+      "When should we use random forests over a single decision tree?",
+      "Why do we split data into train, validation, and test sets?",
+      "Can you explain overfitting with a concrete example?",
+      "How does cross-validation help us pick a better model?",
+      "What's the role of the loss function in training a neural network?",
+      "Why do we one-hot encode categorical variables?",
+    ],
+    comments: [
+      "The gradient descent animation made a confusing concept finally click",
+      "I finally see why we need feature scaling",
+      "That overfitting example with the polynomial curve was perfect",
+      "scikit-learn's pipeline API is really clean once you get it",
+      "The bias-variance trade-off is clearer after the target-shooting analogy",
+      "The confusion matrix example made precision vs recall obvious",
+      "Jupyter notebooks are so much nicer for exploring data than plain scripts",
+      "I ran the MNIST demo locally and it worked first try",
+    ],
+    confusion: [
+      "I'm confused about when to use classification vs regression",
+      "The backpropagation math is really confusing",
+      "Why do we need a validation set if we already have a test set?",
+      "Not sure I follow how regularisation prevents overfitting",
+      "The difference between a model's bias and variance is fuzzy",
+      "I don't get why we split the data the way we do",
+    ],
+  },
+};
 
 const ALIAS_ADJECTIVES = ['Clever', 'Swift', 'Bright', 'Calm', 'Bold', 'Wise', 'Quick', 'Sharp', 'Keen', 'Brave'];
 const ALIAS_ANIMALS = ['Fox', 'Owl', 'Eagle', 'Wolf', 'Bear', 'Hawk', 'Lion', 'Tiger', 'Falcon', 'Panda'];
@@ -606,12 +859,20 @@ async function seedDemoData() {
           else identityMode = 'identified';
         }
 
-        // Pick message text
+        // Pick message text — prefer topic-specific pool, 20% fall-through to generic
+        // so realistic off-topic chatter still appears ("thanks for the clarification", etc).
         let text;
-        if (isLecturer) text = pickRandom(LECTURER_MSGS);
-        else if (type === 'QUESTION') text = pickRandom(QUESTION_MSGS);
-        else if (type === 'CONFUSION') text = pickRandom(CONFUSION_MSGS);
-        else text = pickRandom(COMMENT_MSGS);
+        const topicPool = session.topic && TOPIC_MSGS[session.topic];
+        const useTopic = topicPool && Math.random() < 0.8;
+        if (isLecturer) {
+          text = pickRandom(LECTURER_MSGS);
+        } else if (type === 'QUESTION') {
+          text = useTopic ? pickRandom(topicPool.questions) : pickRandom(QUESTION_MSGS);
+        } else if (type === 'CONFUSION') {
+          text = useTopic ? pickRandom(topicPool.confusion) : pickRandom(CONFUSION_MSGS);
+        } else {
+          text = useTopic ? pickRandom(topicPool.comments) : pickRandom(COMMENT_MSGS);
+        }
 
         const timestamp = getTimestampInLecture(session.startTime, LECTURE_DURATION, position);
 

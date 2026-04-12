@@ -305,12 +305,16 @@ function initializeSocket() {
     }
   });
 
-  socket.on('message-deleted', function (data) {
-    var el = document.querySelector('[data-message-id="' + data.messageId + '"]');
-    if (el) {
-      el.className = 'chat-message deleted-message';
-      el.innerHTML = '<div class="deleted-message-content"><span class="deleted-icon">🚫</span> <em>This message was deleted</em></div>';
-    }
+  socket.on('message-deleted', function(data) {
+    var messageId = data.messageId || data.id;
+    
+    // Remove from announcements banner if it was an announcement
+    announcements = announcements.filter(function(a) { return a.id !== messageId; });
+    updateAnnouncementBanner();
+    // Remove from pinned if it was pinned
+    removePinnedMessage(messageId);
+    var el = document.querySelector('[data-message-id="' + messageId + '"]');
+    if (el) { el.style.transition = 'opacity 0.3s'; el.style.opacity = '0'; setTimeout(function() { el.remove(); }, 300); }
   });
   socket.on('message-reported', function (data) {
     var el = document.querySelector('[data-message-id="' + data.messageId + '"]');
@@ -329,10 +333,8 @@ function initializeSocket() {
   // handle pin toggle and update pin bar
   socket.on('message-pinned', function (data) {
     var msgId = data.messageId || data.id;
-    var el = document.querySelector('[data-message-id="' + msgId + '"]');
-    if (el) {
-      if (data.isPinned) el.classList.add('pinned');
-      else el.classList.remove('pinned');
+    if (typeof updatePinUI === 'function') {
+      updatePinUI(msgId, !!data.isPinned);
     }
     if (typeof handlePinUpdate === 'function') {
       handlePinUpdate(data);
@@ -507,7 +509,7 @@ function setupInputArea() {
           <span style="font-size:18px;">📎</span>
           <span>Attach File</span>
         </button>
-        <input type="file" id="chat-file-input" accept="image/*,.pdf,.doc,.docx,.txt" style="display:none;" onchange="handleFileSelected(event)">
+        <input type="file" id="chat-file-input" accept="image/*,.pdf,.doc,.docx,.txt,.md,.csv,.tsv,.json,.xml,.yml,.yaml,.ini,.toml,.py,.ipynb,.js,.mjs,.cjs,.ts,.tsx,.jsx,.java,.c,.cc,.cpp,.h,.hpp,.cs,.go,.rs,.rb,.php,.swift,.kt,.scala,.sql,.html,.htm,.css,.scss,.less,.sh,.bash,.zsh,.ps1,.r,.lua,.tex,.xlsx,.pptx,.zip" style="display:none;" onchange="handleFileSelected(event)">
       </div>
       <div class="other-input-row" style="display:flex;align-items:center;gap:8px;position:relative;">
         <button id="plus-btn" type="button" class="other-plus-btn" style="width:44px;height:44px;border-radius:50%;border:none;background:#374151;color:white;font-size:24px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;">+</button>
@@ -588,7 +590,7 @@ async function sendMessage() {
   var input = document.getElementById('message-input');
   if (!input) return;
   var text = input.value.trim();
-  if (!text) return;
+  if (!text && !pendingAttachment) return;
 
   if (!socketJoined && socket && socket.connected) {
     socket.emit('join-session', { sessionId: sessionId, userId: currentUser._id, displayName: currentUser.displayName, role: currentUser.role });
@@ -623,7 +625,7 @@ async function sendMessage() {
     var typeSelect = document.getElementById('message-type');
     var identityMode = typeof getIdentityMode === 'function' ? getIdentityMode() : 'anonymous';
     var alias = identityMode === 'pseudonymous' && typeof getSessionAlias === 'function' ? getSessionAlias() : null;
-    messageData = { sessionId: sessionId, text: text || '', type: typeSelect ? typeSelect.value : 'NONE', replyTo: replyingTo ? replyingTo.id : null, identityMode: identityMode, alias: alias, attachment: pendingAttachment || null };
+    messageData = { sessionId: sessionId, text: text || '', type: typeSelect ? typeSelect.value : 'COMMENT', replyTo: replyingTo ? replyingTo.id : null, identityMode: identityMode, alias: alias, attachment: pendingAttachment || null };
     try {
       var response = await fetch('/api/messages/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(messageData) });
       if (!response.ok) { var errorData = await response.json(); throw new Error(errorData.message || 'Failed'); }
@@ -711,19 +713,57 @@ function appendMessage(message) {
   if (message.attachment && message.attachment.dataUrl) {
     var fname = escapeHtml(message.attachment.filename || 'file');
     var dataUrl = message.attachment.dataUrl;
-    if (message.attachment.mimetype && message.attachment.mimetype.startsWith('image/')) {
+    var rawName = (message.attachment.filename || '').toLowerCase();
+    var rawMime = (message.attachment.mimetype || '').toLowerCase();
+    var isImage = rawMime.indexOf('image/') === 0 ||
+      dataUrl.indexOf('data:image/') === 0 ||
+      /\.(jpe?g|png|gif|webp|bmp|svg)$/i.test(rawName);
+    var isText = !isImage && (
+      /\.(txt|md|markdown|csv|tsv|json|xml|yml|yaml|ini|cfg|conf|toml|py|mjs|cjs|js|ts|tsx|jsx|java|c|cc|cpp|h|hpp|cs|go|rs|rb|php|swift|kt|scala|sql|html?|css|scss|sass|less|sh|bash|zsh|fish|ps1|r|lua|tex|dockerfile|makefile|log)$/i.test(rawName) ||
+      rawMime.indexOf('text/') === 0 ||
+      rawMime === 'application/json' ||
+      rawMime === 'application/xml'
+    );
+    if (isImage) {
       attachmentHTML = '<div class="message-attachment attachment-image-wrap">' +
         '<img src="' + dataUrl + '" alt="' + fname + '" class="attachment-thumb" onclick="previewAttachment(\'' + dataUrl.replace(/'/g, "\\'") + '\', \'' + fname.replace(/'/g, "\\'") + '\', true)">' +
-        '<div class="attachment-actions">' +
-        '<button class="attachment-action-btn" onclick="previewAttachment(\'' + dataUrl.replace(/'/g, "\\'") + '\', \'' + fname.replace(/'/g, "\\'") + '\', true)" title="Preview">🔍 Preview</button>' +
-        '<button class="attachment-action-btn" onclick="downloadAttachment(\'' + dataUrl.replace(/'/g, "\\'") + '\', \'' + fname.replace(/'/g, "\\'") + '\')" title="Download">⬇️ Download</button>' +
-        '</div></div>';
+        '</div>';
+    } else if (isText) {
+      var codeText = '';
+      var isTruncated = false;
+      try {
+        var commaIdx = dataUrl.indexOf(',');
+        if (commaIdx > -1) {
+          var b64 = dataUrl.substring(commaIdx + 1);
+          var binary = atob(b64);
+          var byteArr = new Uint8Array(binary.length);
+          for (var bi = 0; bi < binary.length; bi++) byteArr[bi] = binary.charCodeAt(bi);
+          codeText = new TextDecoder('utf-8').decode(byteArr);
+          var lines = codeText.split('\n');
+          if (lines.length > 200) { codeText = lines.slice(0, 200).join('\n'); isTruncated = true; }
+          if (codeText.length > 12000) { codeText = codeText.substring(0, 12000); isTruncated = true; }
+        }
+      } catch (e) { codeText = '(unable to decode file)'; }
+      var codeSize = message.attachment.size ? formatFileSize(message.attachment.size) : '';
+      attachmentHTML = '<div class="message-attachment attachment-code-wrap">' +
+        '<div class="attachment-code-header">' +
+        '<span class="attachment-code-icon">📝</span>' +
+        '<span class="attachment-code-filename">' + fname + '</span>' +
+        (codeSize ? '<span class="attachment-code-size">' + codeSize + '</span>' : '') +
+        '<button class="attachment-action-btn attachment-code-download" onclick="downloadAttachment(\'' + dataUrl.replace(/'/g, "\\'") + '\', \'' + fname.replace(/'/g, "\\'") + '\')" title="Download">⬇️</button>' +
+        '</div>' +
+        '<pre class="attachment-code-body"><code>' + escapeHtml(codeText) + '</code></pre>' +
+        (isTruncated ? '<div class="attachment-code-truncated">… truncated — download for full file</div>' : '') +
+        '</div>';
     } else {
       var fileIcon = '📄';
       var mime = message.attachment.mimetype || '';
-      if (mime.includes('pdf')) fileIcon = '📕';
-      else if (mime.includes('word') || mime.includes('document')) fileIcon = '📘';
-      else if (mime.includes('text')) fileIcon = '📝';
+      if (mime.includes('pdf') || /\.pdf$/i.test(rawName)) fileIcon = '📕';
+      else if (mime.includes('word') || /\.docx?$/i.test(rawName)) fileIcon = '📘';
+      else if (mime.includes('spreadsheet') || /\.xlsx?$/i.test(rawName)) fileIcon = '📗';
+      else if (mime.includes('presentation') || /\.pptx?$/i.test(rawName)) fileIcon = '📙';
+      else if (mime.includes('zip') || /\.zip$/i.test(rawName)) fileIcon = '🗜️';
+      else if (/\.ipynb$/i.test(rawName)) fileIcon = '📓';
       var fileSize = message.attachment.size ? formatFileSize(message.attachment.size) : '';
       attachmentHTML = '<div class="message-attachment attachment-file-wrap">' +
         '<div class="attachment-file-info">' +
@@ -774,7 +814,9 @@ function appendMessage(message) {
   if (message.isPoll && message.poll) {
     pollHTML = renderPollHTML(message);
   }
-  var messageBodyHTML = message.isPoll ? '' : '<div class="message-body"><span class="message-type-indicator">' + typeIcon + '</span><span class="message-text">' + escapeHtml(message.text) + (message.isEdited ? ' <span class="edited-indicator">(edited)</span>' : '') + '</span></div>' + attachmentHTML;
+  var hasText = message.text && message.text.length > 0;
+  var textBodyHTML = hasText ? '<div class="message-body"><span class="message-type-indicator">' + typeIcon + '</span><span class="message-text">' + escapeHtml(message.text) + (message.isEdited ? ' <span class="edited-indicator">(edited)</span>' : '') + '</span></div>' : '';
+  var messageBodyHTML = message.isPoll ? '' : (textBodyHTML + attachmentHTML);
 
   messageDiv.innerHTML = '<div class="message-avatar-wrapper">' + avatarHTML + '</div><div class="message-content-wrapper"><div class="message-header"><span class="message-username ' + (isLecturer ? 'lecturer' : 'student') + '">' + escapeHtml(displayName) + '</span>' + lecturerBadge + identityBadge + '<span class="message-time">' + formatTime(message.timestamp || message.createdAt || new Date()) + '</span></div>' + replyHTML + messageBodyHTML + pollHTML + reactionsHTML + '<div class="message-footer">' + badgeHTML + '<div class="message-actions">' + actionButtonsHTML + '</div></div></div>';
 
@@ -1007,16 +1049,40 @@ window.unreportMessage = async function (messageId) {
   } catch (error) { alert('Failed: ' + error.message); }
 };
 
+function updatePinUI(messageId, isPinned) {
+  var el = document.querySelector('[data-message-id="' + messageId + '"]');
+  if (!el) return;
+  if (isPinned) el.classList.add('pinned');
+  else el.classList.remove('pinned');
+
+  var pinBtn = el.querySelector('.action-btn.pin-btn');
+  if (pinBtn) {
+    pinBtn.title = isPinned ? 'Unpin' : 'Pin';
+    pinBtn.textContent = isPinned ? '📌' : '📍';
+  }
+
+  var footer = el.querySelector('.message-footer');
+  var badge = el.querySelector('.badge-pinned');
+  if (isPinned && !badge && footer) {
+    var newBadge = document.createElement('span');
+    newBadge.className = 'message-badge badge-pinned';
+    newBadge.textContent = '📌 Pinned';
+    footer.insertBefore(newBadge, footer.firstChild);
+  } else if (!isPinned && badge) {
+    badge.remove();
+  }
+}
+window.updatePinUI = updatePinUI;
+
 window.togglePin = async function (messageId) {
   try {
     var el = document.querySelector('[data-message-id="' + messageId + '"]');
-    var isPinned = el?.classList.contains('pinned');
+    var wasPinned = el?.classList.contains('pinned');
     var response = await fetch('/api/messages/' + messageId + '/pin', { method: 'POST', credentials: 'include' });
     if (!response.ok) { var e = await response.json(); throw new Error(e.message || 'Failed'); }
-    if (el) {
-      if (isPinned) el.classList.remove('pinned');
-      else el.classList.add('pinned');
-    }
+    var data = await response.json();
+    var nowPinned = typeof data.isPinned === 'boolean' ? data.isPinned : !wasPinned;
+    updatePinUI(messageId, nowPinned);
   } catch (error) { alert('Failed: ' + error.message); }
 };
 
@@ -1120,9 +1186,21 @@ function handleFileSelected(event) {
     event.target.value = '';
     return;
   }
-  var allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
-  if (!allowed.includes(file.type)) {
-    alert('File type not supported. Use: images, PDF, DOC, TXT');
+  var allowedExt = /\.(jpe?g|png|gif|webp|bmp|svg|pdf|docx?|txt|md|markdown|csv|tsv|json|xml|yml|yaml|ini|cfg|conf|toml|py|ipynb|mjs|cjs|js|ts|tsx|jsx|java|c|cc|cpp|h|hpp|cs|go|rs|rb|php|swift|kt|scala|sql|html?|css|scss|sass|less|sh|bash|zsh|fish|ps1|r|lua|tex|dockerfile|makefile|xlsx|pptx|zip)$/i;
+  var allowedMime = file.type && (
+    file.type.startsWith('image/') ||
+    file.type.startsWith('text/') ||
+    file.type === 'application/pdf' ||
+    file.type === 'application/json' ||
+    file.type === 'application/xml' ||
+    file.type === 'application/msword' ||
+    file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+    file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+    file.type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+    file.type === 'application/zip'
+  );
+  if (!allowedExt.test(file.name) && !allowedMime) {
+    alert('File type not supported.');
     event.target.value = '';
     return;
   }
@@ -1274,7 +1352,19 @@ async function submitPoll() {
 
 async function votePoll(pollId, optionId) {
   try {
-    var response = await fetch('/api/messages/poll/' + pollId + '/vote', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ optionIds: [optionId] }) });
+    var cached = window._pollCache && window._pollCache[pollId];
+    var optionIds;
+    if (cached && cached.allowMultiple) {
+      var currentVoted = cached.options.filter(function (o) { return o.hasVoted; }).map(function (o) { return o.id; });
+      if (currentVoted.indexOf(optionId) > -1) {
+        optionIds = currentVoted.filter(function (id) { return id !== optionId; });
+      } else {
+        optionIds = currentVoted.concat([optionId]);
+      }
+    } else {
+      optionIds = [optionId];
+    }
+    var response = await fetch('/api/messages/poll/' + pollId + '/vote', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ optionIds: optionIds }) });
     var result = await response.json();
     if (result.success) {
       loadMessages(); // Refresh to show vote
@@ -1297,18 +1387,16 @@ async function closePollById(pollId) {
   } catch (error) { console.error('Close poll error:', error); alert('Failed to close poll'); }
 }
 
-async function viewPollVotes(pollId) {
-  try {
-    var response = await fetch('/api/messages/poll/' + pollId + '/results', { credentials: 'include' });
-    var result = await response.json();
-    if (result.success) {
-      var r = result.results;
-      var voterInfo = r.options.map(function (opt) {
-        return opt.text + ': ' + opt.voteCount + ' votes' + (opt.voters && opt.voters.length > 0 ? ' (' + opt.voters.join(', ') + ')' : '');
-      }).join('\n');
-      alert('Poll Results:\n\n' + voterInfo + '\n\nTotal: ' + r.totalVotes + ' votes');
-    }
-  } catch (error) { console.error('View votes error:', error); }
+function viewPollVotes(pollId) {
+  var poll = window._pollCache && window._pollCache[pollId];
+  if (!poll) { alert('Poll data not available'); return; }
+  var totalVotes = poll.options.reduce(function (sum, opt) { return sum + (opt.voteCount || 0); }, 0);
+  var lines = poll.options.map(function (opt) {
+    var count = opt.voteCount || 0;
+    var pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
+    return opt.text + ': ' + count + ' vote' + (count === 1 ? '' : 's') + ' (' + pct + '%)';
+  }).join('\n');
+  alert('Poll Results:\n\n' + lines + '\n\nTotal: ' + totalVotes + ' vote' + (totalVotes === 1 ? '' : 's'));
 }
 
 // Style Poll Rendering
@@ -1320,6 +1408,9 @@ function renderPollHTML(message) {
   var isClosed = poll.isClosed;
   var isLecturer = currentUser && currentUser.role === 'lecturer';
   var msgId = message.id || message._id;
+
+  window._pollCache = window._pollCache || {};
+  window._pollCache[msgId] = poll;
 
   //  style header
   var headerHTML = '<div style="margin-bottom:12px;"><div style="font-size:16px;font-weight:600;color:white;margin-bottom:4px;">' + escapeHtml(poll.question) + '</div><div style="display:flex;align-items:center;gap:6px;color:#00a884;font-size:13px;"><span>📊</span><span>' + (poll.allowMultiple ? 'Select one or more' : 'Select one option') + '</span></div></div>';
@@ -1339,27 +1430,28 @@ function renderPollHTML(message) {
     var progressHTML = (hasVoted || isClosed) ?
       '<div style="height:4px;background:#2d3748;border-radius:2px;margin-top:8px;overflow:hidden;"><div style="height:100%;width:' + percentage + '%;background:' + (voted ? '#00a884' : '#4a5568') + ';border-radius:2px;transition:width 0.3s;"></div></div>' : '';
 
-    var clickHandler = (!hasVoted && !isClosed) ? ' onclick="votePoll(\'' + msgId + '\', \'' + opt.id + '\')" style="cursor:pointer;"' : '';
+    var canClick = !isClosed && (!hasVoted || poll.allowMultiple);
+    var clickHandler = canClick ? ' onclick="votePoll(\'' + msgId + '\', \'' + opt.id + '\')" style="cursor:pointer;"' : '';
 
-    return '<div' + clickHandler + ' style="padding:12px 0;border-bottom:1px solid #2d3748;' + (!hasVoted && !isClosed ? 'cursor:pointer;' : '') + '"><div style="display:flex;align-items:center;justify-content:space-between;"><div style="display:flex;align-items:center;gap:12px;">' + circleHTML + '<span style="color:white;font-size:15px;">' + escapeHtml(opt.text) + '</span></div><span style="color:#94a3b8;font-size:14px;">' + voteCount + '</span></div>' + progressHTML + '</div>';
+    return '<div class="poll-option"' + clickHandler + ' style="padding:8px 0;border-bottom:1px solid #2d3748;' + (canClick ? 'cursor:pointer;' : '') + '"><div style="display:flex;align-items:center;justify-content:space-between;"><div style="display:flex;align-items:center;gap:10px;">' + circleHTML + '<span class="poll-option-text" style="color:white;font-size:14px;">' + escapeHtml(opt.text) + '</span></div><span class="poll-option-count" style="color:#94a3b8;font-size:13px;">' + voteCount + '</span></div>' + progressHTML + '</div>';
   }).join('');
 
-  // Footer with timestamp and view votes (lecturer only)
-  var footerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:8px;">';
-  footerHTML += '<span style="color:#8b9caa;font-size:12px;">' + formatTime(message.timestamp || message.createdAt || new Date()) + ' ✓✓</span>';
+  // Footer with timestamp, view votes (everyone), close (lecturer only)
+  var footerHTML = '<div class="poll-footer" style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:6px;gap:6px;flex-wrap:wrap;">';
+  footerHTML += '<span style="color:#8b9caa;font-size:11px;">' + formatTime(message.timestamp || message.createdAt || new Date()) + ' ✓✓</span>';
 
-  if (isLecturer) {
-    if (!isClosed) {
-      footerHTML += '<div style="display:flex;gap:8px;"><button onclick="viewPollVotes(\'' + msgId + '\')" style="background:#2d3748;border:none;color:#00a884;padding:8px 16px;border-radius:20px;font-size:13px;cursor:pointer;">View votes</button><button onclick="closePollById(\'' + msgId + '\')" style="background:none;border:none;color:#ef4444;font-size:12px;cursor:pointer;">Close</button></div>';
-    } else {
-      footerHTML += '<button onclick="viewPollVotes(\'' + msgId + '\')" style="background:#2d3748;border:none;color:#00a884;padding:8px 16px;border-radius:20px;font-size:13px;cursor:pointer;">View votes</button>';
-    }
+  var viewVotesBtn = '<button onclick="viewPollVotes(\'' + msgId + '\')" class="poll-btn poll-btn-view" style="background:#2d3748;border:none;color:#00a884;padding:6px 12px;border-radius:18px;font-size:12px;cursor:pointer;">View votes</button>';
+
+  if (isLecturer && !isClosed) {
+    footerHTML += '<div style="display:flex;gap:6px;align-items:center;">' + viewVotesBtn + '<button onclick="closePollById(\'' + msgId + '\')" class="poll-btn poll-btn-close" style="background:none;border:none;color:#ef4444;font-size:12px;cursor:pointer;">Close</button></div>';
   } else if (isClosed) {
-    footerHTML += '<span style="color:#f59e0b;font-size:12px;">Poll closed</span>';
+    footerHTML += '<div style="display:flex;gap:6px;align-items:center;">' + viewVotesBtn + '<span style="color:#f59e0b;font-size:11px;">Poll closed</span></div>';
+  } else {
+    footerHTML += viewVotesBtn;
   }
   footerHTML += '</div>';
 
-  return '<div class="poll-container" data-poll-id="' + msgId + '" style="background:#1a2e35;border-radius:12px;padding:16px;margin-top:8px;max-width:320px;">' + headerHTML + '<div class="poll-options">' + optionsHTML + '</div>' + footerHTML + '</div>';
+  return '<div class="poll-container" data-poll-id="' + msgId + '" style="background:#1a2e35;border-radius:12px;padding:12px;margin-top:6px;max-width:320px;">' + headerHTML + '<div class="poll-options">' + optionsHTML + '</div>' + footerHTML + '</div>';
 }
 
 window.openPollCreator = openPollCreator;
@@ -1371,6 +1463,38 @@ window.submitPoll = submitPoll;
 window.votePoll = votePoll;
 window.closePollById = closePollById;
 window.viewPollVotes = viewPollVotes;
+
+// Mobile: tap message to reveal actions, tap elsewhere to dismiss
+(function () {
+  var isMobile = window.matchMedia('(max-width: 768px)');
+
+  document.addEventListener('click', function (e) {
+    if (!isMobile.matches) return;
+
+    var msg = e.target.closest('.chat-message');
+    var clickedAction = e.target.closest('.action-btn');
+
+    // If clicked an action button, let it fire normally and then dismiss
+    if (clickedAction) {
+      setTimeout(function () {
+        document.querySelectorAll('.chat-message.actions-visible').forEach(function (el) {
+          el.classList.remove('actions-visible');
+        });
+      }, 100);
+      return;
+    }
+
+    // Dismiss all other open action bars
+    document.querySelectorAll('.chat-message.actions-visible').forEach(function (el) {
+      if (el !== msg) el.classList.remove('actions-visible');
+    });
+
+    // Toggle actions on the tapped message
+    if (msg) {
+      msg.classList.toggle('actions-visible');
+    }
+  });
+})();
 
 document.addEventListener('DOMContentLoaded', function () {
   console.log('DOM ready, calling init()');

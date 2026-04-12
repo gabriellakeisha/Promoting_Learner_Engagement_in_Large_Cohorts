@@ -323,7 +323,7 @@
 }
 
 .chat-message.pinned::before {
-  content: '\U0001F4CC';
+  content: '📌';
   position: absolute;
   top: 8px;
   right: 8px;
@@ -1130,3 +1130,76 @@
   transition: all 0.2s;
 }
 .attachment-action-btn:hover { background: rgba(0,168,132,0.3); }
+
+/* Inline code/text file preview */
+.attachment-code-wrap {
+  margin-top: 6px;
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 10px;
+  overflow: hidden;
+  max-width: 480px;
+}
+.attachment-code-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #1e293b;
+  border-bottom: 1px solid #334155;
+}
+.attachment-code-icon { font-size: 16px; flex-shrink: 0; }
+.attachment-code-filename {
+  flex: 1;
+  min-width: 0;
+  color: #e2e8f0;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'SF Mono', Monaco, Consolas, 'Courier New', monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.attachment-code-size {
+  color: #94a3b8;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.attachment-code-download {
+  padding: 4px 8px !important;
+  font-size: 12px !important;
+}
+.attachment-code-body {
+  margin: 0;
+  padding: 12px;
+  max-height: 320px;
+  overflow: auto;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-family: 'SF Mono', Monaco, Consolas, 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre;
+  tab-size: 4;
+}
+.attachment-code-body code {
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+}
+.attachment-code-truncated {
+  padding: 6px 12px;
+  background: #1e293b;
+  border-top: 1px solid #334155;
+  color: #94a3b8;
+  font-size: 11px;
+  font-style: italic;
+}
+
+@media (max-width: 480px) {
+  .attachment-code-wrap { max-width: 100%; }
+  .attachment-code-header { padding: 6px 10px; }
+  .attachment-code-filename { font-size: 12px; }
+  .attachment-code-body { max-height: 240px; font-size: 11px; padding: 10px; }
+}

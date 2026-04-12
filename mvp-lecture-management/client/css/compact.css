@@ -292,6 +292,38 @@ body.dark-mode .chat-message.lecturer-message .message-time {
   opacity: 0.8 !important;
 }
 
+/* Mobile: hide actions until message is tapped */
+@media (max-width: 768px) {
+  .message-actions {
+    display: none !important;
+  }
+
+  .chat-message.actions-visible .message-actions {
+    display: flex !important;
+    width: 100%;
+    background: var(--card-bg, #1e293b);
+    border-radius: 8px;
+    padding: 6px 8px;
+    margin-top: 4px;
+    gap: 6px !important;
+    animation: slideDown 0.15s ease;
+  }
+
+  .chat-message.actions-visible .message-actions .action-btn {
+    flex: 1;
+    text-align: center;
+    padding: 6px 4px !important;
+    font-size: 14px !important;
+    background: rgba(255,255,255,0.08) !important;
+    border-radius: 8px !important;
+  }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
 /* Reply Context */
 .message-reply-context {
   padding: 6px 8px !important;
@@ -499,8 +531,9 @@ body:not(.dark-mode) .other-message-input {
   }
 
   .chat-message {
-    max-width: 85% !important;
-    padding: 6px 10px !important;
+    max-width: 90% !important;
+    padding: 5px 8px !important;
+    gap: 6px !important;
   }
 
   .message-text {
@@ -508,6 +541,35 @@ body:not(.dark-mode) .other-message-input {
   }
 
   .chat-messages {
-    padding: 8px 10px !important;
+    padding: 6px 8px !important;
+  }
+
+  .poll-container {
+    padding: 10px !important;
+    margin-top: 4px !important;
+    max-width: 100% !important;
+    border-radius: 10px !important;
+  }
+
+  .poll-container .poll-option {
+    padding: 6px 0 !important;
+  }
+
+  .poll-container .poll-option-text {
+    font-size: 13px !important;
+  }
+
+  .poll-container .poll-option-count {
+    font-size: 12px !important;
+  }
+
+  .poll-container .poll-footer {
+    margin-top: 8px !important;
+    padding-top: 4px !important;
+  }
+
+  .poll-container .poll-btn {
+    padding: 5px 10px !important;
+    font-size: 11px !important;
   }
 }

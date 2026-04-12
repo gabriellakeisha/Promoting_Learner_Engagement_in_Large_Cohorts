@@ -1,5 +1,5 @@
 let currentIdentityMode = 'anonymous';
-let currentMessageType = 'NONE';
+let currentMessageType = 'COMMENT';
 let sessionAlias = null;
 
 const animalEmojis = ['🦊', '🐼', '🦁', '🐯', '🐨', '🐸', '🦋', '🐙', '🦄', '🐺', '🦉', '🐢', '🦈', '🐬', '🦩', '🐝'];
@@ -46,7 +46,7 @@ function getAlias() {
 
 function getMessageType() {
   const typeInput = document.getElementById('message-type');
-  return typeInput ? typeInput.value : 'NONE';
+  return typeInput ? typeInput.value : 'COMMENT';
 }
 
 function setIdentityMode(mode) {
@@ -115,7 +115,7 @@ function initIdentityModeSelector(containerSelector) {
   const hiddenType = document.createElement('input');
   hiddenType.type = 'hidden';
   hiddenType.id = 'message-type';
-  hiddenType.value = 'NONE';
+  hiddenType.value = 'COMMENT';
   container.appendChild(hiddenType);
 
   const plusBtn = document.getElementById('other-plus-btn');
@@ -123,7 +123,7 @@ function initIdentityModeSelector(containerSelector) {
   var studentFileInput = document.createElement('input');
   studentFileInput.type = 'file';
   studentFileInput.id = 'chat-file-input';
-  studentFileInput.accept = 'image/*,.pdf,.doc,.docx,.txt';
+  studentFileInput.accept = 'image/*,.pdf,.doc,.docx,.txt,.md,.csv,.tsv,.json,.xml,.yml,.yaml,.ini,.toml,.py,.ipynb,.js,.mjs,.cjs,.ts,.tsx,.jsx,.java,.c,.cc,.cpp,.h,.hpp,.cs,.go,.rs,.rb,.php,.swift,.kt,.scala,.sql,.html,.htm,.css,.scss,.less,.sh,.bash,.zsh,.ps1,.r,.lua,.tex,.xlsx,.pptx,.zip';
   studentFileInput.style.display = 'none';
   studentFileInput.addEventListener('change', function(ev) {
     if (typeof handleFileSelected === 'function') handleFileSelected(ev);
@@ -186,9 +186,8 @@ function initNavbarIdentityDropdown() {
       <div class="navbar-dropdown-section">
         <div class="navbar-dropdown-label">💬 Message Type</div>
         <div class="navbar-msgtype-grid">
-          <button type="button" class="navbar-msgtype-option selected" data-type="NONE">📝 None</button>
           <button type="button" class="navbar-msgtype-option" data-type="QUESTION">❓ Question</button>
-          <button type="button" class="navbar-msgtype-option" data-type="COMMENT">💬 Comment</button>
+          <button type="button" class="navbar-msgtype-option selected" data-type="COMMENT">💬 Comment</button>
           <button type="button" class="navbar-msgtype-option" data-type="CONFUSION">❗ Confusion</button>
         </div>
       </div>

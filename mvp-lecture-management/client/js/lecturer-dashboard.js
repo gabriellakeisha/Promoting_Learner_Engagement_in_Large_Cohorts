@@ -265,16 +265,16 @@ function displayAnalytics(analytics) {
         <div class="stat-value">${summary.totalMessages || 0}</div>
       </div>
       <div class="analytics-stat-card stat-green">
-        <div class="stat-label">Contributors / Total</div>
+        <div class="stat-label">Contributors</div>
         <div class="stat-value">${summary.activeUsers || 0}/${summary.totalMembers || 0}</div>
-        <div class="stat-sub">${consumersCount} consumers (read only)</div>
+        <div class="stat-sub">${consumersCount} read-only</div>
       </div>
       <div class="analytics-stat-card stat-orange">
-        <div class="stat-label">Participation Rate</div>
+        <div class="stat-label">Participation</div>
         <div class="stat-value">${Math.min(100, summary.participationRate || 0)}%</div>
       </div>
       <div class="analytics-stat-card stat-green">
-        <div class="stat-label">Messages/Minute</div>
+        <div class="stat-label">Msgs / min</div>
         <div class="stat-value">${summary.messagesPerMinute || 0}</div>
         <div class="stat-sub">Last 5 min: ${summary.messagesLast5Min || 0}</div>
       </div>
@@ -510,8 +510,34 @@ function initializeCharts(analytics) {
   }
 }
 
-document.getElementById('close-analytics-btn').addEventListener('click', () => {
-  document.getElementById('analytics-modal').classList.remove('show');
+function closeAnalyticsModal() {
+  var modal = document.getElementById('analytics-modal');
+  if (modal) modal.classList.remove('show');
+}
+window.closeAnalyticsModal = closeAnalyticsModal;
+
+// Footer Close button
+var closeBtn = document.getElementById('close-analytics-btn');
+if (closeBtn) closeBtn.addEventListener('click', closeAnalyticsModal);
+
+// Corner ✕ button (always visible, mobile-friendly)
+var closeX = document.getElementById('close-analytics-x');
+if (closeX) closeX.addEventListener('click', closeAnalyticsModal);
+
+// Backdrop click — only when the click lands on the overlay itself, not a child
+var analyticsModal = document.getElementById('analytics-modal');
+if (analyticsModal) {
+  analyticsModal.addEventListener('click', function (e) {
+    if (e.target === analyticsModal) closeAnalyticsModal();
+  });
+}
+
+// Escape key (desktop) — handle both modern `key` and legacy `keyCode`
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape' || e.key === 'Esc' || e.keyCode === 27) {
+    var m = document.getElementById('analytics-modal');
+    if (m && m.classList.contains('show')) closeAnalyticsModal();
+  }
 });
 
 async function endSession(sessionId) {

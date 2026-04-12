@@ -63,11 +63,9 @@
   font-weight: 600;
   opacity: 1;
   margin-bottom: 6px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   text-shadow: 0 1px 2px rgba(0,0,0,0.2);
   letter-spacing: 0.3px;
+  line-height: 1.25;
 }
 
 .analytics-stat-card .stat-value {
@@ -137,14 +135,15 @@
 
 .indicator-label {
   font-size: 14px;
-  color: var(--text-secondary);
+  color: var(--text-primary, #1e293b);
+  font-weight: 600;
   margin-bottom: 4px;
 }
 
 .indicator-value {
   font-size: 28px;
   font-weight: 700;
-  color: var(--text-color);
+  color: var(--text-primary, #1e293b);
 }
 
 .indicator-value.text-danger {
@@ -158,9 +157,23 @@
 
 .indicator-footer {
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-secondary, #475569);
   margin-top: 8px;
 }
+
+body.dark-mode .indicator-card {
+  background: #1e293b;
+  border: 1px solid #334155;
+}
+
+body.dark-mode .indicator-label,
+body.dark-mode .indicator-value,
+body.dark-mode .indicator-footer {
+  color: #f1f5f9;
+}
+
+body.dark-mode .indicator-label { opacity: 0.9; }
+body.dark-mode .indicator-footer { opacity: 0.75; }
 
 /* Charts Row - Engagement Over Time & Message Types */
 .analytics-charts-row {
@@ -307,4 +320,79 @@
 /* Analytics Modal/Overlay */
 .analytics-overlay {
   padding: 10px;
+}
+
+.analytics-modal-content {
+  position: relative;
+  max-width: 1200px;
+  margin: 0 auto;
+  background: var(--card-bg, #ffffff);
+  border-radius: 16px;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.analytics-close-x {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(100, 116, 139, 0.15);
+  color: var(--text-color);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  transition: background 0.15s ease;
+}
+.analytics-close-x:hover,
+.analytics-close-x:focus {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  outline: none;
+}
+
+body.dark-mode .analytics-close-x {
+  background: rgba(148, 163, 184, 0.2);
+  color: #f1f5f9;
+}
+body.dark-mode .analytics-close-x:hover,
+body.dark-mode .analytics-close-x:focus {
+  background: rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+}
+
+.analytics-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+  margin-right: 44px;
+  flex-wrap: wrap;
+}
+
+.analytics-header h2 {
+  margin: 0;
+  padding-right: 52px;
+  font-size: 20px;
+  color: var(--text-color);
+}
+
+.analytics-header-buttons {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.analytics-header-buttons .btn {
+  white-space: nowrap;
+  padding: 6px 14px;
+  font-size: 13px;
 }
