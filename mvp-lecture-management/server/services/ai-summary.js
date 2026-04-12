@@ -26,10 +26,14 @@ async function generateAISummary(messages, context) {
   }
 
   try {
-    // Prepare text for summarization
-    // Only send message content (no usernames for privacy)
-    const messageTexts = messages
-      .filter(m => m.text && m.text.trim().length > 0)
+    // Prepare text for summarization — focus on student messages only.
+    // Lecturer messages are mostly admin ("deadline is Friday", "lab moved to room X")
+    // and BART tends to extract those instead of the actual discussion content.
+    const studentMessages = messages.filter(m =>
+      m.text && m.text.trim().length > 0 &&
+      (!m.userId || m.userId.role !== 'lecturer')
+    );
+    const messageTexts = studentMessages
       .map(m => {
         const typeLabel = m.type === 'QUESTION' ? '[Q]' :
                          m.type === 'CONFUSION' ? '[C]' : '';

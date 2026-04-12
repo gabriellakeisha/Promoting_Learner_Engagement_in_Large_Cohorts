@@ -30,7 +30,13 @@ const fallbackStopWords = new Set([
   'want', 'wanted', 'make', 'made', 'say', 'said', 'feel', 'feels', 'look', 'looks',
   'try', 'tried', 'use', 'using', 'work', 'works', 'point', 'points', 'part',
   'actually', 'basically', 'literally', 'definitely', 'probably', 'maybe', 'perhaps',
-  'one', 'two', 'first', 'second', 'last', 'next', 'new', 'confused', 'clarification', 'clarify'
+  'one', 'two', 'first', 'second', 'last', 'next', 'new', 'confused', 'clarification', 'clarify',
+  'lost', 'finally', 'big', 'considered', 'clicks', 'small', 'different', 'important', 'need',
+  'show', 'showing', 'start', 'started', 'end', 'ended', 'run', 'running', 'check', 'checking',
+  'real', 'world', 'today', 'week', 'time', 'times', 'ago', 'already', 'yet', 'done',
+  'called', 'means', 'mean', 'makes', 'sense', 'true', 'false', 'goes', 'went',
+  'peer', 'review', 'group', 'project', 'assignment', 'coursework', 'deadline', 'canvas',
+  'recommended', 'reading', 'list', 'coverage', 'room', 'moved', 'break', 'minutes'
 ]);
 
 // extract keywords using hugging face model

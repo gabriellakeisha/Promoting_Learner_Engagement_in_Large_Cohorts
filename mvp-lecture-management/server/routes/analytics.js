@@ -88,10 +88,13 @@ router.get('/lecturer/:sessionId', isAuthenticated, isLecturer, async (req, res)
     const identityModes = { anonymous: 0, pseudonymous: 0, identified: 0 };
     identityModeBreakdown.forEach(item => { identityModes[item._id] = item.count; });
 
-    const allMessages = await Message.find({ sessionId, isDeleted: false }).select('text');
+    const allMessages = await Message.find({ sessionId, isDeleted: false })
+      .select('text userId')
+      .populate('userId', 'role');
 
-    // Extract keywords using AI (Hugging Face) with RAKE fallback
-    const allText = allMessages.map(msg => msg.text || '').join(' ');
+    // Extract keywords from student messages only — lecturer admin messages pollute the keyword list
+    const studentTexts = allMessages.filter(msg => !msg.userId || msg.userId.role !== 'lecturer');
+    const allText = studentTexts.map(msg => msg.text || '').join(' ');
     const keywords = await aiKeywordsService.extractKeywordsAI(allText, 15);
 
     const peakActivity = timeline.reduce((max, current) => current.count > (max?.count || 0) ? current : max, null);
@@ -440,8 +443,10 @@ router.get('/ai-summary/:sessionId', isAuthenticated, isLecturer, async (req, re
       }
     });
 
-    // Extract keywords using AI service (Hugging Face with RAKE fallback)
-    var allMessageText = messages.map(function (m) { return m.text || ''; }).join(' ');
+    // Extract keywords from student messages only — lecturer admin messages
+    // ("deadline Friday", "peer review open") pollute the keyword list
+    var studentMessages = messages.filter(function (m) { return !m.userId || m.userId.role !== 'lecturer'; });
+    var allMessageText = studentMessages.map(function (m) { return m.text || ''; }).join(' ');
     var aiKeywords = await aiKeywordsService.extractKeywordsAI(allMessageText, 10);
     var topKeywords = aiKeywords.map(function (k) { return preserveTerms[k.word] || k.word; });
 
@@ -452,7 +457,12 @@ router.get('/ai-summary/:sessionId', isAuthenticated, isLecturer, async (req, re
     var topConfusionTopics = confusionAiKeywords.map(function (k) { return preserveTerms[k.word] || k.word; });
 
     var questionMessages = messages.filter(function (m) { return m.type === 'QUESTION'; });
-    var questionSamples = questionMessages.slice(0, 5).map(function (m) { return m.text.substring(0, 120); });
+    var seen = {};
+    var questionSamples = [];
+    questionMessages.forEach(function (m) {
+      var t = m.text.substring(0, 120);
+      if (!seen[t] && questionSamples.length < 5) { seen[t] = true; questionSamples.push(t); }
+    });
 
     var dominantIdentity = 'identified';
     if (identityCounts.anonymous >= identityCounts.pseudonymous && identityCounts.anonymous >= identityCounts.identified) dominantIdentity = 'anonymous';
