@@ -609,7 +609,7 @@ async function sendMessage() {
     var isAnnouncement = document.getElementById('is-announcement')?.checked || false;
     var shouldPin = document.getElementById('pin-message')?.checked || false;
 
-    messageData = { sessionId: sessionId, text: text || '', type: 'COMMENT', replyTo: replyingTo ? replyingTo.id : null, isAnnouncement: isAnnouncement, attachment: pendingAttachment || null };
+    messageData = { sessionId: sessionId, text: text || '', type: 'COMMENT', replyTo: replyingTo ? replyingTo.id : null, isAnnouncement: isAnnouncement, identityMode: 'identified', alias: null, attachment: pendingAttachment || null };
     try {
       var response = await fetch('/api/messages/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(messageData) });
       if (!response.ok) { var errorData = await response.json(); throw new Error(errorData.message || 'Failed'); }
@@ -803,7 +803,7 @@ function appendMessage(message) {
   var reactionBtnHTML = '<button class="action-btn reaction-btn" onclick="showReactionPicker(event, \'' + msgId + '\')" title="React">😀</button>';
 
   var actionButtonsHTML = reactionBtnHTML;
-  actionButtonsHTML += '<button class="action-btn reply-btn" onclick="setReplyTo(\'' + msgId + '\', \'' + escapeHtml(displayName) + '\', \'' + escapeHtml((message.text || '').substring(0, 100)) + '\')" title="Reply">↩️</button>';
+  actionButtonsHTML += '<button class="action-btn reply-btn" onclick="setReplyTo(\'' + msgId + '\', \'' + escapeForAttr(displayName) + '\', \'' + escapeForAttr((message.text || '').substring(0, 100)) + '\')" title="Reply">↩️</button>';
 
   if (currentUser && currentUser.role === 'lecturer') {
     actionButtonsHTML += '<button class="action-btn edit-btn" onclick="editMessage(\'' + msgId + '\')" title="Edit">✏️</button>';
@@ -1152,6 +1152,7 @@ function showError(message) {
   container.appendChild(div);
 }
 function escapeHtml(text) { var div = document.createElement('div'); div.textContent = text || ''; return div.innerHTML; }
+function escapeForAttr(text) { return escapeHtml(text).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
 function formatTime(timestamp) { return new Date(timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }); }
 function formatDateSeparator(timestamp) {
   var date = new Date(timestamp);

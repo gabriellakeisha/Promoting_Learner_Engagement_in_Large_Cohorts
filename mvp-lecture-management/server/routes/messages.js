@@ -127,7 +127,7 @@ router.post('/send', isAuthenticated, async (req, res) => {
         .populate('userId', 'displayName role avatar')
         .populate({
           path: 'replyTo',
-          select: 'text userId type timestamp',
+          select: 'text userId type timestamp identityMode alias',
           populate: {
             path: 'userId',
             select: 'displayName role'
@@ -159,7 +159,9 @@ router.post('/send', isAuthenticated, async (req, res) => {
             type: populatedMessage.replyTo.type,
             timestamp: populatedMessage.replyTo.timestamp,
             user: {
-              displayName: populatedMessage.replyTo.userId?.displayName || 'Unknown',
+              displayName: populatedMessage.replyTo.identityMode === 'anonymous' ? 'Anonymous' :
+                populatedMessage.replyTo.identityMode === 'pseudonymous' ? (populatedMessage.replyTo.alias || 'Anonymous') :
+                (populatedMessage.replyTo.userId?.displayName || 'Unknown'),
               role: populatedMessage.replyTo.userId?.role || 'student'
             }
           } : null,
@@ -233,7 +235,7 @@ router.get('/session/:sessionId', isAuthenticated, verifySessionAccess, async (r
       .populate('userId', 'displayName role avatar')
       .populate({
         path: 'replyTo',
-        select: 'text userId type timestamp',
+        select: 'text userId type timestamp identityMode alias',
         populate: {
           path: 'userId',
           select: 'displayName role'
@@ -267,7 +269,9 @@ router.get('/session/:sessionId', isAuthenticated, verifySessionAccess, async (r
         type: msg.replyTo.type,
         timestamp: msg.replyTo.timestamp,
         user: {
-          displayName: msg.replyTo.userId?.displayName || 'Unknown',
+          displayName: msg.replyTo.identityMode === 'anonymous' ? 'Anonymous' :
+            msg.replyTo.identityMode === 'pseudonymous' ? (msg.replyTo.alias || 'Anonymous') :
+            (msg.replyTo.userId?.displayName || 'Unknown'),
           role: msg.replyTo.userId?.role || 'student'
         }
       } : null,

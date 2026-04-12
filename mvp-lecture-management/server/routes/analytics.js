@@ -16,16 +16,17 @@ router.get('/lecturer/:sessionId', isAuthenticated, isLecturer, async (req, res)
     if (!session) return res.status(404).json({ success: false, message: 'Session not found' });
     if (session.lecturer.toString() !== req.session.userId) return res.status(403).json({ success: false, message: 'Access denied.' });
 
-    const totalMessages = await Message.countDocuments({ sessionId, isDeleted: false });
+    const lecturerId = session.lecturer;
+    const totalMessages = await Message.countDocuments({ sessionId, isDeleted: false, userId: { $ne: lecturerId } });
 
     const messagesByType = await Message.aggregate([
-      { $match: { sessionId: session._id, isDeleted: false } },
+      { $match: { sessionId: session._id, isDeleted: false, userId: { $ne: lecturerId } } },
       { $group: { _id: '$type', count: { $sum: 1 } } },
     ]);
     const typeCounts = { QUESTION: 0, COMMENT: 0, CONFUSION: 0 };
     messagesByType.forEach(item => { typeCounts[item._id] = item.count; });
 
-    const activeUserIds = await Message.distinct('userId', { sessionId, isDeleted: false });
+    const activeUserIds = await Message.distinct('userId', { sessionId, isDeleted: false, userId: { $ne: lecturerId } });
     const activeUserCount = activeUserIds.length;
     const totalMembers = await Membership.countDocuments({ sessionId });
     const consumersCount = Math.max(0, totalMembers - activeUserCount);
@@ -82,7 +83,7 @@ router.get('/lecturer/:sessionId', isAuthenticated, isLecturer, async (req, res)
     );
 
     const identityModeBreakdown = await Message.aggregate([
-      { $match: { sessionId: session._id, isDeleted: false } },
+      { $match: { sessionId: session._id, isDeleted: false, userId: { $ne: lecturerId } } },
       { $group: { _id: { $ifNull: ['$identityMode', 'identified'] }, count: { $sum: 1 } } },
     ]);
     const identityModes = { anonymous: 0, pseudonymous: 0, identified: 0 };
@@ -138,51 +139,61 @@ router.get('/export/:sessionId', isAuthenticated, isLecturer, async (req, res) =
     const messages = await Message.find({ sessionId })
       .populate('userId', 'displayName email role').sort({ timestamp: 1 });
 
-    const totalMessages = messages.length;
-    const activeUsers = [...new Set(messages.map(m => m.userId?._id?.toString()))].length;
+    const lecturerIdExport = session.lecturer;
+    const studentMessages = messages.filter(m => m.userId?._id?.toString() !== lecturerIdExport.toString());
+    const activeStudentMessages = studentMessages.filter(m => !m.isDeleted);
+    const activeStudents = [...new Set(studentMessages.map(m => m.userId?._id?.toString()))].length;
     const totalMembers = await Membership.countDocuments({ sessionId });
 
     const typeCounts = { QUESTION: 0, COMMENT: 0, CONFUSION: 0 };
-    messages.forEach(m => { if (typeCounts[m.type] !== undefined) typeCounts[m.type]++; });
+    activeStudentMessages.forEach(m => { if (typeCounts[m.type] !== undefined) typeCounts[m.type]++; });
+
+    var T = '\t';
+    var clean = function(s) { return (s || '').replace(/[\t\n\r]/g, ' '); };
 
     let csv = 'Session Analytics Export\n';
-    csv += `Session Title,${session.title}\n`;
-    csv += `Module Code,${session.moduleCode || 'N/A'}\n`;
-    csv += `Join Code,${session.joinCode}\n`;
-    csv += `Export Date,${new Date().toISOString()}\n\n`;
+    csv += `Session Title${T}${session.title}\n`;
+    csv += `Module Code${T}${session.moduleCode || 'N/A'}\n`;
+    csv += `Join Code${T}${session.joinCode}\n`;
+    csv += `Export Date${T}${new Date().toISOString()}\n\n`;
     csv += 'Summary Statistics\n';
-    csv += `Total Messages,${totalMessages}\n`;
-    csv += `Active Contributors,${activeUsers}\n`;
-    csv += `Total Members,${totalMembers}\n`;
-    csv += `Participation Rate,${totalMembers > 0 ? Math.min(100, ((activeUsers / totalMembers) * 100)).toFixed(1) : 0}%\n`;
-    csv += `Questions,${typeCounts.QUESTION}\n`;
-    csv += `Comments,${typeCounts.COMMENT}\n`;
-    csv += `Confusion,${typeCounts.CONFUSION}\n\n`;
+    csv += `Student Messages${T}${activeStudentMessages.length}\n`;
+    csv += `Deleted${T}${messages.filter(m => m.isDeleted).length}\n`;
+    csv += `Reported${T}${messages.filter(m => m.isReported).length}\n`;
+    csv += `Active Contributors${T}${activeStudents}\n`;
+    csv += `Total Members${T}${totalMembers}\n`;
+    csv += `Participation Rate${T}${totalMembers > 0 ? Math.min(100, ((activeStudents / totalMembers) * 100)).toFixed(1) : 0}%\n`;
+    csv += `Questions${T}${typeCounts.QUESTION}\n`;
+    csv += `Comments${T}${typeCounts.COMMENT}\n`;
+    csv += `Confusion${T}${typeCounts.CONFUSION}\n\n`;
     csv += 'Message Log\n';
-    csv += 'Timestamp,User,Role,Type,Identity Mode,Status,Message,Original Text,Edit History\n';
+    csv += `Timestamp${T}User${T}Role${T}Type${T}Identity Mode${T}Status${T}Message${T}Original Text${T}Edit History\n`;
     messages.forEach(msg => {
       const timestamp = new Date(msg.timestamp).toISOString();
       const user = msg.userId?.displayName || 'Unknown';
       const role = msg.userId?.role || 'student';
       const type = msg.type || 'COMMENT';
       const identityMode = msg.identityMode || 'identified';
-      const status = msg.isDeleted ? 'DELETED' : (msg.isEdited ? 'EDITED' : 'ACTIVE');
-      const text = `"${(msg.text || '').replace(/"/g, '""')}"`;
+      const statusParts = [];
+      if (msg.isDeleted) statusParts.push('DELETED');
+      if (msg.isEdited) statusParts.push('EDITED');
+      if (msg.isReported) statusParts.push('REPORTED');
+      const status = statusParts.length > 0 ? statusParts.join('+') : 'ACTIVE';
+      const text = clean(msg.text);
       let originalText = '';
       if (msg.originalText && msg.originalText !== msg.text) {
-        originalText = `"${msg.originalText.replace(/"/g, '""')}"`;
+        originalText = clean(msg.originalText);
       }
-      let editHistoryText = '';
+      let editHistory = '';
       if (msg.editHistory && msg.editHistory.length > 0) {
-        const historyParts = msg.editHistory.map(function(h) {
-          return h.text + ' (' + new Date(h.editedAt).toLocaleString() + ')';
-        });
-        editHistoryText = `"${historyParts.join(' → ').replace(/"/g, '""')}"`;
+        editHistory = msg.editHistory.map(function(h) {
+          return clean(h.text) + ' (' + new Date(h.editedAt).toISOString() + ')';
+        }).join(' > ');
       }
-      csv += `${timestamp},${user},${role},${type},${identityMode},${status},${text},${originalText},${editHistoryText}\n`;
+      csv += `${timestamp}${T}${user}${T}${role}${T}${type}${T}${identityMode}${T}${status}${T}${text}${T}${originalText}${T}${editHistory}\n`;
     });
 
-    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Type', 'text/tab-separated-values');
     res.setHeader('Content-Disposition', `attachment; filename="session_${session.joinCode}_analytics.csv"`);
     res.send(csv);
   } catch (error) {

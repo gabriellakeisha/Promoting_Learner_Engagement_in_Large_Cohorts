@@ -263,7 +263,7 @@ io.on('connection', async (socket) => {
       await message.populate('userId', 'displayName role avatar');
       await message.populate({
         path: 'replyTo',
-        select: 'text userId type timestamp',
+        select: 'text userId type timestamp identityMode alias',
         populate: {
           path: 'userId',
           select: 'displayName role'
@@ -284,7 +284,9 @@ io.on('connection', async (socket) => {
           type: message.replyTo.type,
           timestamp: message.replyTo.timestamp,
           user: {
-            displayName: message.replyTo.userId?.displayName || 'Unknown',
+            displayName: message.replyTo.identityMode === 'anonymous' ? 'Anonymous' :
+              message.replyTo.identityMode === 'pseudonymous' ? (message.replyTo.alias || 'Anonymous') :
+              (message.replyTo.userId?.displayName || 'Unknown'),
             role: message.replyTo.userId?.role || 'student'
           }
         } : null,
