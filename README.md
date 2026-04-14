@@ -77,7 +77,7 @@ final-year-project/
 │   │   │   └── ai-summary.js           # DistilBART session summarisation with fallback
 │   │   └── server.js                   # Main entry point (Express + Socket.IO setup)
 │   │
-│   ├── tests/                          # Jest automated tests (97 tests)
+│   ├── tests/                          # Jest automated tests (145 tests)
 │   │   ├── ai-services.test.js         # RAKE and AI comparison
 │   │   ├── auth-middleware.test.js     # Role-based access control
 │   │   ├── auth-routes.test.js         # Registration, login, logout

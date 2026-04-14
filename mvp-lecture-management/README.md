@@ -105,7 +105,7 @@ HUGGINGFACE_API_KEY=hf_your_api_key_here
 npm test
 ```
 
-This runs 97 Jest tests across 5 suites:
+This runs 145 Jest tests across 5 suites:
 
 | Suite | Tests | What It Covers |
 |---|---|---|
@@ -114,6 +114,9 @@ This runs 97 Jest tests across 5 suites:
 | auth-middleware.test.js | 11 | isAuthenticated, isLecturer, isStudent, isAdmin |
 | ai-services.test.js | 8 | RAKE keyword extraction, AI comparison service |
 | models.test.js | 46 | All 5 Mongoose model schemas (User, Session, Message, Membership, StudentReflection) |
+| message-routes.test.js | 22 | Send, edit, delete, pin, react, report |
+| session-routes.test.js | 16 | Create, join, activate, end, my-sessions |
+| reflection-routes.test.jss | 9 | Goals, reflections, semester trend |
 
 All tests run offline in under a minute with zero external dependencies.
 
@@ -211,7 +214,7 @@ mvp-lecture-management/
 │   │   └── ai-summary.js               # DistilBART session summarisation with fallback
 │   └── server.js                       # Main entry point (Express + Socket.IO setup)
 │
-├── tests/                              # Jest automated tests (97 tests)
+├── tests/                              # Jest automated tests (145 tests)
 │   ├── ai-services.test.js             # RAKE and AI comparison
 │   ├── auth-middleware.test.js         # Role-based access control
 │   ├── auth-routes.test.js             # Registration, login, logout
