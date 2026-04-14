@@ -3,11 +3,14 @@
 const { sanitiseText, sanitiseInput, sanitiseBody, securityHeaders } = require('../server/middleware/security');
 
 describe('sanitiseText', () => {
-  test('should escape html tags', () => {
+  // SBT Session 5 Finding 1.1: server no longer HTML-escapes. HTML escaping is
+  // done client-side by escapeHtml() at render time to prevent the
+  // double-encoding bug (&lt; becoming &amp;lt;). Server strips control
+  // characters and trims whitespace only.
+  test('should preserve html tags (client handles escaping at render)', () => {
     const input = '<script>alert("xss")</script>';
     const result = sanitiseText(input);
-    expect(result).not.toContain('<script>');
-    expect(result).toContain('&lt;script&gt;');
+    expect(result).toBe('<script>alert("xss")</script>');
   });
 
   test('should return empty string for null input', () => {
@@ -25,10 +28,15 @@ describe('sanitiseText', () => {
     expect(sanitiseText('  hello  ')).toBe('hello');
   });
 
-  test('should escape ampersands and quotes', () => {
+  test('should strip control characters', () => {
+    // validator.stripLow removes ASCII 0-31 and 127 (control chars)
+    const result = sanitiseText('hello\x00\x01world');
+    expect(result).toBe('helloworld');
+  });
+
+  test('should preserve ampersands and quotes (client escapes at render)', () => {
     const result = sanitiseText('a & b "c"');
-    expect(result).toContain('&amp;');
-    expect(result).toContain('&quot;');
+    expect(result).toBe('a & b "c"');
   });
 
   test('should handle normal text without changes', () => {
@@ -37,17 +45,23 @@ describe('sanitiseText', () => {
 });
 
 describe('sanitiseInput', () => {
-  test('should sanitise string values in object', () => {
-    const input = { name: '<b>bold</b>', age: 25 };
+  test('should trim string values in object', () => {
+    const input = { name: '  bold  ', age: 25 };
     const result = sanitiseInput(input);
-    expect(result.name).not.toContain('<b>');
+    expect(result.name).toBe('bold');
     expect(result.age).toBe(25);
   });
 
-  test('should preserve password fields (not escape them)', () => {
+  test('should preserve html in string values (client handles escaping)', () => {
+    const input = { name: '<b>bold</b>' };
+    const result = sanitiseInput(input);
+    expect(result.name).toBe('<b>bold</b>');
+  });
+
+  test('should preserve password fields (not sanitise them)', () => {
     const input = { password: 'p@ss<word>' };
     const result = sanitiseInput(input);
-    // password should only be trimmed, not escaped
+    // password should only be trimmed, never touched by sanitiseText
     expect(result.password).toBe('p@ss<word>');
   });
 
@@ -59,22 +73,22 @@ describe('sanitiseInput', () => {
   });
 
   test('should handle nested objects', () => {
-    const input = { user: { name: '<script>bad</script>' } };
+    const input = { user: { name: '  trimme  ' } };
     const result = sanitiseInput(input);
-    expect(result.user.name).not.toContain('<script>');
+    expect(result.user.name).toBe('trimme');
   });
 
   test('should handle arrays of strings', () => {
-    const input = { tags: ['<b>tag1</b>', 'tag2'] };
+    const input = { tags: ['  tag1  ', 'tag2'] };
     const result = sanitiseInput(input);
-    expect(result.tags[0]).not.toContain('<b>');
+    expect(result.tags[0]).toBe('tag1');
     expect(result.tags[1]).toBe('tag2');
   });
 
   test('should handle arrays of objects', () => {
-    const input = { items: [{ text: '<img src=x>' }] };
+    const input = { items: [{ text: '  hello  ' }] };
     const result = sanitiseInput(input);
-    expect(result.items[0].text).not.toContain('<img');
+    expect(result.items[0].text).toBe('hello');
   });
 
   test('should return non-object input as-is', () => {
@@ -93,14 +107,14 @@ describe('sanitiseInput', () => {
 });
 
 describe('sanitiseBody middleware', () => {
-  test('should sanitise req.body and call next', () => {
-    const req = { body: { name: '<script>xss</script>' } };
+  test('should trim and strip control chars from req.body and call next', () => {
+    const req = { body: { name: '  hello\x00world  ' } };
     const res = {};
     const next = jest.fn();
 
     sanitiseBody(req, res, next);
 
-    expect(req.body.name).not.toContain('<script>');
+    expect(req.body.name).toBe('helloworld');
     expect(next).toHaveBeenCalled();
   });
 
