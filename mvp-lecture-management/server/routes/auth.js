@@ -1,10 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const { authLimiter } = require('../middleware/security');
 
 const LECTURER_ACCESS_CODE = process.env.LECTURER_ACCESS_CODE || 'ECHOCLASS-LECTURER-2026';
 
-router.post('/register', async (req, res) => {
+// authLimiter (10 req/15min) only on login/register to prevent brute-force.
+// /me and /logout use the general apiLimiter from server.js mount.
+router.post('/register', authLimiter, async (req, res) => {
   try {
     const { email, password, displayName, role, lecturerCode } = req.body;
 
@@ -61,7 +64,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
 

@@ -245,7 +245,10 @@ router.get('/session/:sessionId', isAuthenticated, verifySessionAccess, async (r
 
     console.log(`Found ${messages.length} messages`);
 
-    const formattedMessages = messages.map(msg => ({
+    // Filter out reported messages from chatroom (preserved in CSV export only)
+    const filteredMessages = messages.filter(msg => !msg.isReported);
+
+    const formattedMessages = filteredMessages.map(msg => ({
       id: msg._id,
       text: msg.text,
       type: msg.type,

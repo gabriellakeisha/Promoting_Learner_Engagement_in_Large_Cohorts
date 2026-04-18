@@ -8,7 +8,7 @@ const cors = require('cors');
 require('dotenv').config();
 
 const { connectDB } = require('./config/database');
-const { apiLimiter, authLimiter, messageLimiter, sanitiseBody, securityHeaders, sanitiseText } = require('./middleware/security');
+const { apiLimiter, messageLimiter, sanitiseBody, securityHeaders, sanitiseText } = require('./middleware/security');
 const User = require('./models/User');
 const Session = require('./models/Session');
 const Message = require('./models/Message');
@@ -79,7 +79,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use(express.static(path.join(__dirname, '../client')));
 
 // API Routes with rate limiting
-app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/auth', apiLimiter, authRoutes);
 app.use('/api/profile', apiLimiter, profileRoutes);
 app.use('/api/bulk', apiLimiter, bulkUploadRoutes);
 app.use('/api/sessions', apiLimiter, sessionsRoutes);

@@ -9,13 +9,17 @@ function renderMessageWithAvatar(message, currentUserId, isLecturerView = false)
   const displayName = message.sender?.displayName || message.displayName || 'Anonymous';
   const avatar = message.sender?.avatar || message.avatar;
   
+  // Hide reported messages from chatroom entirely (preserved in CSV export only)
+  if (message.isReported) {
+    return '';
+  }
+
   // Determine message classes
   let messageClasses = ['chat-message'];
   if (isOwn) messageClasses.push('own');
   if (isLecturer) messageClasses.push('lecturer-message');
   if (isAnnouncement) messageClasses.push('announcement');
   if (message.isPinned) messageClasses.push('pinned');
-  if (message.isReported) messageClasses.push('reported');
   
   // Build avatar HTML
   const avatarHTML = renderChatAvatar(avatar, displayName, 36);

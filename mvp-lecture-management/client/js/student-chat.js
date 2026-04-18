@@ -326,7 +326,13 @@ function initializeSocket() {
   });
   socket.on('message-reported', function (data) {
     var el = document.querySelector('[data-message-id="' + data.messageId + '"]');
-    if (el) { if (data.isReported) el.classList.add('reported-message'); else el.classList.remove('reported-message'); }
+    if (!el) return;
+    // Remove reported messages from chatroom for all users (preserved in CSV export only)
+    if (data.isReported) {
+      el.style.transition = 'opacity 0.3s';
+      el.style.opacity = '0';
+      setTimeout(function() { el.remove(); }, 300);
+    }
   });
   socket.on('message-edited', function (data) {
     var el = document.querySelector('[data-message-id="' + data.messageId + '"]');
@@ -678,6 +684,11 @@ function appendMessage(message) {
     deletedDiv.setAttribute('data-message-id', msgId);
     deletedDiv.innerHTML = '<div class="deleted-message-content"><span class="deleted-icon">🚫</span> <em>This message was deleted</em></div>';
     container.appendChild(deletedDiv);
+    return;
+  }
+
+  // Hide reported messages from chatroom entirely (preserved in CSV export only)
+  if (message.isReported) {
     return;
   }
 
