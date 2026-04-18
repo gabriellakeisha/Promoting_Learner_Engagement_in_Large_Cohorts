@@ -1,0 +1,520 @@
+<mxfile host="app.diagrams.net" agent="EchoClass" pages="4">
+  <diagram id="seq-auth" name="Sequence - Authentication">
+    <mxGraphModel dx="1400" dy="1024" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="t" parent="1" style="text;html=1;align=center;fontSize=16;" value="&lt;b&gt;Sequence Diagram: Authentication Flow (Login and Register)&lt;/b&gt;" vertex="1">
+          <mxGeometry height="25" width="550" x="309" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="browser" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;collapsible=0;recursiveResize=0;outlineConnect=0;size=40;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=15;labelBackgroundColor=none;" value="&lt;b&gt;Browser&lt;/b&gt;" vertex="1">
+          <mxGeometry height="680" width="100" x="80" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="express" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;collapsible=0;recursiveResize=0;outlineConnect=0;size=40;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=15;labelBackgroundColor=none;" value="&lt;b&gt;Express&lt;br&gt;/api/auth&lt;/b&gt;" vertex="1">
+          <mxGeometry height="680" width="100" x="300" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="security" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;collapsible=0;recursiveResize=0;outlineConnect=0;size=40;fillColor=#f8cecc;strokeColor=#b85450;fontSize=15;labelBackgroundColor=none;" value="&lt;b&gt;Security&lt;br&gt;Middleware&lt;/b&gt;" vertex="1">
+          <mxGeometry height="680" width="100" x="500" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="bcrypt" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;collapsible=0;recursiveResize=0;outlineConnect=0;size=40;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=15;labelBackgroundColor=none;" value="&lt;b&gt;bcryptjs&lt;/b&gt;" vertex="1">
+          <mxGeometry height="680" width="90" x="680" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;collapsible=0;recursiveResize=0;outlineConnect=0;size=40;fillColor=#f5f5f5;strokeColor=#666;fontSize=15;labelBackgroundColor=none;" value="&lt;b&gt;MongoDB&lt;/b&gt;" vertex="1">
+          <mxGeometry height="680" width="90" x="860" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="sess" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;collapsible=0;recursiveResize=0;outlineConnect=0;size=40;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=15;labelBackgroundColor=none;" value="&lt;b&gt;Session&lt;br&gt;Store&lt;/b&gt;" vertex="1">
+          <mxGeometry height="680" width="90" x="1020" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="reg-frame" parent="1" style="shape=umlFrame;whiteSpace=wrap;html=1;width=60;height=15;fillColor=none;strokeColor=#6c8ebf;labelBackgroundColor=none;" value="Register" vertex="1">
+          <mxGeometry height="230" width="1070" x="60" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="r1" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;labelBackgroundColor=none;" value="1. POST /register {email, password, displayName, role}">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="130" y="135" as="sourcePoint" />
+            <mxPoint x="350" y="135" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r2" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;labelBackgroundColor=none;" value="2. authLimiter (10 req/15min)">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="160" as="sourcePoint" />
+            <mxPoint x="550" y="160" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r3" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;dashed=1;fontSize=15;labelBackgroundColor=none;" value="3. sanitiseBody()">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="550" y="180" as="sourcePoint" />
+            <mxPoint x="350" y="180" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r4" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;labelBackgroundColor=none;" value="4. Check email unique">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="205" as="sourcePoint" />
+            <mxPoint x="905" y="205" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r5" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;labelBackgroundColor=none;" value="5. bcrypt.hash(password, 10)">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="230" as="sourcePoint" />
+            <mxPoint x="725" y="230" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r6" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;labelBackgroundColor=none;" value="6. User.create()">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="260" as="sourcePoint" />
+            <mxPoint x="905" y="260" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r7" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;dashed=1;fontSize=15;labelBackgroundColor=none;" value="7. {success, user}">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="295" as="sourcePoint" />
+            <mxPoint x="130" y="295" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="login-frame" parent="1" style="shape=umlFrame;whiteSpace=wrap;html=1;width=40;height=15;fillColor=none;strokeColor=#82b366;labelBackgroundColor=none;" value="Login" vertex="1">
+          <mxGeometry height="280" width="1070" x="60" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="l1" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;labelBackgroundColor=none;" value="1. POST /login {email, password}">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="130" y="390" as="sourcePoint" />
+            <mxPoint x="350" y="390" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="l2" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;labelBackgroundColor=none;" value="2. authLimiter check">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="415" as="sourcePoint" />
+            <mxPoint x="550" y="415" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="l3" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;labelBackgroundColor=none;" value="3. User.findOne({email})">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="440" as="sourcePoint" />
+            <mxPoint x="905" y="440" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="l4" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;dashed=1;fontSize=15;labelBackgroundColor=none;" value="4. user doc">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="905" y="460" as="sourcePoint" />
+            <mxPoint x="350" y="460" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="l5" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;labelBackgroundColor=none;" value="5. bcrypt.compare()">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="490" as="sourcePoint" />
+            <mxPoint x="725" y="490" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="l6" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;dashed=1;fontSize=15;labelBackgroundColor=none;" value="6. match: true">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="725" y="510" as="sourcePoint" />
+            <mxPoint x="350" y="510" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="l7" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;labelBackgroundColor=none;" value="7. req.session.userId = user._id">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="540" as="sourcePoint" />
+            <mxPoint x="1065" y="540" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="l8" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;dashed=1;fontSize=15;labelBackgroundColor=none;" value="8. Session persisted (connect-mongo)">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1065" y="565" as="sourcePoint" />
+            <mxPoint x="350" y="565" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="l9" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;dashed=1;fontSize=15;labelBackgroundColor=none;" value="9. {success, user}">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="595" as="sourcePoint" />
+            <mxPoint x="130" y="595" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="seq-reflection" name="Sequence - Student Reflection">
+    <mxGraphModel dx="2513" dy="931" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="t" parent="1" style="text;html=1;align=center;fontSize=16;labelBackgroundColor=none;" value="&lt;b&gt;Sequence Diagram: Student Self-Reflection Dashboard (SRL Cycle)&lt;/b&gt;" vertex="1">
+          <mxGeometry height="25" width="600" x="140" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="stu" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;size=40;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=15;labelBackgroundColor=none;" value="&lt;b&gt;Student&lt;/b&gt;" vertex="1">
+          <mxGeometry height="700" width="90" x="60" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="api" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;size=40;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=15;labelBackgroundColor=none;" value="&lt;b&gt;/api/reflection&lt;/b&gt;" vertex="1">
+          <mxGeometry height="700" width="120" x="280" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="db" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;size=40;fillColor=#f5f5f5;strokeColor=#666;fontSize=15;labelBackgroundColor=none;" value="&lt;b&gt;MongoDB&lt;/b&gt;" vertex="1">
+          <mxGeometry height="700" width="90" x="530" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="cjs" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;size=40;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=15;labelBackgroundColor=none;" value="&lt;b&gt;Chart.js&lt;/b&gt;" vertex="1">
+          <mxGeometry height="700" width="90" x="740" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="f1" parent="1" style="shape=umlFrame;whiteSpace=wrap;html=1;width=100;height=15;fillColor=none;strokeColor=#1565C0;fontColor=#1565C0;labelBackgroundColor=none;" value="SRL Forethought" vertex="1">
+          <mxGeometry height="110" width="810" x="40" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="s1" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;labelBackgroundColor=none;" value="1. POST /goal/:sessionId {text, targetCount:3}">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="105" y="135" as="sourcePoint" />
+            <mxPoint x="340" y="135" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s2" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;labelBackgroundColor=none;" value="2. Upsert StudentReflection">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="340" y="160" as="sourcePoint" />
+            <mxPoint x="575" y="160" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s3" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;dashed=1;fontSize=15;labelBackgroundColor=none;" value="3. {goal saved}">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="340" y="185" as="sourcePoint" />
+            <mxPoint x="105" y="185" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f2" parent="1" style="shape=umlFrame;whiteSpace=wrap;html=1;width=105;height=15;fillColor=none;strokeColor=#2E7D32;fontColor=#2E7D32;labelBackgroundColor=none;" value="SRL Performance" vertex="1">
+          <mxGeometry height="80" width="810" x="40" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="s4" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;labelBackgroundColor=none;" value="4. Send QUESTION messages during lecture">
+          <mxGeometry relative="1" x="-1" y="-15" as="geometry">
+            <mxPoint x="15" y="-15" as="offset" />
+            <mxPoint x="105" y="280" as="sourcePoint" />
+            <mxPoint x="105" y="305" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s4b" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;dashed=1;fontSize=15;fontColor=#2E7D32;labelBackgroundColor=none;" value="Goal progress bar updates (QUESTION count vs target)">
+          <mxGeometry relative="1" x="-0.0638" y="-7" as="geometry">
+            <mxPoint x="1" as="offset" />
+            <mxPoint x="340" y="287" as="sourcePoint" />
+            <mxPoint x="105" y="287" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f3" parent="1" style="shape=umlFrame;whiteSpace=wrap;html=1;width=115;height=15;fillColor=none;strokeColor=#E65100;fontColor=#E65100;labelBackgroundColor=none;" value="SRL Self-Reflection" vertex="1">
+          <mxGeometry height="340" width="810" x="40" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="s5" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;labelBackgroundColor=none;" value="5. GET /student/:sessionId">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="105" y="365" as="sourcePoint" />
+            <mxPoint x="340" y="365" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s6" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;labelBackgroundColor=none;" value="6. Aggregate stats, rank, percentile, badges">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="340" y="390" as="sourcePoint" />
+            <mxPoint x="575" y="390" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s7" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;dashed=1;fontSize=15;labelBackgroundColor=none;" value="7. {stats, badges, tips, history}">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="340" y="420" as="sourcePoint" />
+            <mxPoint x="105" y="420" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s8" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;labelBackgroundColor=none;" value="8. Render pie + bar + trend charts">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="105" y="450" as="sourcePoint" />
+            <mxPoint x="785" y="450" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s9" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;labelBackgroundColor=none;" value="9. Display 6 badges (earned=gold, locked=grey)">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="105" y="480" as="sourcePoint" />
+            <mxPoint x="105" y="505" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s10" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;labelBackgroundColor=none;" value="10. POST /reflection/:sessionId {understanding:4, confusingTopic, improvement}">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="105" y="530" as="sourcePoint" />
+            <mxPoint x="340" y="530" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s11" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;labelBackgroundColor=none;" value="11. Save to StudentReflection">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="340" y="555" as="sourcePoint" />
+            <mxPoint x="575" y="555" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s12" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;labelBackgroundColor=none;" value="12. GET /semester-trend">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="105" y="590" as="sourcePoint" />
+            <mxPoint x="340" y="590" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s13" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;dashed=1;fontSize=15;labelBackgroundColor=none;" value="13. Render semester line chart (personal vs class avg)">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="340" y="620" as="sourcePoint" />
+            <mxPoint x="105" y="620" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="seq-analytics" name="Sequence - Lecturer Analytics">
+    <mxGraphModel dx="2725" dy="1138" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="t" parent="1" style="text;html=1;align=center;fontSize=16;labelBackgroundColor=none;" value="&lt;b&gt;Sequence Diagram: Lecturer Analytics + Confusion Spike Detection&lt;/b&gt;" vertex="1">
+          <mxGeometry height="25" width="600" x="140" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="lect" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;size=40;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=15;labelBackgroundColor=none;" value="&lt;b&gt;Lecturer&lt;/b&gt;" vertex="1">
+          <mxGeometry height="650" width="90" x="60" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="api" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;size=40;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=15;labelBackgroundColor=none;" value="&lt;b&gt;/api/analytics&lt;/b&gt;" vertex="1">
+          <mxGeometry height="650" width="110" x="280" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="db" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;size=40;fillColor=#f5f5f5;strokeColor=#666;fontSize=15;labelBackgroundColor=none;" value="&lt;b&gt;MongoDB&lt;br&gt;Aggregation&lt;/b&gt;" vertex="1">
+          <mxGeometry height="650" width="110" x="510" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="cjs" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;size=40;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=15;" value="&lt;b&gt;Chart.js&lt;/b&gt;" vertex="1">
+          <mxGeometry height="700" width="90" x="730" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="mf" parent="1" style="shape=umlFrame;whiteSpace=wrap;html=1;width=90;height=15;fillColor=none;strokeColor=#1565C0;fontColor=#1565C0;labelBackgroundColor=none;" value="Micro Analytics" vertex="1">
+          <mxGeometry height="220" width="800" x="40" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="a1" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;labelBackgroundColor=none;" value="1. GET /lecturer/:sessionId">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="105" y="135" as="sourcePoint" />
+            <mxPoint x="335" y="135" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a2" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;labelBackgroundColor=none;" value="2. $group by 5-min buckets (timeline)">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="335" y="160" as="sourcePoint" />
+            <mxPoint x="565" y="160" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a3" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;labelBackgroundColor=none;" value="3. $group by type + identityMode + contributors">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="335" y="185" as="sourcePoint" />
+            <mxPoint x="565" y="185" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a4" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;labelBackgroundColor=none;" value="4. Filter: userId != lecturerId (student-only)">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="335" y="210" as="sourcePoint" />
+            <mxPoint x="565" y="210" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a5" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;dashed=1;fontSize=15;labelBackgroundColor=none;" value="5. {timeline, types, identity, contributors, lurkerRatio, keywords}">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="335" y="245" as="sourcePoint" />
+            <mxPoint x="105" y="245" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a6" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;labelBackgroundColor=none;" value="6. Render charts (line, doughnut, bar)">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="105" y="280" as="sourcePoint" />
+            <mxPoint x="775" y="280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="cf" parent="1" style="shape=umlFrame;whiteSpace=wrap;html=1;width=175;height=15;fillColor=none;strokeColor=#E65100;fontColor=#E65100;labelBackgroundColor=none;" value="Confusion Spike (Computed)" vertex="1">
+          <mxGeometry height="140" width="800" x="40" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="c1" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;strokeColor=#E53935;labelBackgroundColor=none;" value="Server counts CONFUSION msgs in last 3 min">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="335" y="375" as="sourcePoint" />
+            <mxPoint x="565" y="375" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c2" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;strokeColor=#E53935;labelBackgroundColor=none;" value="7. confusionLast3Min &amp;gt;= 3 → spike active">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="565" y="400" as="sourcePoint" />
+            <mxPoint x="335" y="400" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c3" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;strokeColor=#E53935;labelBackgroundColor=none;" value="8. {confusionSpike: {active, count, rate}} in response">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="335" y="435" as="sourcePoint" />
+            <mxPoint x="105" y="435" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c4" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;strokeColor=#E53935;labelBackgroundColor=none;" value="9. Render red alert banner if spike active">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="105" y="460" as="sourcePoint" />
+            <mxPoint x="105" y="470" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ef" parent="1" style="shape=umlFrame;whiteSpace=wrap;html=1;width=70;height=15;fillColor=none;strokeColor=#666;labelBackgroundColor=none;" value="CSV Export" vertex="1">
+          <mxGeometry height="100" width="800" x="40" y="500" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;labelBackgroundColor=none;" value="10. GET /export/:sessionId">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="105" y="535" as="sourcePoint" />
+            <mxPoint x="335" y="535" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;fontSize=15;labelBackgroundColor=none;" value="11. Build CSV (student-only summary + full message log)">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="335" y="560" as="sourcePoint" />
+            <mxPoint x="565" y="560" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;dashed=1;fontSize=15;labelBackgroundColor=none;" value="12. Download: session_analytics.csv">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="335" y="585" as="sourcePoint" />
+            <mxPoint x="105" y="585" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="activity" name="Activity - User Flow">
+    <mxGraphModel dx="1556" dy="1138" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="t" parent="1" style="text;html=1;align=center;fontSize=16;" value="&lt;b&gt;Activity Diagram: Overall User Flow&lt;/b&gt;" vertex="1">
+          <mxGeometry height="25" width="400" x="304" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="start" parent="1" style="ellipse;fillColor=#000;strokeColor=#000;" value="" vertex="1">
+          <mxGeometry height="30" width="30" x="492" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="login" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=15;" value="Login / Register" vertex="1">
+          <mxGeometry height="40" width="140" x="434" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="role" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=15;" value="Role?" vertex="1">
+          <mxGeometry height="57.5" width="100" x="454" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="s-dash" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=15;" value="Student Dashboard" vertex="1">
+          <mxGeometry height="35" width="150" x="208" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="l-dash" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=15;" value="Lecturer Dashboard" vertex="1">
+          <mxGeometry height="35" width="160" x="637" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="s-join" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=15;" value="Join Session (Code)" vertex="1">
+          <mxGeometry height="35" width="150" x="208" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="l-create" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=15;" value="Create Session" vertex="1">
+          <mxGeometry height="35" width="150" x="642" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="s-chat" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=15;" value="Chat Room&lt;br&gt;(Send Messages)" vertex="1">
+          <mxGeometry height="40" width="150" x="208" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="l-moderate" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=15;" value="Moderate Chat&lt;br&gt;(Announce/Pin/Poll)" vertex="1">
+          <mxGeometry height="40" width="160" x="637" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="s-id" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#42A5F5;fontSize=15;" value="Select Identity +&lt;br&gt;Message Type" vertex="1">
+          <mxGeometry height="40" width="130" x="373" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="s-goal" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#42A5F5;fontSize=15;" value="Set Goal (SRL)" vertex="1">
+          <mxGeometry height="35" width="150" x="208" y="420" as="geometry" />
+        </mxCell>
+        <mxCell id="l-micro" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#43A047;fontSize=15;" value="View Micro Analytics" vertex="1">
+          <mxGeometry height="35" width="150" x="642" y="420" as="geometry" />
+        </mxCell>
+        <mxCell id="l-spike" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFCDD2;strokeColor=#E53935;fontSize=15;" value="Confusion&lt;br&gt;Spike!" vertex="1">
+          <mxGeometry height="35" width="90" x="827" y="420" as="geometry" />
+        </mxCell>
+        <mxCell id="s-reflect" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#42A5F5;fontSize=15;" value="View Reflection&lt;br&gt;Dashboard" vertex="1">
+          <mxGeometry height="40" width="150" x="208" y="490" as="geometry" />
+        </mxCell>
+        <mxCell id="l-summary" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#43A047;fontSize=15;" value="Generate AI Summary" vertex="1">
+          <mxGeometry height="35" width="160" x="637" y="490" as="geometry" />
+        </mxCell>
+        <mxCell id="s-badges" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#42A5F5;fontSize=15;" value="Badges + Tips" vertex="1">
+          <mxGeometry height="35" width="120" x="388" y="490" as="geometry" />
+        </mxCell>
+        <mxCell id="s-submit" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#42A5F5;fontSize=15;" value="Submit Reflection" vertex="1">
+          <mxGeometry height="35" width="150" x="208" y="565" as="geometry" />
+        </mxCell>
+        <mxCell id="l-macro" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#43A047;fontSize=15;" value="View Macro Analytics" vertex="1">
+          <mxGeometry height="35" width="150" x="642" y="565" as="geometry" />
+        </mxCell>
+        <mxCell id="l-csv" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#43A047;fontSize=15;" value="Export CSV" vertex="1">
+          <mxGeometry height="35" width="90" x="827" y="565" as="geometry" />
+        </mxCell>
+        <mxCell id="s-trend" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#42A5F5;fontSize=15;" value="Semester Trend" vertex="1">
+          <mxGeometry height="35" width="150" x="208" y="635" as="geometry" />
+        </mxCell>
+        <mxCell id="l-end" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=15;" value="End Session" vertex="1">
+          <mxGeometry height="35" width="150" x="642" y="635" as="geometry" />
+        </mxCell>
+        <mxCell id="end1" parent="1" style="ellipse;fillColor=#000;strokeColor=#000;" value="" vertex="1">
+          <mxGeometry height="20" width="20" x="273" y="700" as="geometry" />
+        </mxCell>
+        <mxCell id="end2" parent="1" style="ellipse;fillColor=#000;strokeColor=#000;" value="" vertex="1">
+          <mxGeometry height="20" width="20" x="707" y="700" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="start" style="endArrow=block;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="505.1504474833919" y="79.95581728409411" as="sourcePoint" />
+            <mxPoint x="507" y="110" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="login" style="endArrow=block;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="role">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="501.82352941176487" y="150" as="sourcePoint" />
+            <mxPoint x="499.7045454545455" y="186.02272727272725" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="role" style="endArrow=block;html=1;fontSize=15;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" target="s-dash" value="Student">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="454" y="218" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="1" style="endArrow=block;html=1;fontSize=15;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="l-dash" value="Lecturer">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="552" y="218.75" as="sourcePoint" />
+            <mxPoint x="635" y="218.11349693251532" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="s-dash" style="endArrow=block;html=1;" target="s-join">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="s-join" style="endArrow=block;html=1;" target="s-chat">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" edge="1" parent="1" source="s-chat" style="endArrow=block;html=1;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="388" y="360" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e8" edge="1" parent="1" source="s-chat" style="endArrow=block;html=1;" target="s-goal">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" edge="1" parent="1" source="s-goal" style="endArrow=block;html=1;" target="s-reflect">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" edge="1" parent="1" source="s-reflect" style="endArrow=block;html=1;" target="s-badges">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" edge="1" parent="1" source="s-reflect" style="endArrow=block;html=1;" target="s-submit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" edge="1" parent="1" source="s-submit" style="endArrow=block;html=1;" target="s-trend">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" edge="1" parent="1" source="s-trend" style="endArrow=block;html=1;" target="end1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" edge="1" parent="1" source="l-dash" style="endArrow=block;html=1;" target="l-create">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e15" edge="1" parent="1" source="l-create" style="endArrow=block;html=1;" target="l-moderate">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" edge="1" parent="1" source="l-moderate" style="endArrow=block;html=1;" target="l-micro">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e17" edge="1" parent="1" source="l-micro" style="endArrow=block;html=1;dashed=1;strokeColor=#E53935;" target="l-spike">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e18" edge="1" parent="1" source="l-micro" style="endArrow=block;html=1;" target="l-summary">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e19" edge="1" parent="1" source="l-summary" style="endArrow=block;html=1;" target="l-macro">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e20" edge="1" parent="1" source="l-macro" style="endArrow=block;html=1;" target="l-csv">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e21" edge="1" parent="1" source="l-macro" style="endArrow=block;html=1;" target="l-end">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e22" edge="1" parent="1" source="l-end" style="endArrow=block;html=1;" target="end2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
