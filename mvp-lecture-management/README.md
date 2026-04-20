@@ -45,7 +45,7 @@ Three things set it apart from available tools like Vevox, Slido, or Mentimeter:
 
 ### Prerequisites
 
-- **Node.js** v18+ and npm
+- **Node.js** v24+ and npm
 - **MongoDB** running locally or a MongoDB Atlas connection string
 - **Hugging Face API key** (free tier) — system works without it using RAKE fallback
 
@@ -93,7 +93,7 @@ HUGGINGFACE_API_KEY=hf_your_api_key_here
 
 - `MONGODB_URI` — your MongoDB connection string (local or Atlas)
 - `SESSION_SECRET` — any random string for session encryption
-- `LECTURER_CODE` — code required to register as a lecturer (prevents students from creating lecturer accounts)
+- `LECTURER_ACCESS_CODE` — code required to register as a lecturer (prevents students from creating lecturer accounts)
 - `HUGGINGFACE_API_KEY` — get one free at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens). If not set, the system uses RAKE for keywords and auto skips AI summaries.
 
 ```
@@ -105,18 +105,18 @@ HUGGINGFACE_API_KEY=hf_your_api_key_here
 npm test
 ```
 
-This runs 145 Jest tests across 5 suites:
+This runs 147 Jest tests across 8 suites:
 
 | Suite | Tests | What It Covers |
 |---|---|---|
-| security.test.js | 18 | XSS sanitisation, recursive sanitisation, security headers |
+| security.test.js | 20 | XSS sanitisation, recursive sanitisation, security headers |
 | auth-routes.test.js | 14 | Registration, login, logout, session management |
 | auth-middleware.test.js | 11 | isAuthenticated, isLecturer, isStudent, isAdmin |
 | ai-services.test.js | 8 | RAKE keyword extraction, AI comparison service |
 | models.test.js | 46 | All 5 Mongoose model schemas (User, Session, Message, Membership, StudentReflection) |
 | message-routes.test.js | 22 | Send, edit, delete, pin, react, report |
-| session-routes.test.js | 16 | Create, join, activate, end, my-sessions |
-| reflection-routes.test.jss | 9 | Goals, reflections, semester trend |
+| session-routes.test.js | 17 | Create, join, activate, end, my-sessions |
+| reflection-routes.test.js | 9 | Goals, reflections, semester trend |
 
 All tests run offline in under a minute with zero external dependencies.
 
