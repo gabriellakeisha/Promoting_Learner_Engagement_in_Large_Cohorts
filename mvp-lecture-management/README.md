@@ -8,7 +8,7 @@
 
 ## Overview
 
-A real-time backchannel web application for large university lectures (100–500 students). Students can ask questions, flag confusion, and participate through configurable identity modes — all while lecturers monitor engagement through live analytics.
+A real-time backchannel web application for large university lectures (100–500 students). Students can ask questions, flag confusion, and participate through configurable identity modes, all while lecturers monitor engagement through live analytics.
 
 The platform addresses common barriers to participation: social anxiety, fear of judgement, and the lack of real-time feedback in large cohorts (Auerbach & Andrews, 2018; Sun et al., 2022).
 
@@ -74,23 +74,6 @@ npm start
 Create a `.env` file in the project root with the following variables:
  
 ```
-# Server
-PORT=3000
-NODE_ENV=development
- 
-# MongoDB
-MONGODB_URI=mongodb://localhost:27017/lecture_engagement_mvp
- 
-# Session
-SESSION_SECRET=your-random-secret-string-here
-SESSION_MAX_AGE=86400000
- 
-# Lecturer Registration
-LECTURER_ACCESS_CODE=set_lecture_private_code_here
- 
-# Hugging Face AI (optional — system uses RAKE fallback if not set)
-HUGGINGFACE_API_KEY=hf_your_api_key_here
-
 - `MONGODB_URI` — your MongoDB connection string (local or Atlas)
 - `SESSION_SECRET` — any random string for session encryption
 - `LECTURER_ACCESS_CODE` — code required to register as a lecturer (prevents students from creating lecturer accounts)
