@@ -197,12 +197,15 @@ mvp-lecture-management/
 │   │   └── ai-summary.js               # DistilBART session summarisation with fallback
 │   └── server.js                       # Main entry point (Express + Socket.IO setup)
 │
-├── tests/                              # Jest automated tests (145 tests)
+├── tests/                              # Jest automated tests (147 tests)
 │   ├── ai-services.test.js             # RAKE and AI comparison
 │   ├── auth-middleware.test.js         # Role-based access control
 │   ├── auth-routes.test.js             # Registration, login, logout
+│   ├── message-routes.test.js         # Message CRUD, polls, reactions, reports
 │   ├── models.test.js                  # All 5 Mongoose model schemas
-│   └── security.test.js                # XSS sanitisation and security headers
+│   ├── reflection-routes.test.js      # Goals, reflections, semester trend
+│   ├── security.test.js                # XSS sanitisation and security headers
+│   └── session-routes.test.js         # Create, join, activate, end sessions
 │
 ├── .env.example                        # Environment variable template
 ├── .gitignore                          # Git ignore rules
