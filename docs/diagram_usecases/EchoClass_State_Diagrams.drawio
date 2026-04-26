@@ -1,45 +1,52 @@
 <mxfile host="app.diagrams.net" agent="EchoClass" pages="2">
   <diagram id="session-state" name="Session State Diagram">
-    <mxGraphModel dx="2647" dy="1024" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="550" math="0" shadow="0">
+    <mxGraphModel dx="2813" dy="1138" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="550" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
         <mxCell id="title" parent="1" style="text;html=1;align=center;fontSize=16;" value="&lt;b&gt;Figure 4: Session State Diagram&lt;/b&gt;" vertex="1">
-          <mxGeometry height="25" width="350" x="350" y="20" as="geometry" />
+          <mxGeometry height="25" width="350" x="350" y="10" as="geometry" />
         </mxCell>
         <mxCell id="init" parent="1" style="ellipse;fillColor=#000000;strokeColor=#000000;labelBackgroundColor=none;" value="" vertex="1">
-          <mxGeometry height="30" width="30" x="-53" y="196" as="geometry" />
+          <mxGeometry height="30" width="30" x="-53" y="186" as="geometry" />
         </mxCell>
         <mxCell id="scheduled" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#F9A825;arcSize=20;align=center;verticalAlign=top;spacingTop=5;fontSize=15;labelBackgroundColor=none;" value="&lt;b&gt;Scheduled&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;status = &#39;scheduled&#39;&lt;br&gt;startTime = future date&lt;br&gt;endTime = planned end&lt;br&gt;Students cannot send messages" vertex="1">
-          <mxGeometry height="150" width="230" x="137" y="131" as="geometry" />
+          <mxGeometry height="150" width="230" x="137" y="121" as="geometry" />
         </mxCell>
         <mxCell id="active" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;arcSize=20;align=center;verticalAlign=top;spacingTop=5;fontSize=15;labelBackgroundColor=none;" value="&lt;b&gt;Active&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;status = &#39;active&#39;&lt;br&gt;startTime = now&lt;br&gt;Messages enabled&lt;br&gt;Analytics available on demand&lt;br&gt;Confusion spike computed per request" vertex="1">
-          <mxGeometry height="180" width="260" x="500" y="115" as="geometry" />
+          <mxGeometry height="180" width="260" x="570" y="106" as="geometry" />
         </mxCell>
         <mxCell id="ended" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#9E9E9E;arcSize=20;align=center;verticalAlign=top;spacingTop=5;fontSize=15;labelBackgroundColor=none;" value="&lt;b&gt;Ended&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;status = &#39;ended&#39;&lt;br&gt;endTime = timestamp&lt;br&gt;Messages read-only&lt;br&gt;Analytics still accessible&lt;br&gt;AI summary available&lt;br&gt;CSV export available" vertex="1">
-          <mxGeometry height="180" width="230" x="850" y="115" as="geometry" />
+          <mxGeometry height="180" width="230" x="1000" y="106" as="geometry" />
         </mxCell>
         <mxCell id="final" parent="1" style="ellipse;fillColor=#000000;strokeColor=#000000;shape=doubleCircle;labelBackgroundColor=none;" value="" vertex="1">
-          <mxGeometry height="30" width="30" x="1120" y="190" as="geometry" />
+          <mxGeometry height="30" width="30" x="1270" y="181" as="geometry" />
         </mxCell>
-        <mxCell id="t1" edge="1" parent="1" source="init" style="endArrow=block;html=1;fontSize=15;fontColor=#666666;curved=1;labelBackgroundColor=none;" target="scheduled" value="POST /create&lt;br&gt;{isScheduled: true}">
-          <mxGeometry relative="1" x="-0.0004" y="-2" as="geometry">
-            <mxPoint as="offset" />
+        <mxCell id="t1" edge="1" parent="1" style="endArrow=block;html=1;fontSize=15;fontColor=#666666;curved=1;labelBackgroundColor=none;" value="POST /create&lt;br&gt;{isScheduled: true}">
+          <mxGeometry relative="1" x="0.0066" y="29" as="geometry">
+            <mxPoint x="1" as="offset" />
+            <mxPoint x="-20.00058732551679" y="200.8672618347391" as="sourcePoint" />
+            <mxPoint x="140" y="197.98275862068965" as="targetPoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="t1b" edge="1" parent="1" source="init" style="endArrow=block;html=1;fontSize=15;fontColor=#666666;curved=1;labelBackgroundColor=none;entryX=0;entryY=0.75;entryDx=0;entryDy=0;" target="active" value="POST /create&lt;br&gt;{default: active}">
-          <mxGeometry relative="1" x="0.7773" y="-24" as="geometry">
+          <mxGeometry relative="1" x="0.1999" y="18" as="geometry">
             <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="260" y="350" />
+            </Array>
             <mxPoint x="300" y="80" as="sourcePoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="t2" edge="1" parent="1" source="scheduled" style="endArrow=block;html=1;fontSize=14;fontColor=#666666;labelBackgroundColor=none;" target="active" value="POST /:sessionId/activate&lt;br&gt;(lecturer manually activates)">
-          <mxGeometry relative="1" x="-0.0526" y="1" as="geometry">
+        <mxCell id="t2" edge="1" parent="1" source="scheduled" style="endArrow=block;html=1;fontSize=15;fontColor=#666666;labelBackgroundColor=none;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" target="active" value="POST /:sessionId/activate&lt;br&gt;(lecturer manually activates)">
+          <mxGeometry relative="1" x="0.025" y="33" as="geometry">
             <mxPoint as="offset" />
+            <mxPoint x="366" y="193.69576719576708" as="sourcePoint" />
+            <mxPoint x="550" y="192" as="targetPoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="t3" edge="1" parent="1" source="active" style="endArrow=block;html=1;fontSize=15;fontColor=#666666;labelBackgroundColor=none;" target="ended" value="POST /:sessionId/end&lt;br&gt;(lecturer ends session)">
-          <mxGeometry relative="1" x="-0.1" y="15" as="geometry">
+          <mxGeometry relative="1" x="-0.0476" y="26" as="geometry">
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
@@ -47,39 +54,39 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="legend-bg" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#CCCCCC;dashed=1;labelBackgroundColor=none;" value="" vertex="1">
-          <mxGeometry height="70" width="550" x="330" y="310" as="geometry" />
+          <mxGeometry height="70" width="580" x="420" y="300" as="geometry" />
         </mxCell>
         <mxCell id="leg-title" parent="1" style="text;html=1;fontSize=15;align=left;labelBackgroundColor=none;" value="&lt;b&gt;Legend:&lt;/b&gt;" vertex="1">
-          <mxGeometry height="20" width="70" x="340" y="315" as="geometry" />
+          <mxGeometry height="20" width="70" x="429" y="299" as="geometry" />
         </mxCell>
         <mxCell id="leg1" parent="1" style="rounded=1;fillColor=#FFF9C4;strokeColor=#F9A825;labelBackgroundColor=none;" value="" vertex="1">
-          <mxGeometry height="15" width="20" x="340" y="340" as="geometry" />
+          <mxGeometry height="15" width="20" x="430" y="330" as="geometry" />
         </mxCell>
         <mxCell id="leg1t" parent="1" style="text;html=1;fontSize=15;align=left;labelBackgroundColor=none;" value="Scheduled (waiting)" vertex="1">
-          <mxGeometry height="20" width="140" x="365" y="338" as="geometry" />
+          <mxGeometry height="20" width="140" x="455" y="328" as="geometry" />
         </mxCell>
         <mxCell id="leg2" parent="1" style="rounded=1;fillColor=#C8E6C9;strokeColor=#2E7D32;labelBackgroundColor=none;" value="" vertex="1">
-          <mxGeometry height="15" width="20" x="530" y="340" as="geometry" />
+          <mxGeometry height="15" width="20" x="620" y="330" as="geometry" />
         </mxCell>
         <mxCell id="leg2t" parent="1" style="text;html=1;fontSize=15;align=left;labelBackgroundColor=none;" value="Active (messages enabled)" vertex="1">
-          <mxGeometry height="20" width="180" x="555" y="338" as="geometry" />
+          <mxGeometry height="20" width="180" x="645" y="328" as="geometry" />
         </mxCell>
         <mxCell id="leg3" parent="1" style="rounded=1;fillColor=#F5F5F5;strokeColor=#9E9E9E;labelBackgroundColor=none;" value="" vertex="1">
-          <mxGeometry height="15" width="20" x="750" y="340" as="geometry" />
+          <mxGeometry height="15" width="20" x="840" y="330" as="geometry" />
         </mxCell>
         <mxCell id="leg3t" parent="1" style="text;html=1;fontSize=15;align=left;labelBackgroundColor=none;" value="Ended (read-only)" vertex="1">
-          <mxGeometry height="20" width="130" x="775" y="338" as="geometry" />
+          <mxGeometry height="20" width="130" x="865" y="328" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
   <diagram id="message-state" name="Message State Diagram">
-    <mxGraphModel dx="1344" dy="931" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="750" math="0" shadow="0">
+    <mxGraphModel dx="2114" dy="2213" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="750" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
         <mxCell id="title" parent="1" style="text;html=1;align=center;fontSize=16;labelBackgroundColor=none;" value="&lt;b&gt;Figure 5: Message State Diagram&lt;/b&gt;" vertex="1">
-          <mxGeometry height="25" width="350" x="1190" y="122.5" as="geometry" />
+          <mxGeometry height="25" width="350" x="1405" y="87.5" as="geometry" />
         </mxCell>
         <mxCell id="init" parent="1" style="ellipse;fillColor=#000000;strokeColor=#000000;" value="" vertex="1">
           <mxGeometry height="30" width="30" x="59" y="260" as="geometry" />
@@ -88,45 +95,47 @@
           <mxGeometry height="150" width="210" x="200" y="200" as="geometry" />
         </mxCell>
         <mxCell id="edited" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1976D2;arcSize=15;align=center;verticalAlign=top;spacingTop=5;fontSize=15;labelBackgroundColor=none;" value="&lt;b&gt;Edited&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;text = new content&lt;br&gt;isEdited = true&lt;br&gt;editHistory[] += previous text&lt;br&gt;originalText preserved&lt;br&gt;&lt;i&gt;(Edited) label shown&lt;/i&gt;" vertex="1">
-          <mxGeometry height="150" width="230" x="550" y="60" as="geometry" />
+          <mxGeometry height="150" width="230" x="766" y="25" as="geometry" />
         </mxCell>
         <mxCell id="pinned" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#F9A825;arcSize=15;align=center;verticalAlign=top;spacingTop=5;fontSize=15;labelBackgroundColor=none;" value="&lt;b&gt;Pinned&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;isPinned = true&lt;br&gt;&lt;i&gt;Appears at top of chat&lt;br&gt;Toggle on/off by lecturer&lt;/i&gt;" vertex="1">
-          <mxGeometry height="120" width="200" x="550" y="250" as="geometry" />
+          <mxGeometry height="120" width="200" x="766" y="215" as="geometry" />
         </mxCell>
         <mxCell id="reported" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;arcSize=15;align=center;verticalAlign=top;spacingTop=5;fontSize=15;labelBackgroundColor=none;" value="&lt;b&gt;Reported&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;isReported = true&lt;br&gt;reportedBy = userId (FK)&lt;br&gt;reportedAt = timestamp&lt;br&gt;&lt;i&gt;Removed from chatroom&lt;br&gt;Preserved in CSV export only&lt;/i&gt;" vertex="1">
-          <mxGeometry height="150" width="230" x="550" y="410" as="geometry" />
+          <mxGeometry height="150" width="230" x="766" y="375" as="geometry" />
         </mxCell>
         <mxCell id="deleted" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFCDD2;strokeColor=#C62828;arcSize=15;align=center;verticalAlign=top;spacingTop=5;fontSize=15;labelBackgroundColor=none;" value="&lt;b&gt;Soft-Deleted&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;isDeleted = true&lt;br&gt;deletedBy = userId (FK)&lt;br&gt;deletedAt = timestamp&lt;br&gt;originalText preserved in DB&lt;br&gt;&lt;i&gt;&#39;This message was deleted&#39;&lt;br&gt;placeholder shown to users&lt;/i&gt;" vertex="1">
-          <mxGeometry height="170" width="230" x="880" y="200" as="geometry" />
+          <mxGeometry height="170" width="230" x="1096" y="165" as="geometry" />
         </mxCell>
         <mxCell id="final" parent="1" style="ellipse;fillColor=#000000;strokeColor=#000000;shape=doubleCircle;labelBackgroundColor=none;" value="" vertex="1">
-          <mxGeometry height="30" width="30" x="1229" y="270" as="geometry" />
+          <mxGeometry height="30" width="30" x="1445" y="235" as="geometry" />
         </mxCell>
         <mxCell id="t0" edge="1" parent="1" source="init" style="endArrow=block;html=1;fontSize=15;fontColor=#666;labelBackgroundColor=none;" target="created" value="POST /send">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="t1" edge="1" parent="1" source="created" style="endArrow=block;html=1;fontSize=15;fontColor=#666;curved=1;labelBackgroundColor=none;" target="edited" value="PUT /:messageId&lt;br&gt;{text: newText}&lt;br&gt;(owner or lecturer)">
-          <mxGeometry relative="1" x="0.1576" y="3" as="geometry">
+          <mxGeometry relative="1" x="-0.0811" y="15" as="geometry">
             <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="t1" edge="1" parent="1" source="created" style="endArrow=block;html=1;fontSize=15;fontColor=#666;curved=1;labelBackgroundColor=none;exitX=0.714;exitY=0.004;exitDx=0;exitDy=0;exitPerimeter=0;" target="edited" value="PUT /:messageId&lt;br&gt;{text: newText}&lt;br&gt;(owner or lecturer)">
+          <mxGeometry relative="1" x="-0.0472" y="44" as="geometry">
+            <mxPoint x="1" as="offset" />
           </mxGeometry>
         </mxCell>
         <mxCell id="t1b" edge="1" parent="1" source="edited" style="endArrow=block;html=1;fontSize=15;fontColor=#666;curved=1;labelBackgroundColor=none;exitX=1;exitY=0.25;exitDx=0;exitDy=0;" value="Re-edit&lt;br&gt;(appends to&lt;br&gt;editHistory[])">
-          <mxGeometry relative="1" x="-0.1014" y="-10" as="geometry">
-            <mxPoint as="offset" />
+          <mxGeometry relative="1" x="-0.3308" y="-27" as="geometry">
+            <mxPoint x="10" y="2" as="offset" />
             <Array as="points">
-              <mxPoint x="770" y="40" />
-              <mxPoint x="690" y="40" />
+              <mxPoint x="986" y="5" />
+              <mxPoint x="906" y="5" />
             </Array>
-            <mxPoint x="780" y="80" as="sourcePoint" />
-            <mxPoint x="660" y="60" as="targetPoint" />
+            <mxPoint x="996" y="45" as="sourcePoint" />
+            <mxPoint x="876" y="25" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="t2" edge="1" parent="1" source="created" style="endArrow=block;html=1;fontSize=13;fontColor=#666;labelBackgroundColor=none;" target="pinned" value="POST /:messageId/pin&lt;br&gt;(lecturer only)">
-          <mxGeometry relative="1" x="-0.004" y="3" as="geometry">
+        <mxCell id="t2" edge="1" parent="1" source="created" style="endArrow=block;html=1;fontSize=15;fontColor=#666;labelBackgroundColor=none;" target="pinned" value="POST /:messageId/pin&lt;br&gt;(lecturer only)">
+          <mxGeometry relative="1" x="0.0112" y="25" as="geometry">
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="t2b" edge="1" parent="1" style="endArrow=block;html=1;fontSize=14;fontColor=#666;curved=1;dashed=1;labelBackgroundColor=none;" value="Unpin (toggle)&lt;br&gt;(lecturer)">
+        <mxCell id="t2b" edge="1" parent="1" source="pinned" style="endArrow=block;html=1;fontSize=15;fontColor=#666;curved=1;dashed=1;labelBackgroundColor=none;exitX=0;exitY=0.75;exitDx=0;exitDy=0;" value="Unpin (toggle)&lt;br&gt;(lecturer)">
           <mxGeometry relative="1" as="geometry">
             <mxPoint as="offset" />
             <mxPoint x="550" y="330" as="sourcePoint" />
@@ -134,21 +143,26 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="t3" edge="1" parent="1" source="created" style="endArrow=block;html=1;fontSize=15;fontColor=#666;curved=1;labelBackgroundColor=none;" target="reported" value="POST /:messageId/report&lt;br&gt;(any authenticated user)">
-          <mxGeometry relative="1" x="0.0181" y="-3" as="geometry">
-            <mxPoint y="-1" as="offset" />
+          <mxGeometry relative="1" x="0.0355" y="-49" as="geometry">
+            <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="t4" edge="1" parent="1" source="created" style="endArrow=block;html=1;fontSize=13;fontColor=#666;curved=1;labelBackgroundColor=none;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.25;exitDx=0;exitDy=0;" target="deleted" value="DELETE /:messageId&lt;br&gt;(owner or lecturer)">
-          <mxGeometry relative="1" x="0.703" y="-2" as="geometry">
-            <mxPoint as="offset" />
+        <mxCell id="t4" edge="1" parent="1" source="created" style="endArrow=block;html=1;fontSize=15;fontColor=#666;curved=1;labelBackgroundColor=none;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=0.946;exitY=0.029;exitDx=0;exitDy=0;exitPerimeter=0;" target="deleted" value="DELETE /:messageId&lt;br&gt;(owner or lecturer)">
+          <mxGeometry relative="1" x="-0.2256" y="13" as="geometry">
+            <mxPoint x="1" as="offset" />
+            <Array as="points">
+              <mxPoint x="750" y="190" />
+            </Array>
           </mxGeometry>
         </mxCell>
         <mxCell id="t5" edge="1" parent="1" source="edited" style="endArrow=block;html=1;fontSize=15;fontColor=#666;labelBackgroundColor=none;" target="deleted" value="DELETE">
-          <mxGeometry relative="1" as="geometry" />
+          <mxGeometry relative="1" x="-0.1221" y="24" as="geometry">
+            <mxPoint y="-1" as="offset" />
+          </mxGeometry>
         </mxCell>
         <mxCell id="t6" edge="1" parent="1" source="reported" style="endArrow=block;html=1;fontSize=15;fontColor=#666;curved=1;labelBackgroundColor=none;" target="deleted" value="Lecturer deletes&lt;br&gt;reported message">
-          <mxGeometry relative="1" x="-0.0443" y="-4" as="geometry">
-            <mxPoint as="offset" />
+          <mxGeometry relative="1" x="0.3776" y="-48" as="geometry">
+            <mxPoint x="1" as="offset" />
           </mxGeometry>
         </mxCell>
         <mxCell id="t7" edge="1" parent="1" source="deleted" style="endArrow=block;html=1;fontSize=15;fontColor=#999;dashed=1;labelBackgroundColor=none;" target="final" value="&lt;i&gt;(remains in DB&lt;br&gt;for audit trail)&lt;/i&gt;">
@@ -157,43 +171,43 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="legend-bg" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#CCC;dashed=1;labelBackgroundColor=none;" value="" vertex="1">
-          <mxGeometry height="60" width="700" x="286" y="610" as="geometry" />
+          <mxGeometry height="60" width="700" x="585" y="553" as="geometry" />
         </mxCell>
         <mxCell id="lt" parent="1" style="text;html=1;fontSize=15;labelBackgroundColor=none;" value="&lt;b&gt;Legend:&lt;/b&gt;" vertex="1">
-          <mxGeometry height="20" width="60" x="180" y="605" as="geometry" />
+          <mxGeometry height="20" width="60" x="649" y="550" as="geometry" />
         </mxCell>
         <mxCell id="l1" parent="1" style="rounded=1;fillColor=#C8E6C9;strokeColor=#2E7D32;labelBackgroundColor=none;" value="" vertex="1">
-          <mxGeometry height="12" width="16" x="180" y="630" as="geometry" />
+          <mxGeometry height="12" width="16" x="649" y="575" as="geometry" />
         </mxCell>
         <mxCell id="l1t" parent="1" style="text;html=1;fontSize=15;labelBackgroundColor=none;" value="Active" vertex="1">
-          <mxGeometry height="20" width="50" x="200" y="625" as="geometry" />
+          <mxGeometry height="20" width="50" x="669" y="570" as="geometry" />
         </mxCell>
         <mxCell id="l2" parent="1" style="rounded=1;fillColor=#BBDEFB;strokeColor=#1976D2;labelBackgroundColor=none;" value="" vertex="1">
-          <mxGeometry height="12" width="16" x="270" y="630" as="geometry" />
+          <mxGeometry height="12" width="16" x="739" y="575" as="geometry" />
         </mxCell>
         <mxCell id="l2t" parent="1" style="text;html=1;fontSize=15;labelBackgroundColor=none;" value="Modified" vertex="1">
-          <mxGeometry height="20" width="65" x="290" y="625" as="geometry" />
+          <mxGeometry height="20" width="65" x="759" y="570" as="geometry" />
         </mxCell>
         <mxCell id="l3" parent="1" style="rounded=1;fillColor=#FFF9C4;strokeColor=#F9A825;labelBackgroundColor=none;" value="" vertex="1">
-          <mxGeometry height="12" width="16" x="375" y="630" as="geometry" />
+          <mxGeometry height="12" width="16" x="844" y="575" as="geometry" />
         </mxCell>
         <mxCell id="l3t" parent="1" style="text;html=1;fontSize=15;labelBackgroundColor=none;" value="Highlighted" vertex="1">
-          <mxGeometry height="20" width="80" x="395" y="625" as="geometry" />
+          <mxGeometry height="20" width="80" x="864" y="570" as="geometry" />
         </mxCell>
         <mxCell id="l4" parent="1" style="rounded=1;fillColor=#FFE0B2;strokeColor=#E65100;labelBackgroundColor=none;" value="" vertex="1">
-          <mxGeometry height="12" width="16" x="495" y="630" as="geometry" />
+          <mxGeometry height="12" width="16" x="970" y="575" as="geometry" />
         </mxCell>
         <mxCell id="l4t" parent="1" style="text;html=1;fontSize=15;labelBackgroundColor=none;" value="Flagged" vertex="1">
-          <mxGeometry height="20" width="55" x="515" y="625" as="geometry" />
+          <mxGeometry height="20" width="55" x="990" y="570" as="geometry" />
         </mxCell>
         <mxCell id="l5" parent="1" style="rounded=1;fillColor=#FFCDD2;strokeColor=#C62828;labelBackgroundColor=none;" value="" vertex="1">
-          <mxGeometry height="12" width="16" x="590" y="630" as="geometry" />
+          <mxGeometry height="12" width="16" x="1065" y="575" as="geometry" />
         </mxCell>
         <mxCell id="l5t" parent="1" style="text;html=1;fontSize=15;labelBackgroundColor=none;" value="Removed (preserved in DB)" vertex="1">
-          <mxGeometry height="20" width="200" x="610" y="625" as="geometry" />
+          <mxGeometry height="20" width="196" x="1089" y="570" as="geometry" />
         </mxCell>
         <mxCell id="note" parent="1" style="shape=note;size=14;whiteSpace=wrap;html=1;fillColor=#FFFFCC;strokeColor=#999;fontSize=15;align=left;spacingLeft=8;labelBackgroundColor=none;" value="&lt;b&gt;Design Decision:&lt;/b&gt; Messages are never physically deleted.&lt;br&gt;Soft-deletion preserves the audit trail. Reported messages&lt;br&gt;are removed from the chatroom but preserved in the CSV&lt;br&gt;export with a REPORTED status tag." vertex="1">
-          <mxGeometry height="100" width="400" x="60" y="450" as="geometry" />
+          <mxGeometry height="100" width="400" x="59" y="375" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
